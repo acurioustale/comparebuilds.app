@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+/* ─── Friz Quadrata web font ─────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'FrizQuadrata';
+  src: url('./assets/fonts/FRIZQT__.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─── Tailwind theme tokens ──────────────────────────────────────────────── */
+
+@theme {
+  --color-wow-bg:         #0d0d14;
+  --color-wow-panel:      #12121e;
+  --color-wow-gold:       #c8a84b;
+  --color-wow-gold-dark:  #8b6914;
+  --color-wow-gold-light: #e8c96b;
+  --color-wow-text:       #f0e6c8;
+  --color-wow-muted:      #9a8a6a;
+  --color-wow-dim:        #3a2e1a;
+  --font-wow: 'FrizQuadrata', 'Palatino Linotype', serif;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  color: #f0e6c8;
+  font-family: 'FrizQuadrata', 'Palatino Linotype', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  background-color: #0d0d14;
+}
+
+/* ─── WoW panel ──────────────────────────────────────────────────────────── */
+
+/*
+ * Semi-transparent dark panel with radial vignette and double gold border.
+ * The outline creates the inner bright gold line; the border is the outer dark gold line.
+ * outline-offset: -3px places the outline 1px inside the border with a 1px gap.
+ */
+.wow-panel {
+  background: rgba(10, 8, 4, 0.88);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid #8b6914;
+  outline: 1px solid rgba(200,168,75,0.45);
+  outline-offset: -3px;
+  box-shadow:
+    0 0 20px rgba(0,0,0,0.8),
+    inset 0 0 60px rgba(0,0,0,0.4);
+}
+
+/* Header and footer chrome */
+.wow-chrome {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ─── Class icon buttons ─────────────────────────────────────────────────── */
+
+.wow-class-btn img {
+  border-radius: 4px;
+  transition: box-shadow 0.15s ease;
+}
+.wow-class-btn:not(:disabled):hover img {
+  box-shadow: 0 0 0 2px #c8a84b, 0 0 10px rgba(200,168,75,0.5);
+}
+.wow-class-btn.wow-active img {
+  box-shadow: 0 0 0 2px #c8a84b, 0 0 14px rgba(200,168,75,0.65);
+}
+
+/* ─── WoW action button ──────────────────────────────────────────────────── */
+
+.wow-btn {
+  background: #1a1508;
+  border: 1px solid #8b6914;
+  color: #c8a84b;
+  font-family: 'FrizQuadrata', 'Palatino Linotype', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, color 0.15s;
+}
+.wow-btn:hover:not(:disabled) {
+  border-color: #c8a84b;
+  color: #e8c96b;
+  box-shadow: 0 0 12px rgba(200,168,75,0.35), inset 0 0 8px rgba(200,168,75,0.06);
+}
+.wow-btn:active:not(:disabled) {
+  background: #110e04;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.6);
+}
+.wow-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ─── Tippy tooltip overrides ────────────────────────────────────────────── */
+
+.tippy-box {
+  background-color: #0e0e1a !important;
+  border: 1px solid #8b6914 !important;
+  box-shadow: 0 0 0 1px rgba(200,168,75,0.15), 0 6px 24px rgba(0,0,0,0.9) !important;
+  color: #f0e6c8 !important;
+  font-family: 'FrizQuadrata', 'Palatino Linotype', serif !important;
+}
+.tippy-box .tippy-content {
+  padding: 6px 10px;
+}
+.tippy-box[data-placement^='top'] > .tippy-arrow::before {
+  border-top-color: #8b6914 !important;
+}
+.tippy-box[data-placement^='bottom'] > .tippy-arrow::before {
+  border-bottom-color: #8b6914 !important;
+}
+.tippy-box[data-placement^='left'] > .tippy-arrow::before {
+  border-left-color: #8b6914 !important;
+}
+.tippy-box[data-placement^='right'] > .tippy-arrow::before {
+  border-right-color: #8b6914 !important;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar       { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a0a10; }
+::-webkit-scrollbar-thumb { background: #5a4010; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #8b6914; }

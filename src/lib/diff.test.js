@@ -1,0 +1,77 @@
+/**
+ * Tests for the build-diff logic extracted from SideBySideDiff.
+ */
+
+import { describe, test } from 'vitest'
+import assert from 'node:assert/strict'
+import { computeDiff, selectionLabel } from './diff.js'
+
+// Small synthetic spec: one class node, a multi-rank spec node, a choice node,
+// a hero node, and an always-granted node.
+const NODES = [
+  { id: 1, treeType: 'class', type: 'round', posX: 0, posY: 0, maxRanks: 1, name: 'Class A', alreadyGranted: false },
+  { id: 2, treeType: 'spec', type: 'round', posX: 0, posY: 1, maxRanks: 3, name: 'Spec B', alreadyGranted: false },
+  { id: 3, treeType: 'spec', type: 'choice', posX: 1, posY: 1, maxRanks: 1, name: null, alreadyGranted: false, choices: [{ name: 'X' }, { name: 'Y' }] },
+  { id: 4, treeType: 'hero', type: 'round', posX: 0, posY: 0, maxRanks: 1, name: 'Hero H', alreadyGranted: false },
+  { id: 5, treeType: 'class', type: 'round', posX: 2, posY: 0, maxRanks: 1, name: 'Granted', alreadyGranted: true },
+  { id: 6, treeType: 'spec', type: 'apex', posX: 1, posY: 9, maxRanks: 2, name: 'Apex', alreadyGranted: false },
+]
+const byId = Object.fromEntries(NODES.map((n) => [n.id, n]))
+const pt = (pointsInvested, entryChosen = null) => ({ pointsInvested, entryChosen })
+
+describe('selectionLabel', () => {
+  test('null selection → null', () => assert.strictEqual(selectionLabel(byId[1], null), null))
+  test('single-rank node → name only', () => assert.strictEqual(selectionLabel(byId[1], pt(1)), 'Class A'))
+  test('multi-rank node → name with ranks', () => assert.strictEqual(selectionLabel(byId[2], pt(2)), 'Spec B (2/3)'))
+  test('apex node → name with ranks', () => assert.strictEqual(selectionLabel(byId[6], pt(1)), 'Apex (1/2)'))
+  test('choice node → chosen option name', () => assert.strictEqual(selectionLabel(byId[3], pt(1, 1)), 'Y'))
+  test('choice node with out-of-range index → fallback', () => assert.strictEqual(selectionLabel(byId[3], pt(1, 5)), 'option 6'))
+})
+
+describe('computeDiff', () => {
+  test('a-only and b-only are classified and highlighted', () => {
+    const a = { 1: pt(1) }
+    const b = { 4: pt(1) }
+    const { highlights, aOnly, bOnly, differing } = computeDiff(a, b, NODES)
+    assert.strictEqual(highlights[1], 'a-only')
+    assert.strictEqual(highlights[4], 'b-only')
+    assert.deepStrictEqual(aOnly.map((e) => e.id), [1])
+    assert.deepStrictEqual(bOnly.map((e) => e.id), [4])
+    assert.strictEqual(differing.length, 0)
+  })
+
+  test('differing rank is flagged as diff', () => {
+    const { highlights, differing } = computeDiff({ 2: pt(1) }, { 2: pt(3) }, NODES)
+    assert.strictEqual(highlights[2], 'diff')
+    assert.deepStrictEqual(differing.map((e) => e.id), [2])
+  })
+
+  test('differing choice is flagged as diff', () => {
+    const { highlights, differing } = computeDiff({ 3: pt(1, 0) }, { 3: pt(1, 1) }, NODES)
+    assert.strictEqual(highlights[3], 'diff')
+    assert.deepStrictEqual(differing.map((e) => e.id), [3])
+  })
+
+  test('identical selections produce no diff', () => {
+    const sel = { 1: pt(1), 2: pt(3) }
+    const { aOnly, bOnly, differing } = computeDiff(sel, { ...sel }, NODES)
+    assert.strictEqual(aOnly.length + bOnly.length + differing.length, 0)
+  })
+
+  test('alreadyGranted nodes are never diffed', () => {
+    const { highlights, aOnly } = computeDiff({ 5: pt(1) }, {}, NODES)
+    assert.strictEqual(highlights[5], undefined)
+    assert.strictEqual(aOnly.length, 0)
+  })
+
+  test('ids absent from the node list are ignored', () => {
+    const { aOnly } = computeDiff({ 999: pt(1) }, {}, NODES)
+    assert.strictEqual(aOnly.length, 0)
+  })
+
+  test('entries are sorted class → spec → hero', () => {
+    // 4 = hero, 1 = class, 2 = spec — all a-only; expect class, spec, hero order
+    const { aOnly } = computeDiff({ 1: pt(1), 2: pt(3), 4: pt(1) }, {}, NODES)
+    assert.deepStrictEqual(aOnly.map((e) => e.node.treeType), ['class', 'spec', 'hero'])
+  })
+})

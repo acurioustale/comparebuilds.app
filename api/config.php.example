@@ -1,0 +1,15 @@
+<?php
+// Copy this file to config.php, fill in your MariaDB credentials, and place
+// it ONE LEVEL ABOVE the web root so it is never publicly accessible.
+//
+// Typical server layout:
+//   /home/username/          ← place config.php here
+//   /home/username/www/      ← web root (comparebuilds.app points here)
+//   /home/username/www/api/  ← share.php lives here
+//
+// share.php loads this file via: require_once __DIR__ . '/../../config.php';
+
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'your_database_name');
+define('DB_USER', 'your_db_user');
+define('DB_PASS', 'your_db_password');

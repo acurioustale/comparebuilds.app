@@ -1,0 +1,452 @@
+[
+  {
+    "id": 6,
+    "name": "death_knight",
+    "displayName": "Death Knight",
+    "icon": "death_knight",
+    "color": "#C41E3A",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 250,
+        "name": "blood",
+        "displayName": "Blood",
+        "icon": "spell_deathknight_bloodpresence",
+        "color": "#241615",
+        "description": "A dark guardian who manipulates and corrupts life energy to sustain themselves in the face of an enemy onslaught. Preferred Weapon: Two-Handed Axe, Mace, Sword"
+      },
+      {
+        "id": 251,
+        "name": "frost",
+        "displayName": "Frost",
+        "icon": "spell_deathknight_frostpresence",
+        "color": "#131b2a",
+        "description": "An icy harbinger of doom, channeling runic power and delivering vicious weapon strikes. Preferred Weapons: Dual Axes, Maces, Swords"
+      },
+      {
+        "id": 252,
+        "name": "unholy",
+        "displayName": "Unholy",
+        "icon": "spell_deathknight_unholypresence",
+        "color": "#1a1b15",
+        "description": "A master of death and decay, spreading infection and controlling undead minions to do their bidding. Preferred Weapon: Two-Handed Axe, Mace, Sword"
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "name": "demon_hunter",
+    "displayName": "Demon Hunter",
+    "icon": "demon_hunter",
+    "color": "#A330C9",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 1480,
+        "name": "devourer",
+        "displayName": "Devourer",
+        "icon": "classicon_demonhunter_void",
+        "color": "#",
+        "description": "Harnesses the power of the void to crush their enemies and feast on their souls. Preferred Weapons: Warglaives, Swords, Axes, Fist Weapons."
+      },
+      {
+        "id": 577,
+        "name": "havoc",
+        "displayName": "Havoc",
+        "icon": "ability_demonhunter_specdps",
+        "color": "#192714",
+        "description": "A brooding master of warglaives and the destructive power of Fel magic. Preferred Weapons: Warglaives, Swords, Axes, Fist Weapons"
+      },
+      {
+        "id": 581,
+        "name": "vengeance",
+        "displayName": "Vengeance",
+        "icon": "ability_demonhunter_spectank",
+        "color": "#0e131b",
+        "description": "Embraces the demon within to incinerate enemies and protect their allies. Preferred Weapons: Warglaives, Swords, Axes, Fist Weapons"
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "name": "druid",
+    "displayName": "Druid",
+    "icon": "druid",
+    "color": "#FF7C0A",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 102,
+        "name": "balance",
+        "displayName": "Balance",
+        "icon": "spell_nature_starfall",
+        "color": "#151734",
+        "description": "Can shapeshift into a powerful Moonkin, balancing the power of Arcane and Nature magic to destroy enemies. Preferred Weapon: Staff, Dagger, Mace"
+      },
+      {
+        "id": 103,
+        "name": "feral",
+        "displayName": "Feral",
+        "icon": "ability_druid_catform",
+        "color": "#221520",
+        "description": "Takes on the form of a great cat to deal damage with bleeds and bites. Preferred Weapon: Staff, Polearm"
+      },
+      {
+        "id": 104,
+        "name": "guardian",
+        "displayName": "Guardian",
+        "icon": "ability_racial_bearform",
+        "color": "#221715",
+        "description": "Takes on the form of a mighty bear to absorb damage and protect allies. Preferred Weapon: Staff, Polearm"
+      },
+      {
+        "id": 105,
+        "name": "restoration",
+        "displayName": "Restoration",
+        "icon": "spell_nature_healingtouch",
+        "color": "#151d12",
+        "description": "Channels powerful Nature magic to regenerate and revitalize allies. Preferred Weapon: Staff, Dagger, Mace"
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "evoker",
+    "displayName": "Evoker",
+    "icon": "evoker",
+    "color": "#33937F",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 1473,
+        "name": "augmentation",
+        "displayName": "Augmentation",
+        "icon": "classicon_evoker_augmentation",
+        "color": "#",
+        "description": "Imbues allies with the might of the Black dragons, and bends time & fate in their favor with Bronze magic. Preferred Weapon: Staff, Sword, Dagger, Mace"
+      },
+      {
+        "id": 1467,
+        "name": "devastation",
+        "displayName": "Devastation",
+        "icon": "classicon_evoker_devastation",
+        "color": "#1d050d",
+        "description": "Releases innate power as chaotic Red flames or focused Blue magic to bathe the battlefield in destruction. Preferred Weapon: Staff, Sword, Dagger, Mace"
+      },
+      {
+        "id": 1468,
+        "name": "preservation",
+        "displayName": "Preservation",
+        "icon": "classicon_evoker_preservation",
+        "color": "#001027",
+        "description": "Calls upon the Emerald Dream to rejuvenate life, and the Bronze sands of time to prevent harm. Preferred Weapon: Staff, Sword, Dagger, Mace"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "hunter",
+    "displayName": "Hunter",
+    "icon": "hunter",
+    "color": "#AAD372",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 253,
+        "name": "beast-mastery",
+        "displayName": "Beast Mastery",
+        "icon": "ability_hunter_bestialdiscipline",
+        "color": "#0e1420",
+        "description": "A master of the wild who can tame a wide variety of beasts to assist them in combat. Preferred Weapon: Bow, Crossbow, Gun"
+      },
+      {
+        "id": 254,
+        "name": "marksmanship",
+        "displayName": "Marksmanship",
+        "icon": "ability_hunter_focusedaim",
+        "color": "#141e1c",
+        "description": "A master sharpshooter who excels in bringing down enemies from afar. Preferred Weapon: Bow, Crossbow, Gun"
+      },
+      {
+        "id": 255,
+        "name": "survival",
+        "displayName": "Survival",
+        "icon": "ability_hunter_camouflage",
+        "color": "#030918",
+        "description": "An adaptive ranger who favors using explosives, animal venom, and coordinated attacks with their bonded beast. Preferred Weapon: Polearm, Staff, Axe, Dagger, Sword"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "mage",
+    "displayName": "Mage",
+    "icon": "mage",
+    "color": "#3FC7EB",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 62,
+        "name": "arcane",
+        "displayName": "Arcane",
+        "icon": "spell_holy_magicalsentry",
+        "color": "#030918",
+        "description": "Manipulates raw Arcane magic, destroying enemies with overwhelming power. Preferred Weapon: Staff, Wand, Dagger, Sword"
+      },
+      {
+        "id": 63,
+        "name": "fire",
+        "displayName": "Fire",
+        "icon": "spell_fire_firebolt02",
+        "color": "#310a05",
+        "description": "Focuses the pure essence of Fire magic, assaulting enemies with combustive flames. Preferred Weapon: Staff, Wand, Dagger, Sword"
+      },
+      {
+        "id": 64,
+        "name": "frost",
+        "displayName": "Frost",
+        "icon": "spell_frost_frostbolt02",
+        "color": "#161436",
+        "description": "Freezes enemies in their tracks and shatters them with Frost magic. Preferred Weapon: Staff, Wand, Dagger, Sword"
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "monk",
+    "displayName": "Monk",
+    "icon": "monk",
+    "color": "#00FF98",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 268,
+        "name": "brewmaster",
+        "displayName": "Brewmaster",
+        "icon": "spell_monk_brewmaster_spec",
+        "color": "#182519",
+        "description": "A sturdy brawler who uses unpredictable movement and mystical brews to avoid damage and protect allies. Preferred Weapon: Staff, Polearm"
+      },
+      {
+        "id": 270,
+        "name": "mistweaver",
+        "displayName": "Mistweaver",
+        "icon": "spell_monk_mistweaver_spec",
+        "color": "#272c2b",
+        "description": "A healer who masters the mysterious art of manipulating life energies aided by the wisdom of the Jade Serpent. Preferred Weapon: Staff, Mace, Sword"
+      },
+      {
+        "id": 269,
+        "name": "windwalker",
+        "displayName": "Windwalker",
+        "icon": "spell_monk_windwalker_spec",
+        "color": "#141328",
+        "description": "A martial artist without peer who pummels foes with hands and fists. Preferred Weapons: Fist Weapons, Axes, Maces, Swords"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "paladin",
+    "displayName": "Paladin",
+    "icon": "paladin",
+    "color": "#F48CBA",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 65,
+        "name": "holy",
+        "displayName": "Holy",
+        "icon": "spell_holy_holybolt",
+        "color": "#0a0219",
+        "description": "Invokes the power of the Light to heal and protect allies and vanquish evil from the darkest corners of the world. Preferred Weapon: Sword, Mace, and Shield"
+      },
+      {
+        "id": 66,
+        "name": "protection",
+        "displayName": "Protection",
+        "icon": "ability_paladin_shieldofthetemplar",
+        "color": "#131219",
+        "description": "Uses Holy magic to shield themselves and defend allies from attackers. Preferred Weapon: Sword, Mace, Axe, and Shield"
+      },
+      {
+        "id": 70,
+        "name": "retribution",
+        "displayName": "Retribution",
+        "icon": "spell_holy_auraoflight",
+        "color": "#151c1e",
+        "description": "A righteous crusader who judges and punishes opponents with weapons and Holy magic. Preferred Weapon: Two-Handed Sword, Mace, Axe"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "priest",
+    "displayName": "Priest",
+    "icon": "priest",
+    "color": "#FFFFFF",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 256,
+        "name": "discipline",
+        "displayName": "Discipline",
+        "icon": "spell_holy_powerwordshield",
+        "color": "#343434",
+        "description": "Shields allies from harm and cures their wounds by smiting enemies.\nPreferred Weapon: Staff, Wand, Dagger, Mace"
+      },
+      {
+        "id": 257,
+        "name": "holy",
+        "displayName": "Holy",
+        "icon": "spell_holy_guardianspirit",
+        "color": "#27272f",
+        "description": "A versatile healer who can reverse damage on individuals or groups and even heal from beyond the grave. Preferred Weapon: Staff, Wand, Dagger, Mace"
+      },
+      {
+        "id": 258,
+        "name": "shadow",
+        "displayName": "Shadow",
+        "icon": "spell_shadow_shadowwordpain",
+        "color": "#210a36",
+        "description": "Uses sinister Shadow magic and terrifying Void magic to eradicate enemies. Preferred Weapon: Staff, Wand, Dagger, Mace"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "rogue",
+    "displayName": "Rogue",
+    "icon": "rogue",
+    "color": "#FFF468",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 259,
+        "name": "assassination",
+        "displayName": "Assassination",
+        "icon": "ability_rogue_deadlybrew",
+        "color": "#1a262b",
+        "description": "A deadly master of poisons who dispatches victims with vicious dagger strikes. Preferred Weapons: Daggers"
+      },
+      {
+        "id": 260,
+        "name": "outlaw",
+        "displayName": "Outlaw",
+        "icon": "ability_rogue_waylay",
+        "color": "#10141d",
+        "description": "A ruthless fugitive who uses agility and guile to stand toe-to-toe with enemies. Preferred Weapons: Axes, Maces, Swords, Fist Weapons"
+      },
+      {
+        "id": 261,
+        "name": "subtlety",
+        "displayName": "Subtlety",
+        "icon": "ability_stealth",
+        "color": "#111b12",
+        "description": "A dark stalker who leaps from the shadows to ambush their unsuspecting prey. Preferred Weapons: Daggers"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "shaman",
+    "displayName": "Shaman",
+    "icon": "shaman",
+    "color": "#0070DD",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 262,
+        "name": "elemental",
+        "displayName": "Elemental",
+        "icon": "spell_nature_lightning",
+        "color": "#061a23",
+        "description": "A spellcaster who harnesses the destructive forces of nature and the elements. Preferred Weapon: Mace, Dagger, and Shield"
+      },
+      {
+        "id": 263,
+        "name": "enhancement",
+        "displayName": "Enhancement",
+        "icon": "spell_shaman_improvedstormstrike",
+        "color": "#192826",
+        "description": "A totemic warrior who strikes foes with weapons imbued with elemental power. Preferred Weapons: Dual Axes, Maces, Fist Weapons"
+      },
+      {
+        "id": 264,
+        "name": "restoration",
+        "displayName": "Restoration",
+        "icon": "spell_nature_magicimmunity",
+        "color": "#091a42",
+        "description": "A healer who calls upon ancestral spirits and the cleansing power of water to mend allies' wounds. Preferred Weapon: Mace, Dagger, and Shield"
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "warlock",
+    "displayName": "Warlock",
+    "icon": "warlock",
+    "color": "#8788EE",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 265,
+        "name": "affliction",
+        "displayName": "Affliction",
+        "icon": "spell_shadow_deathcoil",
+        "color": "#0c161e",
+        "description": "A master of shadow magic who specializes in drains and damage-over-time spells. Preferred Weapon: Staff, Wand, Dagger, Sword"
+      },
+      {
+        "id": 266,
+        "name": "demonology",
+        "displayName": "Demonology",
+        "icon": "spell_shadow_metamorphosis",
+        "color": "#0b051c",
+        "description": "A commander of demons who twists the souls of their army into devastating power. Preferred Weapon: Staff, Wand, Dagger, Sword"
+      },
+      {
+        "id": 267,
+        "name": "destruction",
+        "displayName": "Destruction",
+        "icon": "spell_shadow_rainoffire",
+        "color": "#1e150d",
+        "description": "A master of chaos who calls down fire to burn and demolish enemies. Preferred Weapon: Staff, Wand, Dagger, Sword"
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "name": "warrior",
+    "displayName": "Warrior",
+    "icon": "warrior",
+    "color": "#C69B6D",
+    "implemented": true,
+    "specs": [
+      {
+        "id": 71,
+        "name": "arms",
+        "displayName": "Arms",
+        "icon": "ability_warrior_savageblow",
+        "color": "#1d0a03",
+        "description": "A battle-hardened master of weapons, using mobility and overpowering attacks to strike their opponents down. Preferred Weapon: Two-Handed Axe, Mace, Sword"
+      },
+      {
+        "id": 72,
+        "name": "fury",
+        "displayName": "Fury",
+        "icon": "ability_warrior_innerrage",
+        "color": "#120e1d",
+        "description": "A furious dual-wielding berserker unleashing a flurry of attacks to carve their opponents to pieces. Preferred Weapons: Dual Two-Handed Axes, Maces, Swords"
+      },
+      {
+        "id": 73,
+        "name": "protection",
+        "displayName": "Protection",
+        "icon": "ability_warrior_defensivestance",
+        "color": "#0f0d13",
+        "description": "A stalwart protector who uses a shield to safeguard themselves and their allies. Preferred Weapon: Axe, Mace, Sword, and Shield"
+      }
+    ]
+  }
+]
