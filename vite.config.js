@@ -10,9 +10,11 @@ export default defineConfig({
     tailwindcss(),
   ],
   test: {
-    // Pure-logic suites run in Node. Component/store DOM tests (a later phase)
-    // will opt into jsdom per-file via a `// @vitest-environment jsdom` pragma.
+    // Pure-logic suites run in Node; component suites opt into jsdom per-file via
+    // a `// @vitest-environment jsdom` pragma at the top of the file.
     environment: 'node',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
     include: ['src/**/*.test.{js,jsx}'],
     coverage: {
       provider: 'v8',
