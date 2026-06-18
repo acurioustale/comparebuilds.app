@@ -4,7 +4,7 @@ import 'tippy.js/dist/tippy.css'
 import TalentTree from './TalentTree'
 import { generateBuildString } from '../lib/buildString'
 import { computeInvalidNodeIds, buildGrantedSeed } from '../lib/treeLogic'
-import { sectionPoints, canSpendPoint } from '../lib/spendRules'
+import { sectionPoints, canSpendPoint, activeHeroSubtree } from '../lib/spendRules'
 import { useBuildsStore } from '../store/buildsStore'
 
 // ─── Section bar (label + counter + per-section clear) ───────────────────────
@@ -178,7 +178,26 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
     if (classSpent < budget.class || specSpent < budget.spec || heroSpent < budget.hero) return
     setExportState('copying')
     try {
-      const buildStr = generateBuildString(selected, specId, classNodes)
+      const activeSub = activeHeroSubtree(treeData.nodes, selected)
+      // The hero gate node is the hero-tree choice: when hero talents are invested
+      // the in-game format marks it selected with entryChosen = the active subtree
+      // (0 = left, 1 = right). Include it so exports match the canonical encoding.
+      const exportSelection = { ...selected }
+      if (heroSpent > 0 && treeData.heroGateNodeId != null) {
+        exportSelection[treeData.heroGateNodeId] = {
+          pointsInvested: 1,
+          entryChosen: activeSub === treeData.heroSubtrees.right.name ? 1 : 0,
+        }
+      }
+      // Auto-granted nodes encode as selected-but-not-purchased. Class/spec grants
+      // always apply; hero grants only for the active subtree (the inactive one's
+      // granted root is not point-relevant and the game recomputes it on import).
+      const grantedIds = new Set(
+        treeData.nodes
+          .filter((n) => n.alreadyGranted && (n.treeType !== 'hero' || n.heroSubtree === activeSub))
+          .map((n) => n.id),
+      )
+      const buildStr = generateBuildString(exportSelection, specId, classNodes, grantedIds)
       await navigator.clipboard.writeText(buildStr)
       await addBuild(buildStr)
       setExportState('done')
@@ -192,7 +211,7 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
       }, 2000)
     }
   }, [exportState, selected, specId, classNodes, addBuild, invalidNodeIds.size,
-      classSpent, specSpent, heroSpent, budget, finishAddingBuild])
+      classSpent, specSpent, heroSpent, budget, treeData, finishAddingBuild])
 
   const pointsRemaining = useMemo(() => ({
     class: budget.class - classSpent,

@@ -16,11 +16,39 @@
 
 import { describe, test, expect } from 'vitest'
 import { createRequire } from 'node:module'
-import { parseSpecId, parseBuildString, collectClassNodes } from './buildString.js'
+import { parseSpecId, parseBuildString, collectClassNodes, generateBuildString } from './buildString.js'
 import { computeInvalidNodeIds, buildGrantedSeed } from './treeLogic.js'
 
 const require = createRequire(import.meta.url)
 const classIndex = require('../data/classes.json')
+
+const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+const CHAR_VAL = new Map(CHARSET.split('').map((c, i) => [c, i]))
+const HEADER_BITS = 8 + 16 + 128 // version + specId + hash
+
+/**
+ * Tokenizes a build string's node region into { id: token } where token encodes
+ * the per-node bits (e.g. '0', '10', '11', '11p3', '11c1'). Lets us compare two
+ * strings node-by-node and skip specific ids — independent of the hash.
+ */
+function tokenizeNodes(str, classNodes) {
+  const bits = []
+  for (const ch of str.replace(/=+$/, '')) {
+    const v = CHAR_VAL.get(ch)
+    for (let j = 0; j < 6; j++) bits.push((v >> j) & 1)
+  }
+  let pos = HEADER_BITS
+  const read = (n) => { let r = 0; for (let i = 0; i < n; i++) r |= bits[pos++] << i; return r }
+  const out = {}
+  for (const { id } of [...classNodes].sort((a, b) => a.id - b.id)) {
+    if (!read(1)) { out[id] = '0'; continue }
+    if (!read(1)) { out[id] = '10'; continue }
+    const partial = read(1) ? `p${read(6)}` : ''
+    const choice = read(1) ? `c${read(2)}` : ''
+    out[id] = `11${partial}${choice}`
+  }
+  return out
+}
 
 const FIXTURES = [
   {
@@ -128,6 +156,34 @@ describe('real in-game build fixtures', () => {
         const selected = { ...buildGrantedSeed(sd), ...parsed.nodes }
         const invalid = computeInvalidNodeIds(sd.nodes, selected, nodeById)
         expect(invalid.size).toBe(0)
+      })
+
+      test('generateBuildString reproduces the canonical build content', () => {
+        const activeSub = fx.heroSubtree
+        const grantedIds = new Set(
+          sd.nodes
+            .filter((n) => n.alreadyGranted && (n.treeType !== 'hero' || n.heroSubtree === activeSub))
+            .map((n) => n.id),
+        )
+        const regen = generateBuildString(parsed.nodes, parsed.specId, classNodes, grantedIds)
+        const orig = tokenizeNodes(fx.string, classNodes)
+        const gen = tokenizeNodes(regen, classNodes)
+
+        // Compare the build CONTENT — point-purchased talents plus the hero-tree
+        // choice (all encoded isPurchased=1, '11…'). Auto-granted markers ('10') are
+        // recomputed by the game on import and can differ between data versions
+        // (these fixtures are current Retail; our data is Midnight), so they are not
+        // part of the byte-for-byte contract.
+        const purchased = Object.keys(orig).filter(
+          (id) => orig[id].startsWith('11') || gen[id].startsWith('11'),
+        )
+        const mismatches = purchased
+          .filter((id) => orig[id] !== gen[id])
+          .map((id) => `${id}: ${orig[id]} != ${gen[id]}`)
+        expect(mismatches).toEqual([])
+
+        // Granted nodes we model must encode as selected-but-not-purchased.
+        for (const id of grantedIds) expect(gen[String(id)]).toBe('10')
       })
     })
   }

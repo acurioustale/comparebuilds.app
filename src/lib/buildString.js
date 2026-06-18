@@ -138,9 +138,14 @@ export function collectClassNodes(classData) {
         })
       }
     }
-    // heroGateNodeId is not in the nodes array but IS in the serialisation space
+    // heroGateNodeId is not in the nodes array but IS in the serialisation space.
+    // It is the hero-tree CHOICE node: when selected it carries a 2-bit entryChosen
+    // picking the active subtree (0 = left, 1 = right), so model it as a 2-option
+    // choice node for correct encoding.
     if (spec.heroGateNodeId != null && !byId.has(spec.heroGateNodeId)) {
-      byId.set(spec.heroGateNodeId, { id: spec.heroGateNodeId, maxRanks: 1, choices: null })
+      byId.set(spec.heroGateNodeId, {
+        id: spec.heroGateNodeId, maxRanks: 1, choices: [{ maxRanks: 1 }, { maxRanks: 1 }],
+      })
     }
   }
 
@@ -262,13 +267,28 @@ class BitWriter {
 /**
  * Encodes a set of node selections into a Blizzard-format talent build string.
  *
+ * Matches the game's canonical encoding: auto-granted nodes are written as
+ * isSelected=1 / isPurchased=0 (verified against in-game exports), point-purchased
+ * nodes as isSelected=1 / isPurchased=1. The hero gate node is encoded like any
+ * other purchased node, so include its id in `selectedNodes` when hero talents are
+ * invested (the in-game format marks it selected once the gate is unlocked).
+ *
+ * The 128-bit Blizzard hash is written as zeros — it cannot be reconstructed from
+ * the selection alone, so a freshly generated string is not byte-identical to an
+ * in-game export, only structurally equivalent.
+ *
  * @param {Record<number, {pointsInvested: number, entryChosen: number|null}>} selectedNodes
  * @param {number} specId
  * @param {Array<{id: number, maxRanks: number, choices: Array<{maxRanks:number}>|null}>} classNodes
  *   Full class node list from collectClassNodes() — determines serialisation order.
+ * @param {Set<number>} [grantedIds]
+ *   Ids of the ACTIVE spec's auto-granted nodes (from treeData). Granted status is
+ *   spec-specific, so it cannot be derived from the class-wide node list — pass it
+ *   explicitly. Defaults to empty (granted nodes then encode like unselected ones,
+ *   which is fine for round-trip tests that never include granted nodes).
  * @returns {string}  Base64 build string (no padding).
  */
-export function generateBuildString(selectedNodes, specId, classNodes) {
+export function generateBuildString(selectedNodes, specId, classNodes, grantedIds = new Set()) {
   const writer = new BitWriter()
 
   writer.writeBits(2, 8)       // version
@@ -279,6 +299,13 @@ export function generateBuildString(selectedNodes, specId, classNodes) {
   const sorted = [...classNodes].sort((a, b) => a.id - b.id)
 
   for (const { id } of sorted) {
+    // Auto-granted nodes are always present but never point-purchased.
+    if (grantedIds.has(id)) {
+      writer.writeBit(1) // isSelected
+      writer.writeBit(0) // isPurchased
+      continue
+    }
+
     const sel = selectedNodes[id]
     if (!sel) { writer.writeBit(0); continue }
 
