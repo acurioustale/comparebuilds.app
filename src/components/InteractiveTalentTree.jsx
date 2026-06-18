@@ -31,10 +31,11 @@ function SectionBar({ label, spent, max, onClear }) {
 
 // ─── Export button ────────────────────────────────────────────────────────────
 
-function ExportButton({ onClick, state, invalidCount, pointsRemaining }) {
+function ExportButton({ onClick, state, invalidCount, hasSelection }) {
   const hasInvalid = invalidCount > 0
-  const hasUnspent = pointsRemaining.class > 0 || pointsRemaining.spec > 0 || pointsRemaining.hero > 0
-  const isDisabled = state !== 'idle' || hasInvalid || hasUnspent
+  // Completeness is NOT required — partial builds (e.g. low-level twinks) are valid.
+  // Only block on conflicts (unmet prereqs/gates) or an empty selection.
+  const isDisabled = state !== 'idle' || hasInvalid || !hasSelection
 
   const label =
     hasInvalid           ? 'Resolve conflicts first' :
@@ -64,22 +65,9 @@ function ExportButton({ onClick, state, invalidCount, pointsRemaining }) {
     )
   }
 
-  if (hasUnspent) {
-    const lines = []
-    if (pointsRemaining.class > 0) lines.push(`Class: ${pointsRemaining.class} remaining`)
-    if (pointsRemaining.spec > 0)  lines.push(`Spec: ${pointsRemaining.spec} remaining`)
-    if (pointsRemaining.hero > 0)  lines.push(`Hero: ${pointsRemaining.hero} remaining`)
+  if (!hasSelection) {
     return (
-      <Tippy
-        content={
-          <div>
-            <div style={{ marginBottom: '0.2rem' }}>Spend all talent points before exporting.</div>
-            {lines.map((l) => <div key={l} style={{ color: '#9a8a6a' }}>{l}</div>)}
-          </div>
-        }
-        placement="bottom"
-        delay={[200, 0]}
-      >
+      <Tippy content="Spend at least one point to export." placement="bottom" delay={[200, 0]}>
         <span style={{ display: 'inline-block' }}>{btn}</span>
       </Tippy>
     )
@@ -172,7 +160,8 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
 
   const handleExport = useCallback(async () => {
     if (exportState !== 'idle' || !classNodes || invalidNodeIds.size > 0) return
-    if (classSpent < budget.class || specSpent < budget.spec || heroSpent < budget.hero) return
+    // Allow partial builds (twink/leveling/theorycraft) — just not an empty one.
+    if (classSpent === 0 && specSpent === 0 && heroSpent === 0) return
     setExportState('copying')
     try {
       const activeSub = activeHeroSubtree(treeData.nodes, selected)
@@ -208,13 +197,7 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
       }, 2000)
     }
   }, [exportState, selected, specId, classNodes, addBuild, invalidNodeIds.size,
-      classSpent, specSpent, heroSpent, budget, treeData, finishAddingBuild])
-
-  const pointsRemaining = useMemo(() => ({
-    class: budget.class - classSpent,
-    spec:  budget.spec  - specSpent,
-    hero:  budget.hero  - heroSpent,
-  }), [budget, classSpent, specSpent, heroSpent])
+      classSpent, specSpent, heroSpent, treeData, finishAddingBuild])
 
   const hasUserSelection = classSpent > 0 || specSpent > 0 || heroSpent > 0
 
@@ -239,7 +222,7 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
               onClick={handleExport}
               state={exportState}
               invalidCount={invalidNodeIds.size}
-              pointsRemaining={pointsRemaining}
+              hasSelection={hasUserSelection}
             />
             <button
               onClick={handleClearAll}
