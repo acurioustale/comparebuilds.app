@@ -19,12 +19,21 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      // Baseline scope: the layers we can exercise without a DOM. `all: true`
-      // reports untested files (e.g. the store) at their true low numbers rather
-      // than hiding them. Components/api join once jsdom is set up.
+      // Gated scope: the logic layers (exercised without a DOM). Logic lives in
+      // lib/ by convention and components stay thin, so this is where the quality
+      // bar matters. `all: true` reports untested files at their true numbers.
       all: true,
       include: ['src/lib/**/*.js', 'src/store/**/*.js'],
       exclude: ['**/*.test.js', '**/wireLayout.snapshot.json'],
+      // Coverage ratchet: CI runs `npm run coverage`, which fails below these
+      // floors. Set a few points under current (stmts 93 / branch 89 / func 92 /
+      // lines 95) to absorb normal churn. Raise them as coverage climbs; never lower.
+      thresholds: {
+        statements: 90,
+        branches: 86,
+        functions: 89,
+        lines: 92,
+      },
     },
   },
 })
