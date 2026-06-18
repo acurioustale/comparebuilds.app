@@ -134,3 +134,11 @@ validation on every class and refreshes the snapshot automatically; it aborts
 without updating the snapshot if any class fails validation. To target a
 different source, rewrite its normaliser to emit the same schema — the validator
 and round-trip tests will tell you when the output is correct.
+
+## License
+
+[MIT](LICENSE) © Markus Spitzner
+
+This is an unofficial fan project, not affiliated with or endorsed by Blizzard
+Entertainment. World of Warcraft and all related talent data, names, and icons
+are trademarks or registered trademarks of Blizzard Entertainment, Inc.
