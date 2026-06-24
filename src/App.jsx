@@ -66,9 +66,9 @@ function SingleBuildView({ treeData, parsedBuild }) {
 
 function MainView() {
   const { treeData, parsedBuilds, buildStrings, classNodes, addingBuild, startAddingBuild } = useBuildsStore()
-  // Below 768px the two-build side-by-side (two full trees) is too wide, so fall
-  // back to the single-tree heatmap, matching the 3+ build behaviour.
-  const isNarrow = useMediaQuery('(max-width: 767px)')
+  // Responsive rework: the 2-build heatmap fallback is disabled for now, so two
+  // builds always use the side-by-side diff (3+ builds still use the heatmap).
+  const isNarrow = false // useMediaQuery('(max-width: 767px)')
   if (!treeData) return null
 
   // No builds yet: pure interactive mode

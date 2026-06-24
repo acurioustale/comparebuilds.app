@@ -47,7 +47,9 @@ export default function FitToWidth({ minScale = 0.45, className = '', children }
     }
   }, [minScale])
 
-  const scaled = scale !== 1 && nat.w > 0
+  // Responsive rework: zoom disabled for now. Render children at natural size and
+  // let the container scroll when too wide; rework the fit strategy from here.
+  const scaled = false // (scale !== 1 && nat.w > 0)
 
   return (
     // Full-width measurer — clientWidth here is the true available width.
