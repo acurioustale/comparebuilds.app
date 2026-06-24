@@ -137,7 +137,7 @@ export default function SideBySideDiff({
   return (
     <div>
       {/* ── Two trees: side by side on wide screens, stacked on narrow ───────── */}
-      <div className="flex flex-col gap-10 pb-2 xl:flex-row xl:items-start">
+      <div className="flex flex-col gap-10 pb-2 2xl:flex-row 2xl:items-start">
         <div>
           <BuildLabel label={labelA} color="A" />
           <TalentTree
@@ -148,7 +148,7 @@ export default function SideBySideDiff({
         </div>
 
         {/* Divider: horizontal between stacked builds, vertical when side by side */}
-        <div className="h-px w-full bg-wow-dim xl:h-auto xl:w-px xl:self-stretch" />
+        <div className="h-px w-full bg-wow-dim 2xl:h-auto 2xl:w-px 2xl:self-stretch" />
 
         <div>
           <BuildLabel label={labelB} color="B" />
