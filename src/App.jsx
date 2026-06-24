@@ -9,6 +9,23 @@ import { buildGrantedSeed, computeInvalidNodeIds } from './lib/treeLogic'
 import { byId } from './components/treeLayout'
 import FitToWidth from './components/FitToWidth'
 
+// Tracks a CSS media query. Falls back to false where matchMedia is unavailable
+// (e.g. jsdom in tests), preserving the wide-layout defaults.
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(
+    () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(query).matches,
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    const mql = window.matchMedia(query)
+    const onChange = () => setMatches(mql.matches)
+    setMatches(mql.matches)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [query])
+  return matches
+}
+
 // Wraps a tree/comparison panel so it scales to fit the viewport width, centered.
 // FitToWidth is the full-width measurer; the inner card hugs its content (w-max).
 function TreeCard({ children }) {
@@ -49,6 +66,9 @@ function SingleBuildView({ treeData, parsedBuild }) {
 
 function MainView() {
   const { treeData, parsedBuilds, buildStrings, classNodes, addingBuild, startAddingBuild } = useBuildsStore()
+  // Below 768px the two-build side-by-side (two full trees) is too wide, so fall
+  // back to the single-tree heatmap, matching the 3+ build behaviour.
+  const isNarrow = useMediaQuery('(max-width: 767px)')
   if (!treeData) return null
 
   // No builds yet: pure interactive mode
@@ -75,13 +95,17 @@ function MainView() {
   } else if (valid.length === 2) {
     comparisonEl = (
       <TreeCard>
-        <SideBySideDiff
-          treeData={treeData}
-          buildA={valid[0].parsed}
-          buildB={valid[1].parsed}
-          labelA={valid[0].label}
-          labelB={valid[1].label}
-        />
+        {isNarrow ? (
+          <HeatmapTree treeData={treeData} builds={valid.map((v) => v.parsed)} />
+        ) : (
+          <SideBySideDiff
+            treeData={treeData}
+            buildA={valid[0].parsed}
+            buildB={valid[1].parsed}
+            labelA={valid[0].label}
+            labelB={valid[1].label}
+          />
+        )}
       </TreeCard>
     )
   } else if (valid.length === 1) {
@@ -170,13 +194,33 @@ export default function App() {
     <div className="min-h-screen text-wow-text flex flex-col relative">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="wow-chrome py-5 px-4 border-b border-wow-dim text-center select-none">
-        <h1
-          className="text-[2.75rem] text-wow-gold tracking-widest leading-none"
-          style={{ fontFamily: "'FrizQuadrata', 'Palatino Linotype', serif" }}
-        >
-          Compare Builds
-        </h1>
+      <header
+        className="wow-chrome py-6 px-4 text-center select-none"
+        style={{ borderBottom: '1px solid transparent', borderImage: 'linear-gradient(to right, transparent 8%, rgba(200,168,75,0.55), transparent 92%) 1' }}
+      >
+        <div className="flex items-center justify-center gap-3">
+          <img
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            alt=""
+            width={50}
+            height={50}
+            draggable={false}
+            className="shrink-0"
+            style={{ filter: 'drop-shadow(0 0 10px rgba(200,168,75,0.35))' }}
+          />
+          <h1
+            className="text-[2.75rem] text-wow-gold tracking-[0.16em] leading-none"
+            style={{
+              fontFamily: "'FrizQuadrata', 'Palatino Linotype', serif",
+              textShadow: '0 0 18px rgba(200,168,75,0.35), 0 2px 5px rgba(0,0,0,0.6)',
+            }}
+          >
+            Compare Builds
+          </h1>
+        </div>
+        <p className="text-wow-muted text-xs uppercase tracking-[0.35em] mt-2">
+          WoW Talent Build Comparison
+        </p>
       </header>
 
       {/* ── Main ───────────────────────────────────────────────────────────── */}
@@ -200,7 +244,10 @@ export default function App() {
       </main>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="wow-chrome py-4 px-4 border-t border-wow-dim text-center space-y-0.5">
+      <footer
+        className="wow-chrome py-4 px-4 text-center space-y-0.5"
+        style={{ borderTop: '1px solid transparent', borderImage: 'linear-gradient(to right, transparent 8%, rgba(200,168,75,0.45), transparent 92%) 1' }}
+      >
         <p className="text-wow-muted text-xs">
           2026{' '}
           <a

@@ -8,27 +8,6 @@ import { sectionPoints, canSpendPoint, activeHeroSubtree } from '../lib/spendRul
 import { byId } from './treeLayout'
 import { useBuildsStore } from '../store/buildsStore'
 
-// ─── Section bar (label + counter + per-section clear) ───────────────────────
-
-function SectionBar({ label, spent, max, onClear }) {
-  const full = spent >= max
-  return (
-    <div className="flex items-center gap-1.5 text-xs select-none">
-      <span className="text-wow-gold-dark uppercase tracking-wider w-10 shrink-0">{label}</span>
-      <span className={`tabular-nums font-mono ${full ? 'text-green-400' : 'text-wow-muted'}`}>
-        {spent}<span className="text-wow-dim">/{max}</span>
-      </span>
-      <button
-        onClick={onClear}
-        disabled={spent === 0}
-        className="wow-btn text-[10px] px-1.5 py-0.5 rounded select-none"
-      >
-        Clear
-      </button>
-    </div>
-  )
-}
-
 // ─── Export button ────────────────────────────────────────────────────────────
 
 function ExportButton({ onClick, state, invalidCount, hasSelection }) {
@@ -203,21 +182,28 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
 
   return (
     <div>
-      {/* ── Toolbar ──────────────────────────────────────────────────────────── */}
-      <div className="mb-4 px-1">
-        <div className="flex items-center justify-between gap-6">
-          {/* Left: per-section point bars with inline clear buttons */}
-          <div className="flex gap-5">
-            <SectionBar label="Class" spent={classSpent} max={budget.class} onClear={() => handleClearSection('class')} />
-            <SectionBar label="Spec"  spent={specSpent}  max={budget.spec}  onClear={() => handleClearSection('spec')}  />
-            <SectionBar label="Hero"  spent={heroSpent}  max={budget.hero}  onClear={() => handleClearSection('hero')}  />
-          </div>
+      {/* ── Tree ─────────────────────────────────────────────────────────────── */}
+      <TalentTree
+        treeData={treeData}
+        selectedNodes={selected}
+        invalidNodeIds={invalidNodeIds}
+        specId={specId}
+        onNodeClick={handleClick}
+        onNodeContextMenu={handleRightClick}
+        sectionSpent={{ class: classSpent, spec: specSpent, hero: heroSpent }}
+        onClearSection={handleClearSection}
+      />
 
-          {/* Right: hint + export + clear all */}
+      {/* ── Action bar (below the trees) ─────────────────────────────────────── */}
+      {/* Per-section counters live in each panel header and clears in each panel
+          corner; this bar carries only the global hint and actions. */}
+      <div className="mt-5 px-3 py-2.5 rounded wow-subpanel">
+        <div className="flex items-center justify-between gap-6 flex-wrap">
+          <span className="text-wow-muted text-xs select-none">
+            Left-click to spend · Right-click to refund
+          </span>
+
           <div className="flex items-center gap-3">
-            <span className="text-wow-dim text-xs select-none">
-              Left-click to spend · Right-click to refund
-            </span>
             <ExportButton
               onClick={handleExport}
               state={exportState}
@@ -234,16 +220,6 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
           </div>
         </div>
       </div>
-
-      {/* ── Tree ─────────────────────────────────────────────────────────────── */}
-      <TalentTree
-        treeData={treeData}
-        selectedNodes={selected}
-        invalidNodeIds={invalidNodeIds}
-        specId={specId}
-        onNodeClick={handleClick}
-        onNodeContextMenu={handleRightClick}
-      />
     </div>
   )
 }

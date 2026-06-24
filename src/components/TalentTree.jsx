@@ -127,7 +127,7 @@ function TalentNode({
       }
     : undefined
 
-  const nodeOpacity = isSelected ? 1 : highlight ? 0.5 : locked ? 0.1 : 0.3
+  const nodeOpacity = isSelected ? 1 : highlight ? 0.55 : locked ? 0.16 : 0.42
   const nodeBorder  = isSelected
     ? (invalid ? 'rgba(200,60,60,0.85)' : '#c8a84b')
     : locked ? '#1a1208' : '#2d2010'
@@ -460,6 +460,7 @@ function TreePanel({
   highlights = {}, checkpoints = [],
   invalidNodeIds = null, heroLocked = false,
   onNodeClick = null, onNodeContextMenu = null,
+  onClear = null, clearDisabled = false,
 }) {
   const rawId  = useId()
   const gradId = `tl-${rawId.replace(/:/g, '')}`
@@ -484,18 +485,20 @@ function TreePanel({
 
   return (
     <div
+      className="wow-subpanel"
       style={{
         position: 'relative',
         width: W,
-        height: H,
+        // Reserve a strip below the grid for the in-panel Clear so it never
+        // overlaps a corner node (some class trees reach the bottom-right).
+        height: onClear ? H + 24 : H,
         flexShrink: 0,
-        borderRadius: 4,
       }}
     >
       <svg
         width={W}
         height={H}
-        style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
       >
         <defs>
           <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={H}>
@@ -540,20 +543,47 @@ function TreePanel({
       ))}
 
       {heroLocked && <HeroLockedOverlay />}
+
+      {/* In-panel Clear, anchored to the lower-right corner. zIndex sits above the
+          hero lock overlay so it stays visible (disabled) on the inactive subtree. */}
+      {onClear && (
+        <button
+          onClick={onClear}
+          disabled={clearDisabled}
+          className="wow-btn text-[10px] px-2 py-0.5 rounded select-none"
+          style={{ position: 'absolute', right: 8, bottom: 5, zIndex: 11 }}
+        >
+          Clear
+        </button>
+      )}
     </div>
   )
 }
 
 // ─── Section label ────────────────────────────────────────────────────────────
 
-function PanelLabel({ children }) {
+// Counter shown inline after a section title, e.g. "12/34" (green when maxed).
+function SectionCounter({ spent, max }) {
+  const full = max > 0 && spent >= max
   return (
-    <div className="flex items-center gap-2 mb-1 select-none">
-      <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.55))' }} />
-      <span className="text-wow-gold-dark text-[10px] uppercase tracking-widest shrink-0">
-        {children}
-      </span>
-      <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(200,168,75,0.55))' }} />
+    <span className={`font-mono tabular-nums text-[11px] tracking-normal ${full ? 'text-green-400' : 'text-wow-text'}`}>
+      {spent}<span className="text-wow-muted">/{max}</span>
+    </span>
+  )
+}
+
+function PanelLabel({ children, spent, max }) {
+  const showCounter = spent != null && max != null
+  return (
+    <div className="mb-2 select-none">
+      <div className="flex items-center gap-2">
+        <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.55))' }} />
+        <span className="text-wow-gold text-xs uppercase tracking-[0.2em] shrink-0 flex items-baseline gap-2">
+          <span>{children}</span>
+          {showCounter && <SectionCounter spent={spent} max={max} />}
+        </span>
+        <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(200,168,75,0.55))' }} />
+      </div>
     </div>
   )
 }
@@ -564,8 +594,13 @@ export default function TalentTree({
   treeData, selectedNodes = {}, highlights = {},
   invalidNodeIds = null,
   onNodeClick = null, onNodeContextMenu = null,
+  // Interactive-only: per-section spent totals and a clear handler. When present,
+  // each panel header shows its counter and each panel a corner Clear button.
+  // Omitted by the read-only diff/heatmap/single views.
+  sectionSpent = null, onClearSection = null,
 }) {
   const nodeById = useMemo(() => byId(treeData.nodes), [treeData])
+  const budget = treeData.pointBudget
 
   const classNodes = useMemo(() => treeData.nodes.filter((n) => n.treeType === 'class'), [treeData])
   const specNodes  = useMemo(() => treeData.nodes.filter((n) => n.treeType === 'spec'),  [treeData])
@@ -590,10 +625,15 @@ export default function TalentTree({
     <div className="overflow-x-auto pb-1">
       <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 16, minWidth: 'max-content' }}>
 
-        {/* ── Class + Spec panels ──────────────────────────────────────────── */}
-        <div className="flex items-start">
+        {/* ── Class + Spec panels (stack below md, side by side at md+) ──────── */}
+        <div className="flex flex-col items-center gap-5 md:flex-row md:items-start md:gap-0">
           <div>
-            <PanelLabel>Class</PanelLabel>
+            <PanelLabel
+              spent={sectionSpent?.class}
+              max={sectionSpent ? budget?.class : undefined}
+            >
+              Class
+            </PanelLabel>
             <TreePanel
               nodes={classNodes}
               selectedNodes={selectedNodes}
@@ -603,13 +643,20 @@ export default function TalentTree({
               invalidNodeIds={invalidNodeIds}
               onNodeClick={onNodeClick}
               onNodeContextMenu={onNodeContextMenu}
+              onClear={onClearSection ? () => onClearSection('class') : null}
+              clearDisabled={!sectionSpent?.class}
             />
           </div>
 
-          <div className="self-stretch w-px bg-wow-dim mx-3 mt-5" />
+          <div className="hidden md:block self-stretch w-px bg-wow-dim mx-3 mt-5" />
 
           <div>
-            <PanelLabel>Spec</PanelLabel>
+            <PanelLabel
+              spent={sectionSpent?.spec}
+              max={sectionSpent ? budget?.spec : undefined}
+            >
+              Spec
+            </PanelLabel>
             <TreePanel
               nodes={specNodes}
               selectedNodes={selectedNodes}
@@ -619,6 +666,8 @@ export default function TalentTree({
               invalidNodeIds={invalidNodeIds}
               onNodeClick={onNodeClick}
               onNodeContextMenu={onNodeContextMenu}
+              onClear={onClearSection ? () => onClearSection('spec') : null}
+              clearDisabled={!sectionSpent?.spec}
             />
           </div>
         </div>
@@ -626,19 +675,22 @@ export default function TalentTree({
         {/* ── Hero subtrees ────────────────────────────────────────────────── */}
         <div>
           {/* Section header row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.55))' }} />
-            <span className="text-wow-gold-dark text-[10px] tracking-wide select-none">
-              {treeData.heroSubtrees.left.name}
-            </span>
-            <span className="text-wow-dim select-none" style={{ fontSize: 8 }}>✦</span>
-            <span className="text-wow-gold-dark text-[10px] tracking-wide select-none">
-              {treeData.heroSubtrees.right.name}
-            </span>
-            <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(200,168,75,0.55))' }} />
+          <div className="mb-2">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.55))' }} />
+              <span className="text-wow-gold text-xs uppercase tracking-[0.15em] select-none">
+                {treeData.heroSubtrees.left.name}
+              </span>
+              <span className="text-wow-gold-dark select-none" style={{ fontSize: 9 }}>✦</span>
+              <span className="text-wow-gold text-xs uppercase tracking-[0.15em] select-none">
+                {treeData.heroSubtrees.right.name}
+              </span>
+              {sectionSpent?.hero != null && <SectionCounter spent={sectionSpent.hero} max={budget?.hero ?? 0} />}
+              <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(200,168,75,0.55))' }} />
+            </div>
           </div>
 
-          <div className="flex items-start">
+          <div className="flex flex-col items-center gap-5 md:flex-row md:items-start md:justify-center md:gap-0">
             <TreePanel
               nodes={leftNodes}
               selectedNodes={selectedNodes}
@@ -648,8 +700,10 @@ export default function TalentTree({
               heroLocked={leftLocked}
               onNodeClick={onNodeClick}
               onNodeContextMenu={onNodeContextMenu}
+              onClear={onClearSection ? () => onClearSection('hero') : null}
+              clearDisabled={activeHero !== treeData.heroSubtrees.left.name}
             />
-            <div className="self-stretch w-px bg-wow-dim mx-3" />
+            <div className="hidden md:block self-stretch w-px bg-wow-dim mx-3" />
             <TreePanel
               nodes={rightNodes}
               selectedNodes={selectedNodes}
@@ -659,6 +713,8 @@ export default function TalentTree({
               heroLocked={rightLocked}
               onNodeClick={onNodeClick}
               onNodeContextMenu={onNodeContextMenu}
+              onClear={onClearSection ? () => onClearSection('hero') : null}
+              clearDisabled={activeHero !== treeData.heroSubtrees.right.name}
             />
           </div>
         </div>

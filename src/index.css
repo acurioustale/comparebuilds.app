@@ -16,10 +16,10 @@
   --color-wow-bg:         #0d0d14;
   --color-wow-panel:      #12121e;
   --color-wow-gold:       #c8a84b;
-  --color-wow-gold-dark:  #8b6914;
+  --color-wow-gold-dark:  #a3801f;
   --color-wow-gold-light: #e8c96b;
   --color-wow-text:       #f0e6c8;
-  --color-wow-muted:      #9a8a6a;
+  --color-wow-muted:      #b3a47e;
   --color-wow-dim:        #3a2e1a;
   --font-wow: 'FrizQuadrata', 'Palatino Linotype', serif;
 }
@@ -36,7 +36,17 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
+  /* Supported floor: 320px (covers every real device). Below it the page scrolls
+   * horizontally as a whole rather than squeezing the layout further. */
+  min-width: 320px;
+
   background-color: #0d0d14;
+  /* Layered radial glow for depth: warm gold from the top, cool arcane from the
+   * bottom, over the near-black base. Fixed so it doesn't scroll with content. */
+  background-image:
+    radial-gradient(1100px 520px at 50% -8%, rgba(200,168,75,0.07), transparent 62%),
+    radial-gradient(900px 760px at 50% 118%, rgba(70,46,104,0.12), transparent 60%);
+  background-attachment: fixed;
 }
 
 /* ─── WoW panel ──────────────────────────────────────────────────────────── */
@@ -56,6 +66,19 @@ body {
   box-shadow:
     0 0 20px rgba(0,0,0,0.8),
     inset 0 0 60px rgba(0,0,0,0.4);
+}
+
+/* Sub-panel: frames an inner section (e.g. a single talent-tree grid) so the
+ * nodes read as living inside a bordered panel rather than floating on the page. */
+.wow-subpanel {
+  background:
+    linear-gradient(180deg, rgba(22,18,32,0.55), rgba(8,6,14,0.55));
+  /* Frame drawn entirely with shadows (no border) so it adds zero layout width -
+   * keeps the talent grid from overflowing its scaled container or shifting nodes. */
+  box-shadow:
+    inset 0 0 0 1px rgba(200,168,75,0.20),
+    inset 0 0 34px rgba(0,0,0,0.5);
+  border-radius: 6px;
 }
 
 /* Header and footer chrome */
