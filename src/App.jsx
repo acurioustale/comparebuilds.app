@@ -170,13 +170,22 @@ export default function App() {
     <div className="min-h-screen text-wow-text flex flex-col relative">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="wow-chrome py-5 px-4 border-b border-wow-dim text-center select-none">
+      <header
+        className="wow-chrome py-6 px-4 text-center select-none"
+        style={{ borderBottom: '1px solid transparent', borderImage: 'linear-gradient(to right, transparent 8%, rgba(200,168,75,0.55), transparent 92%) 1' }}
+      >
         <h1
-          className="text-[2.75rem] text-wow-gold tracking-widest leading-none"
-          style={{ fontFamily: "'FrizQuadrata', 'Palatino Linotype', serif" }}
+          className="text-[2.75rem] text-wow-gold tracking-[0.16em] leading-none"
+          style={{
+            fontFamily: "'FrizQuadrata', 'Palatino Linotype', serif",
+            textShadow: '0 0 18px rgba(200,168,75,0.35), 0 2px 5px rgba(0,0,0,0.6)',
+          }}
         >
           Compare Builds
         </h1>
+        <p className="text-wow-muted text-xs uppercase tracking-[0.35em] mt-2">
+          WoW Talent Build Comparison
+        </p>
       </header>
 
       {/* ── Main ───────────────────────────────────────────────────────────── */}
@@ -200,7 +209,10 @@ export default function App() {
       </main>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="wow-chrome py-4 px-4 border-t border-wow-dim text-center space-y-0.5">
+      <footer
+        className="wow-chrome py-4 px-4 text-center space-y-0.5"
+        style={{ borderTop: '1px solid transparent', borderImage: 'linear-gradient(to right, transparent 8%, rgba(200,168,75,0.45), transparent 92%) 1' }}
+      >
         <p className="text-wow-muted text-xs">
           2026{' '}
           <a

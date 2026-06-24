@@ -285,7 +285,7 @@ function HeatmapPanel({ nodes, nodeById, stats, totalBuilds }) {
   const edges = useMemo(() => panelEdges(nodes, nodeById, minX, minY), [nodes, nodeById, minX, minY])
 
   return (
-    <div style={{ position: 'relative', width: W, height: H, flexShrink: 0 }}>
+    <div className="wow-subpanel" style={{ position: 'relative', width: W, height: H, flexShrink: 0 }}>
       <svg
         width={W}
         height={H}

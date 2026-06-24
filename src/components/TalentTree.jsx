@@ -127,7 +127,7 @@ function TalentNode({
       }
     : undefined
 
-  const nodeOpacity = isSelected ? 1 : highlight ? 0.5 : locked ? 0.1 : 0.3
+  const nodeOpacity = isSelected ? 1 : highlight ? 0.55 : locked ? 0.16 : 0.42
   const nodeBorder  = isSelected
     ? (invalid ? 'rgba(200,60,60,0.85)' : '#c8a84b')
     : locked ? '#1a1208' : '#2d2010'
@@ -484,12 +484,12 @@ function TreePanel({
 
   return (
     <div
+      className="wow-subpanel"
       style={{
         position: 'relative',
         width: W,
         height: H,
         flexShrink: 0,
-        borderRadius: 4,
       }}
     >
       <svg
@@ -548,9 +548,9 @@ function TreePanel({
 
 function PanelLabel({ children }) {
   return (
-    <div className="flex items-center gap-2 mb-1 select-none">
+    <div className="flex items-center gap-2 mb-2 select-none">
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.55))' }} />
-      <span className="text-wow-gold-dark text-[10px] uppercase tracking-widest shrink-0">
+      <span className="text-wow-gold text-xs uppercase tracking-[0.2em] shrink-0">
         {children}
       </span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(200,168,75,0.55))' }} />
@@ -628,17 +628,17 @@ export default function TalentTree({
           {/* Section header row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.55))' }} />
-            <span className="text-wow-gold-dark text-[10px] tracking-wide select-none">
+            <span className="text-wow-gold text-xs uppercase tracking-[0.15em] select-none">
               {treeData.heroSubtrees.left.name}
             </span>
-            <span className="text-wow-dim select-none" style={{ fontSize: 8 }}>✦</span>
-            <span className="text-wow-gold-dark text-[10px] tracking-wide select-none">
+            <span className="text-wow-gold-dark select-none" style={{ fontSize: 9 }}>✦</span>
+            <span className="text-wow-gold text-xs uppercase tracking-[0.15em] select-none">
               {treeData.heroSubtrees.right.name}
             </span>
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(200,168,75,0.55))' }} />
           </div>
 
-          <div className="flex items-start">
+          <div className="flex items-start justify-center">
             <TreePanel
               nodes={leftNodes}
               selectedNodes={selectedNodes}

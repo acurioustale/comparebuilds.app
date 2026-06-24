@@ -13,10 +13,10 @@ import { useBuildsStore } from '../store/buildsStore'
 function SectionBar({ label, spent, max, onClear }) {
   const full = spent >= max
   return (
-    <div className="flex items-center gap-1.5 text-xs select-none">
-      <span className="text-wow-gold-dark uppercase tracking-wider w-10 shrink-0">{label}</span>
-      <span className={`tabular-nums font-mono ${full ? 'text-green-400' : 'text-wow-muted'}`}>
-        {spent}<span className="text-wow-dim">/{max}</span>
+    <div className="flex items-center gap-2 text-sm select-none">
+      <span className="text-wow-gold-dark uppercase tracking-wider w-11 shrink-0 text-xs">{label}</span>
+      <span className={`tabular-nums font-mono ${full ? 'text-green-400' : 'text-wow-text'}`}>
+        {spent}<span className="text-wow-muted">/{max}</span>
       </span>
       <button
         onClick={onClear}
@@ -204,8 +204,8 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
   return (
     <div>
       {/* ── Toolbar ──────────────────────────────────────────────────────────── */}
-      <div className="mb-4 px-1">
-        <div className="flex items-center justify-between gap-6">
+      <div className="mb-5 px-3 py-2.5 rounded wow-subpanel">
+        <div className="flex items-center justify-between gap-6 flex-wrap">
           {/* Left: per-section point bars with inline clear buttons */}
           <div className="flex gap-5">
             <SectionBar label="Class" spent={classSpent} max={budget.class} onClear={() => handleClearSection('class')} />
@@ -215,7 +215,7 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
 
           {/* Right: hint + export + clear all */}
           <div className="flex items-center gap-3">
-            <span className="text-wow-dim text-xs select-none">
+            <span className="text-wow-muted text-xs select-none">
               Left-click to spend · Right-click to refund
             </span>
             <ExportButton
