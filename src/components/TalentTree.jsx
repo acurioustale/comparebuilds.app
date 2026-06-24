@@ -455,7 +455,7 @@ function GateDivider({ gate, minY, W }) {
 
 // ─── Tree panel ───────────────────────────────────────────────────────────────
 
-function TreePanel({
+export function TreePanel({
   nodes, selectedNodes, nodeById,
   highlights = {}, checkpoints = [],
   invalidNodeIds = null, heroLocked = false,
