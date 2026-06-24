@@ -8,27 +8,6 @@ import { sectionPoints, canSpendPoint, activeHeroSubtree } from '../lib/spendRul
 import { byId } from './treeLayout'
 import { useBuildsStore } from '../store/buildsStore'
 
-// ─── Section bar (label + counter + per-section clear) ───────────────────────
-
-function SectionBar({ label, spent, max, onClear }) {
-  const full = spent >= max
-  return (
-    <div className="flex items-center gap-2 text-sm select-none">
-      <span className="text-wow-gold-dark uppercase tracking-wider w-11 shrink-0 text-xs">{label}</span>
-      <span className={`tabular-nums font-mono ${full ? 'text-green-400' : 'text-wow-text'}`}>
-        {spent}<span className="text-wow-muted">/{max}</span>
-      </span>
-      <button
-        onClick={onClear}
-        disabled={spent === 0}
-        className="wow-btn text-[10px] px-1.5 py-0.5 rounded select-none"
-      >
-        Clear
-      </button>
-    </div>
-  )
-}
-
 // ─── Export button ────────────────────────────────────────────────────────────
 
 function ExportButton({ onClick, state, invalidCount, hasSelection }) {
@@ -204,20 +183,15 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
   return (
     <div>
       {/* ── Toolbar ──────────────────────────────────────────────────────────── */}
+      {/* Per-section counters and clears now live in each panel header; the toolbar
+          carries only the global hint and actions. */}
       <div className="mb-5 px-3 py-2.5 rounded wow-subpanel">
         <div className="flex items-center justify-between gap-6 flex-wrap">
-          {/* Left: per-section point bars with inline clear buttons */}
-          <div className="flex gap-5">
-            <SectionBar label="Class" spent={classSpent} max={budget.class} onClear={() => handleClearSection('class')} />
-            <SectionBar label="Spec"  spent={specSpent}  max={budget.spec}  onClear={() => handleClearSection('spec')}  />
-            <SectionBar label="Hero"  spent={heroSpent}  max={budget.hero}  onClear={() => handleClearSection('hero')}  />
-          </div>
+          <span className="text-wow-muted text-xs select-none">
+            Left-click to spend · Right-click to refund
+          </span>
 
-          {/* Right: hint + export + clear all */}
           <div className="flex items-center gap-3">
-            <span className="text-wow-muted text-xs select-none">
-              Left-click to spend · Right-click to refund
-            </span>
             <ExportButton
               onClick={handleExport}
               state={exportState}
@@ -243,6 +217,8 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
         specId={specId}
         onNodeClick={handleClick}
         onNodeContextMenu={handleRightClick}
+        sectionSpent={{ class: classSpent, spec: specSpent, hero: heroSpent }}
+        onClearSection={handleClearSection}
       />
     </div>
   )
