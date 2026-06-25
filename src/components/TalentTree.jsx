@@ -1,10 +1,14 @@
-import { useMemo, useId, useRef, useContext } from 'react'
+import { useMemo, useId, useRef, useState, useContext } from 'react'
 import Tippy from '@tippyjs/react'
 import 'tippy.js/dist/tippy.css'
 import { zamimg } from '../lib/zamimg'
 import { activeHeroSubtree } from '../lib/spendRules'
+import { prereqChain } from '../lib/prereqChain'
 import { SearchContext } from './SearchContext'
 import { CELL, ICON, CHOICE_ICON, APEX_ICON, CHOICE_GAP, PAD, byId, panelBounds, panelEdges, sectionRowClass, dividerClass } from './treeLayout'
+
+// Hover highlight for a node's prerequisite chain.
+const CHAIN_RING = '0 0 0 2px rgba(232,201,107,0.9), 0 0 10px rgba(232,201,107,0.45)'
 
 // Box-shadow strings for diff highlight glows
 const HL_SHADOW = {
@@ -95,6 +99,7 @@ function NodeTooltip({ node, entryChosen, pointsInvested = 0 }) {
 function TalentNode({
   node, px, py, sel, alreadyGranted,
   highlight = null, locked = false, invalid = false,
+  inChain = false, onHover = null,
   onNodeClick = null, onNodeContextMenu = null,
 }) {
   const isSelected     = sel !== undefined || alreadyGranted
@@ -166,11 +171,20 @@ function TalentNode({
   const searchHit    = searchActive && matchIds ? matchIds.has(node.id) : false
   const searchDimmed = searchActive && matchIds ? !searchHit : false
   const effOpacity = (base) => (searchDimmed ? Math.min(base, 0.12) : base)
+  // Appends the search-match and prereq-chain rings (when active) onto a node's
+  // existing shadow, so they layer over diff/invalid styling without replacing it.
   const withSearchShadow = (shadow) => {
-    if (!searchHit) return shadow
-    const ring = '0 0 0 2px rgba(110,200,255,0.95), 0 0 12px rgba(110,200,255,0.55)'
-    return shadow ? `${shadow}, ${ring}` : ring
+    const rings = []
+    if (searchHit) rings.push('0 0 0 2px rgba(110,200,255,0.95), 0 0 12px rgba(110,200,255,0.55)')
+    if (inChain && !searchHit) rings.push(CHAIN_RING)
+    if (rings.length === 0) return shadow
+    return [shadow, ...rings].filter(Boolean).join(', ')
   }
+
+  // Hover handlers report this node so the panel can light its prerequisite chain.
+  const hoverProps = onHover
+    ? { onMouseEnter: () => onHover(node.id), onMouseLeave: () => onHover(null) }
+    : null
 
   // ── Choice node ─────────────────────────────────────────────────────────────
   if (node.type === 'choice') {
@@ -180,6 +194,7 @@ function TalentNode({
         <div
           onContextMenu={onContextMenu}
           {...touchHandlers}
+          {...hoverProps}
           style={{
             position: 'absolute',
             left: px - totalW / 2,
@@ -261,6 +276,7 @@ function TalentNode({
           onClick={hasHandlers ? guardClick(() => onNodeClick?.(node.id)) : undefined}
           onContextMenu={onContextMenu}
           {...touchHandlers}
+          {...hoverProps}
           className={interactive ? 'tnode' : undefined}
           role={interactive ? 'button' : undefined}
           tabIndex={interactive ? 0 : undefined}
@@ -344,6 +360,7 @@ function TalentNode({
         onClick={hasHandlers ? guardClick(() => onNodeClick?.(node.id)) : undefined}
         onContextMenu={onContextMenu}
         {...touchHandlers}
+          {...hoverProps}
         className={interactive ? 'tnode' : undefined}
         role={interactive ? 'button' : undefined}
         tabIndex={interactive ? 0 : undefined}
@@ -525,6 +542,15 @@ export function TreePanel({
 
   const edges = useMemo(() => panelEdges(nodes, nodeById, minX, minY), [nodes, nodeById, minX, minY])
 
+  // Prerequisite-chain hover: the set of node ids in the hovered node's chain
+  // (itself, transitive prereqs above, immediate dependents below). Drives a
+  // gold ring on those nodes and brighter strokes on the connecting edges.
+  const [hoveredId, setHoveredId] = useState(null)
+  const chainIds = useMemo(
+    () => (hoveredId == null ? null : prereqChain(hoveredId, nodes, nodeById)),
+    [hoveredId, nodes, nodeById],
+  )
+
   return (
     <div
       className="wow-subpanel"
@@ -552,13 +578,14 @@ export function TreePanel({
           const fromSel = !!selectedNodes[e.fromId] || nodeById[e.fromId]?.alreadyGranted
           const toSel   = !!selectedNodes[e.toId]   || nodeById[e.toId]?.alreadyGranted
           const lit     = fromSel && toSel
+          const inChain = chainIds?.has(e.fromId) && chainIds?.has(e.toId)
           return (
             <line
               key={i}
               x1={e.x1} y1={e.y1}
               x2={e.x2} y2={e.y2}
-              stroke={lit ? `url(#${gradId})` : '#2a2a2a'}
-              strokeWidth={lit ? 2 : 1}
+              stroke={inChain ? '#e8c96b' : lit ? `url(#${gradId})` : '#2a2a2a'}
+              strokeWidth={inChain ? 2.5 : lit ? 2 : 1}
             />
           )
         })}
@@ -575,6 +602,8 @@ export function TreePanel({
           highlight={highlights[node.id] ?? null}
           locked={heroLocked || (!node.alreadyGranted && node.posY >= lockedFromRow)}
           invalid={!!(invalidNodeIds?.has(node.id))}
+          inChain={!!chainIds?.has(node.id)}
+          onHover={heroLocked ? null : setHoveredId}
           onNodeClick={heroLocked ? null : onNodeClick}
           onNodeContextMenu={heroLocked ? null : onNodeContextMenu}
         />
