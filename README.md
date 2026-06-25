@@ -6,10 +6,12 @@ WoW talent build comparison tool — deployed at comparebuilds.app.
 
 ### Automated deploys
 
-Pushing to `main` deploys automatically. The
-[`deploy` workflow](.github/workflows/deploy.yml) runs on every push to `main`
-(and can be triggered manually from the Actions tab), builds the site, and runs
-`deploy.sh`. `deploy.sh` stages the built `dist/` together with the PHP API
+Pushing to `main` deploys automatically, but only after CI passes. The
+[`deploy` workflow](.github/workflows/deploy.yml) runs when the
+[CI workflow](.github/workflows/ci.yml) completes successfully on `main`, so a
+push that fails lint, coverage, or the build never ships. It can also be
+triggered manually from the Actions tab (which skips the gate). It builds the
+site and runs `deploy.sh`. `deploy.sh` stages the built `dist/` together with the PHP API
 (`api/share.php`, `api/og.php`, `api/fonts/`) into one tree and mirrors it with a
 single `rsync -avz --delete` to the web root:
 
@@ -201,9 +203,9 @@ npm run test:watch  # watch mode
 npm run coverage    # run with a coverage report (text + html in coverage/)
 ```
 
-The suite spans the logic layer and the components (Vitest, ~430 tests across a
-dozen-plus files in `src/`). The ones that specifically guard data correctness — the
-most important to understand before editing `src/data/`:
+The suite spans the logic layer and the components (Vitest, several hundred tests
+across a dozen-plus files in `src/`). The ones that specifically guard data
+correctness — the most important to understand before editing `src/data/`:
 
 - **`treeLogic.test.js`** — prerequisite/gate cascade logic.
 - **`buildString.test.js`** — per-class encode→decode round-trips, so a data

@@ -543,8 +543,9 @@ export function TreePanel({
   const edges = useMemo(() => panelEdges(nodes, nodeById, minX, minY), [nodes, nodeById, minX, minY])
 
   // Prerequisite-chain hover: the set of node ids in the hovered node's chain
-  // (itself, transitive prereqs above, immediate dependents below). Drives a
-  // gold ring on those nodes and brighter strokes on the connecting edges.
+  // (itself, direct prereqs one hop above, immediate dependents below — see
+  // prereqChain). Drives a gold ring on those nodes and brighter strokes on the
+  // connecting edges.
   const [hoveredId, setHoveredId] = useState(null)
   const chainIds = useMemo(
     () => (hoveredId == null ? null : prereqChain(hoveredId, nodes, nodeById)),

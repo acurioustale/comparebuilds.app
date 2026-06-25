@@ -55,7 +55,7 @@ Tests default to the `node` environment. Component suites that need a DOM opt in
 
 ## Deployment
 
-`npm run build` → upload the **contents** of `dist/` to the web root, and `api/share.php` into an `api/` subfolder there. `config.php` (MariaDB credentials + `SHARE_IP_SALT`) lives one level **above** the web root so it stays private if PHP processing fails. `share.php` runs `CREATE TABLE IF NOT EXISTS` itself and prunes rows older than 90 days. Full steps, server layout, and the share-link API contract/limits are in `README.md`. The API is hardened for public exposure (per-IP rate limit, body cap, strict validation, same-origin only, prepared statements) — preserve those properties when touching `share.php`.
+Pushes to `main` auto-deploy via GitHub Actions, but the deploy workflow is gated on a successful CI run — a red push never ships. The manual/local path is `npm run build` → upload the **contents** of `dist/` to the web root, and `api/share.php` into an `api/` subfolder there. `config.php` (MariaDB credentials + `SHARE_IP_SALT`) lives one level **above** the web root so it stays private if PHP processing fails. `share.php` runs `CREATE TABLE IF NOT EXISTS` itself and prunes rows older than 90 days. Full steps, server layout, and the share-link API contract/limits are in `README.md`. The API is hardened for public exposure (per-IP rate limit, body cap, strict validation, same-origin only, prepared statements) — preserve those properties when touching `share.php`.
 
 ## Conventions
 
