@@ -1,0 +1,14 @@
+# lychee link-checker config — shared by the Links workflow and `npm run links`.
+# Scope (the files to check) is passed on the command line; this file only tunes
+# behaviour. Checks run against the docs + index.html, not source or vendored
+# files, so there are no noisy registry/CDN URLs to chase.
+
+# Cache results and retry transient failures so a flaky network or a momentary
+# rate-limit doesn't produce a false "broken link".
+cache = true
+max_cache_age = "1d"
+max_retries = 3
+retry_wait_time = 2
+
+# 2xx is success; a 429 (rate-limited) response still proves the link exists.
+accept = ["200..=299", "429"]

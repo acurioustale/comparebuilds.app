@@ -11,6 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Shell scripts (shellcheck + shfmt)
+        run: |
+          shellcheck ./*.sh
+          curl -sSfL https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64 -o /tmp/shfmt
+          chmod +x /tmp/shfmt
+          /tmp/shfmt -d ./*.sh
+
+      - name: PHP syntax check
+        run: |
+          for f in $(git ls-files '*.php' '*.php.example'); do php -l "$f"; done
+
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -22,6 +33,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
 
       - name: Run tests with coverage thresholds
         run: npm run coverage

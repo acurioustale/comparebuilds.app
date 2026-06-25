@@ -1,0 +1,25 @@
+name: Links
+
+# Link checking lives in its own workflow ON PURPOSE: deploy is gated on the CI
+# workflow only (see deploy.yml), so a dead external link or a momentary
+# rate-limit surfaces here without ever blocking a release. The weekly schedule
+# catches link rot; the PR trigger catches links broken by a change.
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Link check
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # --root-dir resolves index.html's root-relative asset links (/favicon.svg
+          # etc.) against public/, where Vite serves them from.
+          args: "--config lychee.toml --root-dir public README.md CLAUDE.md index.html"
+          fail: true
