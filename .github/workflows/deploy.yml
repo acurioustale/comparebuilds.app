@@ -1,7 +1,13 @@
 name: Deploy
 
+# Deploy only after CI succeeds. The push-triggered build is owned by the CI
+# workflow; this one runs when that workflow completes on main, and the job guard
+# below gates on its success so a failing lint/coverage/build never ships.
+# workflow_dispatch stays for manual deploys (which skip the gate).
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -14,6 +20,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Manual dispatch always deploys; a CI-triggered run only when CI passed.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v7
 
