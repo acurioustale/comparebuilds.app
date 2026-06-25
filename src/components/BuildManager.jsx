@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import Tippy from '@tippyjs/react'
 import 'tippy.js/dist/tippy.css'
-import { useBuildsStore, MAX_BUILDS } from '../store/buildsStore'
+import { useBuildsStore, MAX_BUILDS, MAX_BUILD_NAME_LEN } from '../store/buildsStore'
 import { encodeBuildsHash } from '../lib/shareLink'
 import classesIndex from '../data/classes.json'
 import { zamimg } from '../lib/zamimg'
@@ -139,7 +139,7 @@ function pointSummary(parsed, treeData) {
   return `Class: ${pts.class}/${budget.class} · Spec: ${pts.spec}/${budget.spec} · Hero: ${pts.hero}/${budget.hero}`
 }
 
-function FilledSlot({ index, label, summary, value, parsed, loading, onRemove }) {
+function FilledSlot({ index, name, label, summary, value, parsed, loading, onRemove, onRename }) {
   const [flash, setFlash] = useState(false)
 
   const handleCopy = useCallback(async () => {
@@ -156,23 +156,29 @@ function FilledSlot({ index, label, summary, value, parsed, loading, onRemove })
     <div className="flex items-center gap-2 min-w-0">
       <SlotNumber n={index + 1} />
 
-      <Tippy
-        content={flash ? 'Copied!' : (summary ?? 'Loading…')}
-        placement="bottom"
-        delay={[300, 0]}
-      >
-        <div
+      {/* Editable slot name. Empty shows the computed default as a placeholder. */}
+      <input
+        value={name}
+        onChange={(e) => onRename(e.target.value)}
+        placeholder={label}
+        maxLength={MAX_BUILD_NAME_LEN}
+        aria-label={`Name for build ${index + 1}`}
+        spellCheck={false}
+        className="flex-1 min-w-0 text-xs rounded px-2 py-1.5 text-wow-gold placeholder-wow-dim outline-none transition-colors"
+        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid #3a2e1a' }}
+        onFocus={(e) => { e.target.style.borderColor = '#8b6914' }}
+        onBlur={(e) => { e.target.style.borderColor = '#3a2e1a' }}
+      />
+
+      <Tippy content={flash ? 'Copied!' : (summary ?? 'Copy build string')} placement="bottom" delay={[300, 0]}>
+        <button
           onClick={handleCopy}
-          className="flex-1 min-w-0 text-xs rounded px-2 py-1.5 truncate select-none cursor-pointer transition-colors"
-          style={{
-            background: flash ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${flash ? '#166534' : '#3a2e1a'}`,
-          }}
+          aria-label="Copy build string"
+          className="shrink-0 w-6 h-6 flex items-center justify-center transition-colors text-sm leading-none rounded"
+          style={{ color: flash ? '#4ade80' : undefined }}
         >
-          <span className={flash ? 'text-green-400' : 'text-wow-gold'}>
-            {flash ? 'Copied!' : label}
-          </span>
-        </div>
+          {flash ? '✓' : '⧉'}
+        </button>
       </Tippy>
 
       <button
@@ -283,6 +289,7 @@ function SlotNumber({ n, muted = false }) {
 export default function BuildManager() {
   const {
     buildStrings,
+    buildNames,
     parsedBuilds,
     classId,
     specId,
@@ -293,9 +300,11 @@ export default function BuildManager() {
     removeBuild,
     clearAllBuilds,
     preloadSpec,
+    setBuildName,
   } = useBuildsStore(
     useShallow((s) => ({
       buildStrings: s.buildStrings,
+      buildNames: s.buildNames,
       parsedBuilds: s.parsedBuilds,
       classId: s.classId,
       specId: s.specId,
@@ -306,18 +315,31 @@ export default function BuildManager() {
       removeBuild: s.removeBuild,
       clearAllBuilds: s.clearAllBuilds,
       preloadSpec: s.preloadSpec,
+      setBuildName: s.setBuildName,
     })),
   )
 
   const [copyState, setCopyState] = useState('idle') // 'idle' | 'copying' | 'copied' | 'error'
   const [directState, setDirectState] = useState('idle') // 'idle' | 'copied' | 'error'
 
+  // Local class selection used before any builds are loaded
+  const [localClassId, setLocalClassId] = useState(null)
+
+  // Store classId takes precedence once builds exist
+  const activeClassId = classId ?? localClassId
+  const activeClass   = classesIndex.find((c) => c.id === activeClassId)
+  const classLocked   = classId !== null
+
+  // Human-readable spec/class names, used for labels and the share payload.
+  const specDisplayName  = activeClass?.specs.find((s) => s.id === specId)?.displayName ?? ''
+  const classDisplayName = activeClass?.displayName ?? ''
+
   // Instant link: encodes the builds straight into the URL hash — no server
   // round-trip, no rate limit, works offline. The sibling of the short link.
   const handleCopyDirectLink = useCallback(async () => {
     if (directState !== 'idle') return
     try {
-      const token = encodeBuildsHash({ builds: buildStrings })
+      const token = encodeBuildsHash({ builds: buildStrings, names: buildNames })
       const url = `${window.location.origin}${window.location.pathname}#b=${token}`
       await navigator.clipboard.writeText(url)
       setDirectState('copied')
@@ -326,17 +348,20 @@ export default function BuildManager() {
     } finally {
       setTimeout(() => setDirectState('idle'), 2000)
     }
-  }, [directState, buildStrings])
+  }, [directState, buildStrings, buildNames])
 
   const handleCopyLink = useCallback(async () => {
     if (copyState !== 'idle') return
     setCopyState('copying')
     try {
       const apiBase = import.meta.env.BASE_URL + 'api/share.php'
+      // Include labels only when at least one slot is named, plus the display
+      // names the OG-image endpoint needs (it has no class index to look them up).
+      const labels = buildNames.some(Boolean) ? buildNames : undefined
       const res = await fetch(apiBase, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId, specId, builds: buildStrings }),
+        body: JSON.stringify({ classId, specId, builds: buildStrings, labels, className: classDisplayName, specName: specDisplayName }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -351,19 +376,9 @@ export default function BuildManager() {
     } finally {
       setTimeout(() => setCopyState('idle'), 2000)
     }
-  }, [copyState, classId, specId, buildStrings])
-
-  // Local class selection used before any builds are loaded
-  const [localClassId, setLocalClassId] = useState(null)
-
-  // Store classId takes precedence once builds exist
-  const activeClassId = classId ?? localClassId
-  const activeClass   = classesIndex.find((c) => c.id === activeClassId)
-  const classLocked   = classId !== null
+  }, [copyState, classId, specId, buildStrings, buildNames, classDisplayName, specDisplayName])
 
   // Human-readable build label: "Build N — [Hero Spec] Spec Class"
-  const specDisplayName  = activeClass?.specs.find((s) => s.id === specId)?.displayName ?? ''
-  const classDisplayName = activeClass?.displayName ?? ''
   const buildLabel = (n, parsedBuild) => {
     if (!specDisplayName || !classDisplayName) return `Build ${n}`
     const heroSpec = parsedBuild && treeData ? activeHeroSubtree(treeData.nodes, parsedBuild.nodes) : null
@@ -451,6 +466,7 @@ export default function BuildManager() {
                 <FilledSlot
                   key={buildStrings[i]}
                   index={i}
+                  name={buildNames[i] ?? ''}
                   label={buildLabel(i + 1, parsedBuilds[i])}
                   summary={pointSummary(parsedBuilds[i], treeData)}
                   value={buildStrings[i]}
@@ -458,6 +474,7 @@ export default function BuildManager() {
                   // Show "loading" on the last filled slot while tree data is fetched
                   loading={isLoading && i === filledCount - 1 && parsedBuilds[i] === null}
                   onRemove={() => removeBuild(i)}
+                  onRename={(v) => setBuildName(i, v)}
                 />
               )
             }

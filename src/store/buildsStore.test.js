@@ -11,7 +11,7 @@
 import { describe, test, beforeEach } from 'vitest'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { useBuildsStore, MAX_BUILDS } from './buildsStore.js'
+import { useBuildsStore, MAX_BUILDS, MAX_BUILD_NAME_LEN } from './buildsStore.js'
 import { collectClassNodes, generateBuildString } from '../lib/buildString.js'
 
 const require = createRequire(import.meta.url)
@@ -196,6 +196,58 @@ describe('preloadSpec', () => {
   test('ignores an unknown spec id', async () => {
     await get().preloadSpec(999999)
     assert.strictEqual(get().treeData, null)
+  })
+})
+
+// ── Build names ───────────────────────────────────────────────────────────────
+
+describe('build names', () => {
+  test('addBuild keeps buildNames parallel (new slots unnamed)', async () => {
+    const [a, b] = genStrings('death_knight', 'blood', 2)
+    await get().addBuild(a)
+    await get().addBuild(b)
+    assert.deepStrictEqual(get().buildNames, ['', ''])
+  })
+
+  test('setBuildName sets and clamps to the cap', async () => {
+    const [a] = genStrings('death_knight', 'blood', 1)
+    await get().addBuild(a)
+    get().setBuildName(0, 'Raid ST')
+    assert.strictEqual(get().buildNames[0], 'Raid ST')
+    get().setBuildName(0, 'x'.repeat(MAX_BUILD_NAME_LEN + 20))
+    assert.strictEqual(get().buildNames[0].length, MAX_BUILD_NAME_LEN)
+    // Out-of-range index is a no-op.
+    get().setBuildName(9, 'nope')
+    assert.strictEqual(get().buildNames.length, 1)
+  })
+
+  test('removeBuild drops the matching name', async () => {
+    const [a, b] = genStrings('death_knight', 'blood', 2)
+    await get().addBuild(a)
+    await get().addBuild(b)
+    get().setBuildName(0, 'first')
+    get().setBuildName(1, 'second')
+    get().removeBuild(0)
+    assert.deepStrictEqual(get().buildNames, ['second'])
+  })
+
+  test('setBuildNames normalises to the current build count', async () => {
+    const [a, b] = genStrings('death_knight', 'blood', 2)
+    await get().addBuild(a)
+    await get().addBuild(b)
+    // Too few → padded with ''; extras ignored; non-strings coerced to ''.
+    get().setBuildNames(['only one'])
+    assert.deepStrictEqual(get().buildNames, ['only one', ''])
+    get().setBuildNames(['a', 'b', 'c'])
+    assert.deepStrictEqual(get().buildNames, ['a', 'b'])
+  })
+
+  test('clearing the last build resets names', async () => {
+    const [a] = genStrings('death_knight', 'blood', 1)
+    await get().addBuild(a)
+    get().setBuildName(0, 'name')
+    get().removeBuild(0)
+    assert.deepStrictEqual(get().buildNames, [])
   })
 })
 

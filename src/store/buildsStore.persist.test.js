@@ -74,7 +74,7 @@ describe('persistence', () => {
     const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY)).state
     assert.deepStrictEqual(
       Object.keys(persisted).sort(),
-      ['addingBuild', 'buildStrings', 'classId', 'interactiveNodes', 'specId'],
+      ['addingBuild', 'buildNames', 'buildStrings', 'classId', 'interactiveNodes', 'specId'],
     )
     // Derived state must never be written.
     assert.ok(!('treeData' in persisted))
@@ -122,6 +122,26 @@ describe('persistence', () => {
     assert.ok(st.treeData, 'treeData rebuilt for interactive mode')
     // The in-progress pick must survive — not be clobbered by the granted seed.
     assert.ok(st.interactiveNodes[pick.id], 'interactive selection preserved through rehydration')
+  })
+
+  test('round-trips build names and reconciles a mismatched length', async () => {
+    const strings = dkStrings(2)
+    for (const s of strings) await useBuildsStore.getState().addBuild(s)
+    useBuildsStore.getState().setBuildName(0, 'Raid ST')
+    useBuildsStore.getState().setBuildName(1, 'M+ AoE')
+
+    const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY)).state
+    assert.deepStrictEqual(persisted.buildNames, ['Raid ST', 'M+ AoE'])
+
+    // Simulate an older/partial payload whose names array is too short.
+    persisted.buildNames = ['Raid ST']
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, state: persisted }))
+
+    const fresh = await reload()
+    await fresh.getState().rehydrateTreeData()
+    const st = fresh.getState()
+    assert.strictEqual(st.buildNames.length, st.buildStrings.length, 'names padded to build count')
+    assert.deepStrictEqual(st.buildNames, ['Raid ST', ''])
   })
 
   test('drops a restored interactive node that no longer exists in the tree', async () => {

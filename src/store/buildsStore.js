@@ -8,6 +8,8 @@ import { buildGrantedSeed } from '../lib/treeLogic'
 // validating here too just gives a clearer message before the share round-trip.
 export const MAX_BUILDS = 5
 export const MAX_BUILD_LEN = 2000
+// Per-slot name cap. Mirrored server-side in api/share.php (MAX_LABEL_LEN).
+export const MAX_BUILD_NAME_LEN = 40
 
 // Vite creates a lazy chunk per matched file. The glob must be a string literal.
 // Paths are relative to this file (src/store/ → src/data/). classes.json is the
@@ -143,6 +145,13 @@ async function loadTreeData(set, get, classSlug, specSlug, specId, { preserveInt
 const EMPTY = {
   /** @type {string[]} Raw base64 build strings (0 – MAX_BUILDS). */
   buildStrings: [],
+
+  /**
+   * User-assigned slot names, parallel to buildStrings. '' = unnamed (the UI
+   * shows a computed default). Persisted and carried through both share types.
+   * @type {string[]}
+   */
+  buildNames: [],
 
   /**
    * Parsed results, parallel to buildStrings. null means either "not yet
@@ -285,6 +294,8 @@ const createStore = (set, get) => ({
     const newStrings    = [...buildStrings, buildString]
     // Append a null placeholder — becomes a real result once classNodes land
     const newParsed     = [...get().parsedBuilds, null]
+    // Keep names parallel; new slots start unnamed.
+    const newNames      = [...get().buildNames, '']
 
     if (isFirst) {
       // Set identity + kick off tree-data load (specId set synchronously so
@@ -292,6 +303,7 @@ const createStore = (set, get) => ({
       set({
         buildStrings: newStrings,
         parsedBuilds: newParsed,
+        buildNames:   newNames,
         specId:       header.specId,
         classId:      match.cls.id,
       })
@@ -301,11 +313,12 @@ const createStore = (set, get) => ({
       set({
         buildStrings: newStrings,
         parsedBuilds: parseAll(newStrings, classNodes),
+        buildNames:   newNames,
       })
     } else {
       // Tree data is mid-load — store the string now; the load callback will
       // call parseAll(get().buildStrings, …) when it finishes, picking this up
-      set({ buildStrings: newStrings, parsedBuilds: newParsed })
+      set({ buildStrings: newStrings, parsedBuilds: newParsed, buildNames: newNames })
     }
   },
 
@@ -316,18 +329,19 @@ const createStore = (set, get) => ({
    * @param {number} index
    */
   removeBuild: (index) => {
-    const { buildStrings, parsedBuilds } = get()
+    const { buildStrings, parsedBuilds, buildNames } = get()
     if (index < 0 || index >= buildStrings.length) return
 
     const newStrings = buildStrings.filter((_, i) => i !== index)
     const newParsed  = parsedBuilds.filter((_, i)  => i !== index)
+    const newNames   = buildNames.filter((_, i)    => i !== index)
 
     if (newStrings.length === 0) {
       // Invalidate any in-flight load so its commit is a no-op
       loadGen++
       set({ ...EMPTY })
     } else {
-      set({ buildStrings: newStrings, parsedBuilds: newParsed })
+      set({ buildStrings: newStrings, parsedBuilds: newParsed, buildNames: newNames })
     }
   },
 
@@ -382,6 +396,34 @@ const createStore = (set, get) => ({
   finishAddingBuild: () => set({ addingBuild: false }),
 
   /**
+   * Renames the slot at `index`. Trimmed to MAX_BUILD_NAME_LEN; '' means unnamed.
+   * @param {number} index
+   * @param {string} name
+   */
+  setBuildName: (index, name) => {
+    const { buildStrings, buildNames } = get()
+    if (index < 0 || index >= buildStrings.length) return
+    const next = [...buildNames]
+    next[index] = String(name ?? '').slice(0, MAX_BUILD_NAME_LEN)
+    set({ buildNames: next })
+  },
+
+  /**
+   * Replaces all slot names at once (used when applying a shared build's
+   * labels). Normalised to the current buildStrings length.
+   * @param {string[]} names
+   */
+  setBuildNames: (names) => {
+    const { buildStrings } = get()
+    const src = Array.isArray(names) ? names : []
+    set({
+      buildNames: buildStrings.map((_, i) =>
+        typeof src[i] === 'string' ? src[i].slice(0, MAX_BUILD_NAME_LEN) : '',
+      ),
+    })
+  },
+
+  /**
    * Rebuilds the derived, non-persisted state (treeData, classNodes,
    * parsedBuilds) after the persisted slices have been rehydrated from
    * localStorage. Reads specId from the restored state, loads the matching
@@ -413,6 +455,13 @@ const createStore = (set, get) => ({
       loadGen++
       set({ ...EMPTY })
       return
+    }
+
+    // Keep names parallel to builds even if an older/partial persisted payload
+    // had a mismatched length.
+    const { buildStrings, buildNames } = get()
+    if (buildNames.length !== buildStrings.length) {
+      set({ buildNames: buildStrings.map((_, i) => buildNames[i] ?? '') })
     }
 
     // Drop any restored interactive selections for nodes that no longer exist in
@@ -447,6 +496,7 @@ export const useBuildsStore = create(
     // parsedBuilds are derived and rebuilt on rehydration via rehydrateTreeData.
     partialize: (state) => ({
       buildStrings: state.buildStrings,
+      buildNames: state.buildNames,
       specId: state.specId,
       classId: state.classId,
       interactiveNodes: state.interactiveNodes,

@@ -21,6 +21,8 @@ const MAX_BODY_BYTES    = 16384; // raw POST body cap (5 builds * 2000 + overhea
 const MAX_BUILD_LEN     = 2000;
 const MIN_BUILDS        = 2;
 const MAX_BUILDS        = 5;
+const MAX_LABEL_LEN     = 40;    // per-slot name cap; mirrors MAX_BUILD_NAME_LEN client-side
+const MAX_NAME_LEN      = 64;    // class/spec display-name cap (used by the OG image)
 const RATE_LIMIT_MAX    = 20;    // max shares one IP may create per window
 const RATE_LIMIT_WINDOW = 3600;  // window length in seconds (1 hour)
 const SHARE_TTL_DAYS    = 90;    // rows older than this are pruned
@@ -173,6 +175,33 @@ if ($method === 'POST') {
         }
     }
 
+    // Optional per-slot labels: must parallel builds, each a short string.
+    $labels = $body['labels'] ?? null;
+    if ($labels !== null) {
+        if (!is_array($labels) || count($labels) !== count($builds)) {
+            fail(400, 'labels, when present, must be an array parallel to builds');
+        }
+        foreach ($labels as $l) {
+            if (!is_string($l) || mb_strlen($l) > MAX_LABEL_LEN) {
+                fail(400, 'Each label must be a string ≤ ' . MAX_LABEL_LEN . ' chars');
+            }
+        }
+        // Drop an all-empty labels array so we never store noise.
+        if (count(array_filter($labels, fn ($l) => $l !== '')) === 0) {
+            $labels = null;
+        }
+    }
+
+    // Optional class/spec display names (used by the OG image so it needs no
+    // class index of its own). Validated as short plain strings.
+    $className = $body['className'] ?? null;
+    $specName  = $body['specName']  ?? null;
+    foreach (['className' => $className, 'specName' => $specName] as $k => $v) {
+        if ($v !== null && (!is_string($v) || mb_strlen($v) > MAX_NAME_LEN)) {
+            fail(400, "$k, when present, must be a string ≤ " . MAX_NAME_LEN . ' chars');
+        }
+    }
+
     $ipHash = client_ip_hash();
 
     // ── Per-IP rate limit ────────────────────────────────────────────────────
@@ -199,10 +228,11 @@ if ($method === 'POST') {
     }
 
     // ── Generate a unique ID and insert ──────────────────────────────────────
-    $stored = json_encode(
-        ['classId' => $classId, 'specId' => $specId, 'builds' => $builds],
-        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
-    );
+    $payload = ['classId' => $classId, 'specId' => $specId, 'builds' => $builds];
+    if ($labels   !== null) $payload['labels']    = $labels;
+    if ($className !== null) $payload['className'] = $className;
+    if ($specName  !== null) $payload['specName']  = $specName;
+    $stored = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     try {
         $check = $pdo->prepare('SELECT 1 FROM comparebuilds_shares WHERE id = ?');

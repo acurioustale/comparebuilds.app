@@ -59,11 +59,12 @@ function SingleBuildView({ treeData, parsedBuild, widths }) {
 }
 
 function MainView() {
-  const { treeData, parsedBuilds, buildStrings, classNodes, addingBuild, startAddingBuild } = useBuildsStore(
+  const { treeData, parsedBuilds, buildStrings, buildNames, classNodes, addingBuild, startAddingBuild } = useBuildsStore(
     useShallow((s) => ({
       treeData: s.treeData,
       parsedBuilds: s.parsedBuilds,
       buildStrings: s.buildStrings,
+      buildNames: s.buildNames,
       classNodes: s.classNodes,
       addingBuild: s.addingBuild,
       startAddingBuild: s.startAddingBuild,
@@ -87,7 +88,7 @@ function MainView() {
 
   // Builds exist: build the comparison element first
   const valid = parsedBuilds
-    .map((p, i) => ({ parsed: p, label: `Build ${i + 1}` }))
+    .map((p, i) => ({ parsed: p, label: buildNames[i]?.trim() || `Build ${i + 1}` }))
     .filter(({ parsed }) => parsed)
 
   let comparisonEl = null
@@ -157,11 +158,12 @@ function MainView() {
 // ─── Share rehydration ────────────────────────────────────────────────────────
 
 function useShareRehydration() {
-  const { addBuild, clearAllBuilds, rehydrateTreeData } = useBuildsStore(
+  const { addBuild, clearAllBuilds, rehydrateTreeData, setBuildNames } = useBuildsStore(
     useShallow((s) => ({
       addBuild: s.addBuild,
       clearAllBuilds: s.clearAllBuilds,
       rehydrateTreeData: s.rehydrateTreeData,
+      setBuildNames: s.setBuildNames,
     })),
   )
   const [shareError, setShareError] = useState(null)
@@ -200,6 +202,7 @@ function useShareRehydration() {
         for (const buildString of decoded.builds) {
           await addBuild(buildString)
         }
+        if (decoded.names.some(Boolean)) setBuildNames(decoded.names)
         history.replaceState(null, '', window.location.pathname)
       })()
       return
@@ -223,6 +226,7 @@ function useShareRehydration() {
         for (const buildString of data.builds) {
           await addBuild(buildString)
         }
+        if (Array.isArray(data.labels) && data.labels.some(Boolean)) setBuildNames(data.labels)
         // Remove hash so it doesn't re-trigger on manual reload
         history.replaceState(null, '', window.location.pathname)
       } catch {

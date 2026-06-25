@@ -64,9 +64,9 @@ describe('comparison view', () => {
   test('adding two builds renders the side-by-side diff', async () => {
     render(<App />)
     const [a, b] = genStrings('death_knight', 'blood', 2)
-    paste(screen.getAllByRole('textbox')[0], a)
-    await screen.findByText(/Build 1 — Blood Death Knight/)
-    paste(screen.getByRole('textbox'), b)
+    paste(screen.getAllByPlaceholderText('Paste build string…')[0], a)
+    await screen.findByPlaceholderText(/Build 1 — Blood Death Knight/)
+    paste(screen.getByPlaceholderText('Paste build string…'), b)
     expect(await screen.findByText(/Differences/)).toBeInTheDocument()
   })
 })

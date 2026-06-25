@@ -47,23 +47,23 @@ describe('BuildManager import flow', () => {
   test('pasting a valid build string shows its parsed label', async () => {
     render(<BuildManager />)
     const [s] = genStrings('death_knight', 'blood', 1)
-    paste(screen.getAllByRole('textbox')[0], s)
-    expect(await screen.findByText(/Blood Death Knight/)).toBeInTheDocument()
+    paste(screen.getAllByPlaceholderText('Paste build string…')[0], s)
+    expect(await screen.findByPlaceholderText(/Blood Death Knight/)).toBeInTheDocument()
   })
 
   test('pasting an exact duplicate surfaces the duplicate error', async () => {
     render(<BuildManager />)
     const [s] = genStrings('death_knight', 'blood', 1)
-    paste(screen.getAllByRole('textbox')[0], s)
-    await screen.findByText(/Blood Death Knight/)
+    paste(screen.getAllByPlaceholderText('Paste build string…')[0], s)
+    await screen.findByPlaceholderText(/Blood Death Knight/)
     // After the first add there is a single empty input — paste the same string.
-    paste(screen.getByRole('textbox'), s)
+    paste(screen.getByPlaceholderText('Paste build string…'), s)
     expect(await screen.findByText(/already been added/i)).toBeInTheDocument()
   })
 
   test('an unparseable string surfaces an error and adds nothing', async () => {
     render(<BuildManager />)
-    paste(screen.getAllByRole('textbox')[0], 'not-a-real-build')
+    paste(screen.getAllByPlaceholderText('Paste build string…')[0], 'not-a-real-build')
     expect(await screen.findByText(/could not read|not found|invalid|unsupported|version/i)).toBeInTheDocument()
     expect(useBuildsStore.getState().buildStrings.length).toBe(0)
   })
@@ -71,9 +71,9 @@ describe('BuildManager import flow', () => {
   test('clear all removes loaded builds', async () => {
     render(<BuildManager />)
     const [s] = genStrings('death_knight', 'blood', 1)
-    paste(screen.getAllByRole('textbox')[0], s)
-    await screen.findByText(/Blood Death Knight/)
+    paste(screen.getAllByPlaceholderText('Paste build string…')[0], s)
+    await screen.findByPlaceholderText(/Blood Death Knight/)
     fireEvent.click(screen.getByText('Clear all'))
-    await waitFor(() => expect(screen.queryByText(/Blood Death Knight/)).toBeNull())
+    await waitFor(() => expect(screen.queryByPlaceholderText(/Blood Death Knight/)).toBeNull())
   })
 })
