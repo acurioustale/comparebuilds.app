@@ -10,6 +10,31 @@ export const APEX_ICON   = 34 // apex (capstone) node size
 export const CHOICE_GAP  = 4  // gap between a choice node's two options
 export const PAD         = 24 // panel padding around the node grid
 
+// ─── Responsive stacking classes ──────────────────────────────────────────────
+//
+// Tailwind classes for a section's row container and its inter-panel divider,
+// shared by TalentTree and HeatmapTree so the two can't drift. `layout` null keeps
+// the responsive media query (interactive tree); 'row' / 'stacked' force the layout
+// when a coordinator (FitToWidth) drives it from the zoom scale.
+
+/** Section container: panels side by side ('row') or stacked. `justify` centres a row. */
+export function sectionRowClass(layout, justify = false) {
+  if (layout == null) {
+    return `flex flex-col items-center gap-5 2xl:flex-row 2xl:items-start ${justify ? '2xl:justify-center ' : ''}2xl:gap-0`
+  }
+  if (layout === 'row') {
+    return `flex flex-row items-start gap-0${justify ? ' justify-center' : ''}`
+  }
+  return 'flex flex-col items-center gap-5'
+}
+
+/** Inter-panel divider: shown only in row layout. `extra` adds layout-specific classes. */
+export function dividerClass(layout, extra = '') {
+  if (layout == null) return `hidden 2xl:block self-stretch w-px bg-wow-dim mx-3 ${extra}`
+  if (layout === 'row') return `self-stretch w-px bg-wow-dim mx-3 ${extra}`
+  return 'hidden'
+}
+
 /** Builds an `{ id: node }` lookup map from a node array. */
 export function byId(nodes) {
   const m = {}
@@ -34,6 +59,66 @@ export function panelBounds(nodes) {
     W: (maxX - minX) * CELL + PAD * 2,
     H: (maxY - minY) * CELL + PAD * 2,
   }
+}
+
+// Layout chrome widths used between/around panels, in px. Kept here next to the
+// geometry so the natural-width math can't drift from what the renderer draws.
+const SECTION_DIVIDER = 25 // w-px (1) + mx-3 either side (12 + 12)
+const CARD_CHROME     = 34 // card p-4 (16 + 16) plus the .wow-panel 1px border, both
+                           // sides (box-sizing: border-box, so the border adds width)
+
+/**
+ * Natural (unscaled) card widths of a single talent tree in each layout, computed
+ * straight from panel geometry — no DOM measurement, so the responsive coordinator
+ * can decide layout/scale without a measure→render feedback loop.
+ *
+ *   - `row`     — Class ∥ Spec and hero left ∥ right side by side.
+ *   - `stacked` — every panel full width, one per row (≈ the widest single panel).
+ *
+ * @returns {{ row: number, stacked: number }}
+ */
+export function treeNaturalWidths(treeData) {
+  const { nodes, heroSubtrees } = treeData
+  const classW = panelBounds(nodes.filter((n) => n.treeType === 'class')).W
+  const specW  = panelBounds(nodes.filter((n) => n.treeType === 'spec')).W
+  const leftW  = panelBounds(nodes.filter((n) => n.heroSubtree === heroSubtrees.left.name)).W
+  const rightW = panelBounds(nodes.filter((n) => n.heroSubtree === heroSubtrees.right.name)).W
+
+  const row = Math.max(
+    classW + SECTION_DIVIDER + specW,
+    leftW  + SECTION_DIVIDER + rightW,
+  ) + CARD_CHROME
+  const stacked = Math.max(classW, specW, leftW, rightW) + CARD_CHROME
+  return { row, stacked }
+}
+
+/**
+ * Natural card widths of the section-paired two-build diff in each layout. Each
+ * section pairs the two builds' panels (gap-8 between them); the hero section pairs
+ * two hero blocks, each itself left ∥ right.
+ *
+ *   - `row`     — the two builds' panels side by side per section.
+ *   - `stacked` — the two builds stacked per section (≈ one column's width; the hero
+ *                 block stays left ∥ right within a column).
+ *
+ * @returns {{ row: number, stacked: number }}
+ */
+export function pairedNaturalWidths(treeData) {
+  const { nodes, heroSubtrees } = treeData
+  const COLUMN_GAP = 32 // gap-8 between the two builds when paired
+  const classW = panelBounds(nodes.filter((n) => n.treeType === 'class')).W
+  const specW  = panelBounds(nodes.filter((n) => n.treeType === 'spec')).W
+  const leftW  = panelBounds(nodes.filter((n) => n.heroSubtree === heroSubtrees.left.name)).W
+  const rightW = panelBounds(nodes.filter((n) => n.heroSubtree === heroSubtrees.right.name)).W
+  const heroBlock = leftW + SECTION_DIVIDER + rightW
+
+  const row = Math.max(
+    2 * classW + COLUMN_GAP,
+    2 * specW + COLUMN_GAP,
+    2 * heroBlock + COLUMN_GAP,
+  ) + CARD_CHROME
+  const stacked = Math.max(classW, specW, heroBlock) + CARD_CHROME
+  return { row, stacked }
 }
 
 /**
