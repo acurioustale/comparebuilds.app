@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 // ─── Runtime hardening ─────────────────────────────────────────────────────────
@@ -32,14 +33,16 @@ const ID_ALPHABET       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0
 const BUILD_PATTERN     = '/^[A-Za-z0-9+\/]{1,2000}={0,2}$/';
 
 /** Emit a JSON error and stop. */
-function fail(int $code, string $msg): void {
+function fail(int $code, string $msg): void
+{
     http_response_code($code);
     echo json_encode(['error' => $msg]);
     exit;
 }
 
 /** The canonical site origin (overridable in config.php for staging). */
-function site_origin(): string {
+function site_origin(): string
+{
     return defined('SITE_ORIGIN') ? SITE_ORIGIN : 'https://comparebuilds.app';
 }
 
@@ -49,7 +52,8 @@ function site_origin(): string {
  * refresh — no inline script, so it stays within the site's strict CSP.
  * `$data` may be null (share missing/expired) — then a generic card is shown.
  */
-function render_share_page(string $id, ?array $data): void {
+function render_share_page(string $id, ?array $data): void
+{
     $origin = site_origin();
     $count  = is_array($data['builds'] ?? null) ? count($data['builds']) : 0;
     $class  = is_string($data['className'] ?? null) ? $data['className'] : '';
@@ -103,7 +107,8 @@ function render_share_page(string $id, ?array $data): void {
  * in by defining TRUST_PROXY truthy in config.php (i.e. you know a trusted proxy
  * always sets it). Defaults to REMOTE_ADDR.
  */
-function client_ip(): string {
+function client_ip(): string
+{
     if (defined('TRUST_PROXY') && TRUST_PROXY && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
         $first = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
         if (filter_var($first, FILTER_VALIDATE_IP) !== false) {
@@ -114,7 +119,8 @@ function client_ip(): string {
 }
 
 /** Salted hash of the client IP, used only for rate limiting (not reversible to an IP in practice). */
-function client_ip_hash(): string {
+function client_ip_hash(): string
+{
     $salt = defined('SHARE_IP_SALT') ? SHARE_IP_SALT : 'comparebuilds-default-salt';
     return hash('sha256', $salt . '|' . client_ip());
 }
@@ -165,7 +171,10 @@ if ($method === 'GET') {
     $pageMode = isset($_GET['page']);
 
     if (!is_string($id) || !preg_match('/^[A-Za-z0-9]{6}$/', $id)) {
-        if ($pageMode) { http_response_code(400); render_share_page('', null); }
+        if ($pageMode) {
+            http_response_code(400);
+            render_share_page('', null);
+        }
         fail(400, 'Invalid ID format');
     }
 
@@ -174,12 +183,18 @@ if ($method === 'GET') {
         $stmt->execute([$id]);
         $row = $stmt->fetch();
     } catch (Throwable $e) {
-        if ($pageMode) { http_response_code(500); render_share_page($id, null); }
+        if ($pageMode) {
+            http_response_code(500);
+            render_share_page($id, null);
+        }
         fail(500, 'Database error');
     }
 
     if (!$row) {
-        if ($pageMode) { http_response_code(404); render_share_page($id, null); }
+        if ($pageMode) {
+            http_response_code(404);
+            render_share_page($id, null);
+        }
         fail(404, 'Share not found or has expired');
     }
 
@@ -294,9 +309,15 @@ if ($method === 'POST') {
 
     // ── Generate a unique ID and insert ──────────────────────────────────────
     $payload = ['classId' => $classId, 'specId' => $specId, 'builds' => $builds];
-    if ($labels   !== null) $payload['labels']    = $labels;
-    if ($className !== null) $payload['className'] = $className;
-    if ($specName  !== null) $payload['specName']  = $specName;
+    if ($labels   !== null) {
+        $payload['labels']    = $labels;
+    }
+    if ($className !== null) {
+        $payload['className'] = $className;
+    }
+    if ($specName  !== null) {
+        $payload['specName']  = $specName;
+    }
     $stored = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     try {

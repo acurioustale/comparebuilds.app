@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 // ─── Open Graph card generator ─────────────────────────────────────────────────
@@ -31,12 +32,19 @@ const CLASS_INFO = [
     13 => ['Evoker',       '#33937F'],
 ];
 
-function bail(int $code): void { http_response_code($code); exit; }
+function bail(int $code): void
+{
+    http_response_code($code);
+    exit;
+}
 
 /** Allocates a colour from "#RRGGBB". */
-function hexcolor($img, string $hex) {
+function hexcolor($img, string $hex)
+{
     $hex = ltrim($hex, '#');
-    if (strlen($hex) !== 6) $hex = 'c8a84b';
+    if (strlen($hex) !== 6) {
+        $hex = 'c8a84b';
+    }
     return imagecolorallocate($img, (int) hexdec(substr($hex, 0, 2)), (int) hexdec(substr($hex, 2, 2)), (int) hexdec(substr($hex, 4, 2)));
 }
 
@@ -44,9 +52,12 @@ function hexcolor($img, string $hex) {
  * First usable bold TTF: a config override, then the fonts that ship on common
  * Linux hosts (DejaVu/Liberation), then macOS (local dev). null → no TTF.
  */
-function find_font(): ?string {
+function find_font(): ?string
+{
     $candidates = [];
-    if (defined('OG_FONT_PATH')) $candidates[] = OG_FONT_PATH;
+    if (defined('OG_FONT_PATH')) {
+        $candidates[] = OG_FONT_PATH;
+    }
     // Bundled font (api/fonts/) — shipped so the card has crisp text even on hosts
     // with no system fonts installed.
     $candidates[] = __DIR__ . '/fonts/DejaVuSans-Bold.ttf';
@@ -61,7 +72,9 @@ function find_font(): ?string {
         '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
     );
     foreach ($candidates as $f) {
-        if (is_string($f) && $f !== '' && is_file($f)) return $f;
+        if (is_string($f) && $f !== '' && is_file($f)) {
+            return $f;
+        }
     }
     return null;
 }
@@ -78,7 +91,8 @@ function find_font(): ?string {
  * composite as an opaque black box behind the text. Every caller draws onto the
  * flat $bg-coloured card area, so an opaque $bg tile is invisible at its edges.
  */
-function draw_text($img, ?string $font, float $size, int $x, int $yBaseline, $color, string $text, string $bg = '#0d0d14'): void {
+function draw_text($img, ?string $font, float $size, int $x, int $yBaseline, $color, string $text, string $bg = '#0d0d14'): void
+{
     // Use TrueType only when the font exists AND this GD build has FreeType.
     if ($font !== null && function_exists('imagettftext')) {
         imagettftext($img, $size, 0, $x, $yBaseline, $color, $font, $text);
@@ -99,14 +113,17 @@ function draw_text($img, ?string $font, float $size, int $x, int $yBaseline, $co
 
 // ── Validate id ────────────────────────────────────────────────────────────────
 $id = $_GET['id'] ?? '';
-if (!is_string($id) || !preg_match('/^[A-Za-z0-9]{6}$/', $id)) bail(400);
+if (!is_string($id) || !preg_match('/^[A-Za-z0-9]{6}$/', $id)) {
+    bail(400);
+}
 
 // ── Look up the share ───────────────────────────────────────────────────────────
 require_once __DIR__ . '/../../config.php';
 try {
     $pdo = new PDO(
         'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-        DB_USER, DB_PASS,
+        DB_USER,
+        DB_PASS,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false],
     );
     $stmt = $pdo->prepare('SELECT data FROM comparebuilds_shares WHERE id = ?');
@@ -115,7 +132,9 @@ try {
 } catch (Throwable $e) {
     bail(500);
 }
-if (!$row) bail(404);
+if (!$row) {
+    bail(404);
+}
 
 $data      = json_decode($row['data'], true) ?: [];
 $classId   = (int) ($data['classId'] ?? 0);
@@ -126,22 +145,37 @@ $specName  = is_string($data['specName'] ?? null) ? $data['specName'] : '';
 $color     = CLASS_INFO[$classId][1] ?? '#c8a84b';
 
 // ── Render ──────────────────────────────────────────────────────────────────────
-if (!function_exists('imagecreatetruecolor')) bail(500);
+if (!function_exists('imagecreatetruecolor')) {
+    bail(500);
+}
 
 // Pick an output encoder the host's GD actually supports. Some shared builds ship
 // GD without PNG, so fall back through the other formats. Order is by how widely
 // link-preview crawlers accept them: PNG/JPEG/GIF unfurl everywhere (Facebook,
 // LinkedIn, Slack, …); WebP is a last resort (spottier support). The card is flat
 // colour + text, so GIF's 256-colour palette looks effectively identical.
-if      (function_exists('imagepng'))  { $mime = 'image/png';  $emit = static fn ($im) => imagepng($im); }
-elseif  (function_exists('imagejpeg')) { $mime = 'image/jpeg'; $emit = static fn ($im) => imagejpeg($im, null, 90); }
-elseif  (function_exists('imagegif'))  { $mime = 'image/gif';  $emit = static fn ($im) => imagegif($im); }
-elseif  (function_exists('imagewebp')) { $mime = 'image/webp'; $emit = static fn ($im) => imagewebp($im); }
-else    { bail(500); }
+if (function_exists('imagepng')) {
+    $mime = 'image/png';
+    $emit = static fn ($im) => imagepng($im);
+} elseif (function_exists('imagejpeg')) {
+    $mime = 'image/jpeg';
+    $emit = static fn ($im) => imagejpeg($im, null, 90);
+} elseif (function_exists('imagegif')) {
+    $mime = 'image/gif';
+    $emit = static fn ($im) => imagegif($im);
+} elseif (function_exists('imagewebp')) {
+    $mime = 'image/webp';
+    $emit = static fn ($im) => imagewebp($im);
+} else {
+    bail(500);
+}
 
-$W = 1200; $H = 630;
+$W = 1200;
+$H = 630;
 $img = @imagecreatetruecolor($W, $H);
-if ($img === false) bail(500);
+if ($img === false) {
+    bail(500);
+}
 
 try {
     imagefilledrectangle($img, 0, 0, $W, $H, hexcolor($img, '#0d0d14'));
@@ -158,7 +192,7 @@ try {
     $font = find_font();
     $x = 130;
 
-    draw_text($img, $font, 22, $x, 150, $gold,  'COMPAREBUILDS.APP');
+    draw_text($img, $font, 22, $x, 150, $gold, 'COMPAREBUILDS.APP');
     $title = trim("$specName $className");
     draw_text($img, $font, 64, $x, 320, $accent, $title !== '' ? $title : 'Talent Build');
     $subtitle = count($builds) >= 2 ? (count($builds) . ' builds compared') : 'WoW talent build';

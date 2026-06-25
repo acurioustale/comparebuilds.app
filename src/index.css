@@ -3,7 +3,7 @@
 /* ─── Friz Quadrata web font ─────────────────────────────────────────────── */
 
 @font-face {
-  font-family: "FrizQuadrata";
+  font-family: FrizQuadrata;
   src: url("./assets/fonts/FRIZQT__.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
@@ -51,36 +51,35 @@
   --wow-text: #f0e6c8;
   --wow-muted: #b3a47e;
   --wow-dim: #3a2e1a;
-
   --wow-border: #8b6914;
   --wow-body-bg: #0d0d14;
   --wow-body-glow:
     radial-gradient(
       1100px 520px at 50% -8%,
-      rgba(200, 168, 75, 0.07),
+      rgb(200 168 75 / 7%),
       transparent 62%
     ),
     radial-gradient(
       900px 760px at 50% 118%,
-      rgba(70, 46, 104, 0.12),
+      rgb(70 46 104 / 12%),
       transparent 60%
     );
-  --wow-panel-bg: rgba(10, 8, 4, 0.88);
+  --wow-panel-bg: rgb(10 8 4 / 88%);
   --wow-panel-shadow:
-    0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 60px rgba(0, 0, 0, 0.4);
+    0 0 20px rgb(0 0 0 / 80%), inset 0 0 60px rgb(0 0 0 / 40%);
   --wow-subpanel-bg: linear-gradient(
     180deg,
-    rgba(22, 18, 32, 0.55),
-    rgba(8, 6, 14, 0.55)
+    rgb(22 18 32 / 55%),
+    rgb(8 6 14 / 55%)
   );
   --wow-subpanel-shadow:
-    inset 0 0 0 1px rgba(200, 168, 75, 0.2), inset 0 0 34px rgba(0, 0, 0, 0.5);
-  --wow-chrome-bg: rgba(0, 0, 0, 0.75);
+    inset 0 0 0 1px rgb(200 168 75 / 20%), inset 0 0 34px rgb(0 0 0 / 50%);
+  --wow-chrome-bg: rgb(0 0 0 / 75%);
   --wow-btn-bg: #1a1508;
   --wow-btn-active-bg: #110e04;
   --wow-tooltip-bg: #0e0e1a;
   --wow-tooltip-shadow:
-    0 0 0 1px rgba(200, 168, 75, 0.15), 0 6px 24px rgba(0, 0, 0, 0.9);
+    0 0 0 1px rgb(200 168 75 / 15%), 0 6px 24px rgb(0 0 0 / 90%);
   --wow-scroll-track: #0a0a10;
   --wow-scroll-thumb: #5a4010;
 }
@@ -96,37 +95,35 @@
   --wow-text: #2a1c0c;
   --wow-muted: #6a5733;
   --wow-dim: #c9ad74;
-
   --wow-border: #b78a2a;
   --wow-body-bg: #f3e7cb;
   --wow-body-glow:
     radial-gradient(
       1100px 520px at 50% -8%,
-      rgba(160, 120, 30, 0.1),
+      rgb(160 120 30 / 10%),
       transparent 62%
     ),
     radial-gradient(
       900px 760px at 50% 118%,
-      rgba(120, 90, 160, 0.1),
+      rgb(120 90 160 / 10%),
       transparent 60%
     );
-  --wow-panel-bg: rgba(255, 250, 238, 0.92);
+  --wow-panel-bg: rgb(255 250 238 / 92%);
   --wow-panel-shadow:
-    0 4px 18px rgba(94, 64, 20, 0.16), inset 0 0 50px rgba(255, 255, 255, 0.35);
+    0 4px 18px rgb(94 64 20 / 16%), inset 0 0 50px rgb(255 255 255 / 35%);
   --wow-subpanel-bg: linear-gradient(
     180deg,
-    rgba(255, 250, 238, 0.7),
-    rgba(244, 232, 206, 0.7)
+    rgb(255 250 238 / 70%),
+    rgb(244 232 206 / 70%)
   );
   --wow-subpanel-shadow:
-    inset 0 0 0 1px rgba(138, 90, 0, 0.18),
-    inset 0 0 34px rgba(120, 90, 30, 0.08);
-  --wow-chrome-bg: rgba(252, 244, 226, 0.85);
+    inset 0 0 0 1px rgb(138 90 0 / 18%), inset 0 0 34px rgb(120 90 30 / 8%);
+  --wow-chrome-bg: rgb(252 244 226 / 85%);
   --wow-btn-bg: #fbefd2;
   --wow-btn-active-bg: #efdcb2;
   --wow-tooltip-bg: #fdf6e6;
   --wow-tooltip-shadow:
-    0 0 0 1px rgba(138, 90, 0, 0.18), 0 6px 24px rgba(94, 64, 20, 0.28);
+    0 0 0 1px rgb(138 90 0 / 18%), 0 6px 24px rgb(94 64 20 / 28%);
   --wow-scroll-track: #e7d6b2;
   --wow-scroll-thumb: #bfa056;
 }
@@ -141,6 +138,7 @@
 
 html {
   font-size: 16px;
+
   /* Reserve the scrollbar gutter permanently so the page width doesn't jump when
    * a tall (stacked) layout makes the vertical scrollbar appear. Removes the
    * resize hysteresis at the responsive breakpoints. */
@@ -149,19 +147,20 @@ html {
 
 body {
   color: var(--wow-text);
-  font-family: "FrizQuadrata", "Palatino Linotype", serif;
+  font-family: FrizQuadrata, "Palatino Linotype", serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
   /* Hard floor: below this the stacked tree stops shrinking (minScale) and
    * scrolls horizontally instead of becoming unreadable. */
   min-width: 320px;
-
   background-color: var(--wow-body-bg);
+
   /* Layered radial glow for depth: warm gold from the top, cool arcane from the
    * bottom, over the base. Fixed so it doesn't scroll with content. */
   background-image: var(--wow-body-glow);
   background-attachment: fixed;
+
   /* Ease the toggle; on load the inline script sets the theme pre-paint so this
    * never fires a transition on first render. */
   transition:
@@ -181,7 +180,7 @@ body {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   border: 1px solid var(--wow-border);
-  outline: 1px solid rgba(200, 168, 75, 0.45);
+  outline: 1px solid rgb(200 168 75 / 45%);
   outline-offset: -3px;
   box-shadow: var(--wow-panel-shadow);
 }
@@ -190,6 +189,7 @@ body {
  * nodes read as living inside a bordered panel rather than floating on the page. */
 .wow-subpanel {
   background: var(--wow-subpanel-bg);
+
   /* Frame drawn entirely with shadows (no border) so it adds zero layout width -
    * keeps the talent grid from overflowing its scaled container or shifting nodes. */
   box-shadow: var(--wow-subpanel-shadow);
@@ -209,15 +209,17 @@ body {
   border-radius: 4px;
   transition: box-shadow 0.15s ease;
 }
+
 .wow-class-btn:not(:disabled):hover img {
   box-shadow:
     0 0 0 2px var(--wow-gold),
-    0 0 10px rgba(200, 168, 75, 0.5);
+    0 0 10px rgb(200 168 75 / 50%);
 }
+
 .wow-class-btn.wow-active img {
   box-shadow:
     0 0 0 2px var(--wow-gold),
-    0 0 14px rgba(200, 168, 75, 0.65);
+    0 0 14px rgb(200 168 75 / 65%);
 }
 
 /* ─── Talent node keyboard focus ─────────────────────────────────────────── */
@@ -228,6 +230,7 @@ body {
   outline: none;
   border-radius: 5px;
 }
+
 .tnode:focus-visible {
   outline: 2px solid var(--wow-gold-light);
   outline-offset: 3px;
@@ -239,7 +242,7 @@ body {
   background: var(--wow-btn-bg);
   border: 1px solid var(--wow-border);
   color: var(--wow-gold);
-  font-family: "FrizQuadrata", "Palatino Linotype", serif;
+  font-family: FrizQuadrata, "Palatino Linotype", serif;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -248,17 +251,20 @@ body {
     box-shadow 0.15s,
     color 0.15s;
 }
+
 .wow-btn:hover:not(:disabled) {
   border-color: var(--wow-gold);
   color: var(--wow-gold-light);
   box-shadow:
-    0 0 12px rgba(200, 168, 75, 0.35),
-    inset 0 0 8px rgba(200, 168, 75, 0.06);
+    0 0 12px rgb(200 168 75 / 35%),
+    inset 0 0 8px rgb(200 168 75 / 6%);
 }
+
 .wow-btn:active:not(:disabled) {
   background: var(--wow-btn-active-bg);
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 1px 4px rgb(0 0 0 / 60%);
 }
+
 .wow-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
@@ -271,20 +277,25 @@ body {
   border: 1px solid var(--wow-border) !important;
   box-shadow: var(--wow-tooltip-shadow) !important;
   color: var(--wow-text) !important;
-  font-family: "FrizQuadrata", "Palatino Linotype", serif !important;
+  font-family: FrizQuadrata, "Palatino Linotype", serif !important;
 }
+
 .tippy-box .tippy-content {
   padding: 6px 10px;
 }
+
 .tippy-box[data-placement^="top"] > .tippy-arrow::before {
   border-top-color: var(--wow-border) !important;
 }
+
 .tippy-box[data-placement^="bottom"] > .tippy-arrow::before {
   border-bottom-color: var(--wow-border) !important;
 }
+
 .tippy-box[data-placement^="left"] > .tippy-arrow::before {
   border-left-color: var(--wow-border) !important;
 }
+
 .tippy-box[data-placement^="right"] > .tippy-arrow::before {
   border-right-color: var(--wow-border) !important;
 }
@@ -295,13 +306,16 @@ body {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--wow-scroll-track);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--wow-scroll-thumb);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--wow-border);
 }
