@@ -145,7 +145,7 @@ function MainView() {
 // ─── Share rehydration ────────────────────────────────────────────────────────
 
 function useShareRehydration() {
-  const { addBuild } = useBuildsStore()
+  const { addBuild, clearAllBuilds, rehydrateTreeData } = useBuildsStore()
   const [shareError, setShareError] = useState(null)
   // Guard against React StrictMode invoking this effect twice in development,
   // which would otherwise rehydrate (and add) every shared build twice.
@@ -156,7 +156,20 @@ function useShareRehydration() {
     hasRehydrated.current = true
 
     const hash = window.location.hash.slice(1)
-    if (!hash || !/^[A-Za-z0-9]{6}$/.test(hash)) return
+
+    // No share id in the URL: restore whatever was autosaved to localStorage.
+    // The persist middleware has already rehydrated the small slices into the
+    // store synchronously; here we rebuild the derived tree/parsed state from
+    // the restored buildStrings + specId.
+    if (!hash || !/^[A-Za-z0-9]{6}$/.test(hash)) {
+      rehydrateTreeData()
+      return
+    }
+
+    // A share id wins over any locally saved state: discard the restored local
+    // builds first so they can't trigger a spec-mismatch or linger alongside
+    // the shared build.
+    clearAllBuilds()
 
     ;(async () => {
       try {

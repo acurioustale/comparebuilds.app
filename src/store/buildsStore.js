@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import classesIndex from '../data/classes.json'
 import { parseSpecId, parseBuildString, collectClassNodes } from '../lib/buildString'
 import { buildGrantedSeed } from '../lib/treeLogic'
@@ -99,7 +100,7 @@ function parseAll(strings, classNodes) {
 // never applies stale data.
 let loadGen = 0
 
-async function loadTreeData(set, get, classSlug, specSlug, specId) {
+async function loadTreeData(set, get, classSlug, specSlug, specId, { preserveInteractive = false } = {}) {
   const gen = ++loadGen
   set({ isLoading: true, error: null })
 
@@ -125,7 +126,11 @@ async function loadTreeData(set, get, classSlug, specSlug, specId) {
       parsedBuilds: parseAll(currentStrings, classNodes),
       // In interactive mode (no imported builds), seed pre-granted nodes so
       // prerequisite checks evaluate against the full effective selection set.
-      ...(currentStrings.length === 0 && { interactiveNodes: buildGrantedSeed(treeData) }),
+      // Skipped on rehydration (preserveInteractive), where the persisted
+      // in-progress selection must survive the reload.
+      ...(currentStrings.length === 0 && !preserveInteractive && {
+        interactiveNodes: buildGrantedSeed(treeData),
+      }),
     })
   } catch (err) {
     if (loadGen !== gen) return
@@ -193,7 +198,7 @@ const EMPTY = {
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
-export const useBuildsStore = create((set, get) => ({
+const createStore = (set, get) => ({
   ...EMPTY,
 
   /**
@@ -375,4 +380,50 @@ export const useBuildsStore = create((set, get) => ({
 
   /** Called after a successful interactive export to hide the interactive tree. */
   finishAddingBuild: () => set({ addingBuild: false }),
-}))
+
+  /**
+   * Rebuilds the derived, non-persisted state (treeData, classNodes,
+   * parsedBuilds) after the persisted slices have been rehydrated from
+   * localStorage. Reads specId from the restored state, loads the matching
+   * class tree, and re-parses any restored build strings. The in-progress
+   * interactive selection is preserved (preserveInteractive) rather than reset
+   * to the granted seed. No-op when nothing was restored.
+   */
+  rehydrateTreeData: async () => {
+    const { specId } = get()
+    if (specId == null) return
+
+    const match = findClassForSpec(specId)
+    if (!match) return
+
+    await loadTreeData(set, get, match.cls.name, match.spec.name, specId, {
+      preserveInteractive: true,
+    })
+  },
+})
+
+export const useBuildsStore = create(
+  persist(createStore, {
+    name: 'comparebuilds-state',
+    version: 1,
+    // Throw (rather than return undefined) when Web Storage is unavailable so
+    // createJSONStorage disables persistence cleanly instead of building a
+    // wrapper around an undefined store. This keeps the Node test environment,
+    // where `localStorage` is not a real Storage, from crashing on writes.
+    storage: createJSONStorage(() => {
+      if (typeof localStorage === 'undefined' || !localStorage) {
+        throw new Error('localStorage unavailable')
+      }
+      return localStorage
+    }),
+    // Persist only the small, serialisable slices. treeData/classNodes/
+    // parsedBuilds are derived and rebuilt on rehydration via rehydrateTreeData.
+    partialize: (state) => ({
+      buildStrings: state.buildStrings,
+      specId: state.specId,
+      classId: state.classId,
+      interactiveNodes: state.interactiveNodes,
+      addingBuild: state.addingBuild,
+    }),
+  }),
+)
