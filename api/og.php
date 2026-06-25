@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
+// A 1200×630 truecolor image needs a few MB; some shared hosts default to a tiny
+// memory_limit. Nudge it up where allowed (no-op if disabled).
+@ini_set('memory_limit', '256M');
 
 // Canonical class id → [display name, hex colour]. Hardcoded so the card renders
 // for every share (old ones included) without needing the class data on the server.
@@ -44,6 +47,9 @@ function hexcolor($img, string $hex) {
 function find_font(): ?string {
     $candidates = [];
     if (defined('OG_FONT_PATH')) $candidates[] = OG_FONT_PATH;
+    // Bundled font (api/fonts/) — shipped so the card has crisp text even on hosts
+    // with no system fonts installed.
+    $candidates[] = __DIR__ . '/fonts/DejaVuSans-Bold.ttf';
     array_push(
         $candidates,
         '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
@@ -62,7 +68,8 @@ function find_font(): ?string {
 
 /** Draws text at a left x / baseline y, using the TTF if present, else a scaled built-in font. */
 function draw_text($img, ?string $font, float $size, int $x, int $yBaseline, $color, string $text): void {
-    if ($font !== null) {
+    // Use TrueType only when the font exists AND this GD build has FreeType.
+    if ($font !== null && function_exists('imagettftext')) {
         imagettftext($img, $size, 0, $x, $yBaseline, $color, $font, $text);
         return;
     }
@@ -109,31 +116,50 @@ $specName  = is_string($data['specName'] ?? null) ? $data['specName'] : '';
 $color     = CLASS_INFO[$classId][1] ?? '#c8a84b';
 
 // ── Render ──────────────────────────────────────────────────────────────────────
+if (!function_exists('imagecreatetruecolor')) bail(500);
+
+// Pick an output encoder the host's GD actually supports. Some shared builds ship
+// GD without PNG, so fall back through the other formats. Order is by how widely
+// link-preview crawlers accept them: PNG/JPEG/GIF unfurl everywhere (Facebook,
+// LinkedIn, Slack, …); WebP is a last resort (spottier support). The card is flat
+// colour + text, so GIF's 256-colour palette looks effectively identical.
+if      (function_exists('imagepng'))  { $mime = 'image/png';  $emit = static fn ($im) => imagepng($im); }
+elseif  (function_exists('imagejpeg')) { $mime = 'image/jpeg'; $emit = static fn ($im) => imagejpeg($im, null, 90); }
+elseif  (function_exists('imagegif'))  { $mime = 'image/gif';  $emit = static fn ($im) => imagegif($im); }
+elseif  (function_exists('imagewebp')) { $mime = 'image/webp'; $emit = static fn ($im) => imagewebp($im); }
+else    { bail(500); }
+
 $W = 1200; $H = 630;
-$img = imagecreatetruecolor($W, $H);
-imagefilledrectangle($img, 0, 0, $W, $H, hexcolor($img, '#0d0d14'));
+$img = @imagecreatetruecolor($W, $H);
+if ($img === false) bail(500);
 
-$accent = hexcolor($img, $color);
-$gold   = hexcolor($img, '#c8a84b');
-$muted  = hexcolor($img, '#9a8a6a');
-$white  = hexcolor($img, '#f0e6c8');
+try {
+    imagefilledrectangle($img, 0, 0, $W, $H, hexcolor($img, '#0d0d14'));
 
-// Top accent bar + left rule in the class colour.
-imagefilledrectangle($img, 0, 0, $W, 12, $accent);
-imagefilledrectangle($img, 90, 150, 96, 470, $accent);
+    $accent = hexcolor($img, $color);
+    $gold   = hexcolor($img, '#c8a84b');
+    $muted  = hexcolor($img, '#9a8a6a');
+    $white  = hexcolor($img, '#f0e6c8');
 
-$font = find_font();
-$x = 130;
+    // Top accent bar + left rule in the class colour.
+    imagefilledrectangle($img, 0, 0, $W, 12, $accent);
+    imagefilledrectangle($img, 90, 150, 96, 470, $accent);
 
-draw_text($img, $font, 22, $x, 150, $gold,  'COMPAREBUILDS.APP');
-$title = trim("$specName $className");
-draw_text($img, $font, 64, $x, 320, $accent, $title !== '' ? $title : 'Talent Build');
-$subtitle = count($builds) >= 2 ? (count($builds) . ' builds compared') : 'WoW talent build';
-draw_text($img, $font, 30, $x, 380, $white, $subtitle);
-draw_text($img, $font, 22, $x, 470, $muted, 'Import, build and compare WoW talent loadouts');
+    $font = find_font();
+    $x = 130;
 
-header('Content-Type: image/png');
+    draw_text($img, $font, 22, $x, 150, $gold,  'COMPAREBUILDS.APP');
+    $title = trim("$specName $className");
+    draw_text($img, $font, 64, $x, 320, $accent, $title !== '' ? $title : 'Talent Build');
+    $subtitle = count($builds) >= 2 ? (count($builds) . ' builds compared') : 'WoW talent build';
+    draw_text($img, $font, 30, $x, 380, $white, $subtitle);
+    draw_text($img, $font, 22, $x, 470, $muted, 'Import, build and compare WoW talent loadouts');
+} catch (Throwable $e) {
+    // Any drawing failure: still return a valid (if plainer) PNG rather than a 500,
+    // so the link at least unfurls with the class-coloured background.
+}
+
+header("Content-Type: $mime");
 header('Cache-Control: public, max-age=86400');
 header('X-Content-Type-Options: nosniff');
-imagepng($img);
-imagedestroy($img);
+$emit($img);
