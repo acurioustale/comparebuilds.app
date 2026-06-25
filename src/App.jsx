@@ -16,7 +16,10 @@ import FitToWidth from "./components/FitToWidth";
 import { resolveRoute } from "./lib/route";
 import { decodeBuildsHash } from "./lib/shareLink";
 import { matchNodeIds } from "./lib/talentSearch";
-import { SearchContext } from "./components/SearchContext";
+import {
+  SearchContext,
+  ChangesFilterContext,
+} from "./components/SearchContext";
 import TalentSearch from "./components/TalentSearch";
 import {
   THEME_STORAGE_KEY,
@@ -128,6 +131,26 @@ function ThemeToggle({ mode, next, onCycle }) {
   );
 }
 
+// Comparison-only toggle: dim every node the builds agree on, leaving just the
+// differences. One control for both views — in the diff "differences" means a
+// node differs between the two builds; in the heatmap it means a contested node
+// (picked by some builds but not all).
+function ChangesFilterToggle({ value, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!value)}
+      aria-pressed={value}
+      className={`wow-btn text-xs px-3 py-1.5 rounded select-none transition-colors ${
+        value ? "ring-1 ring-wow-gold text-wow-gold" : "text-wow-muted"
+      }`}
+      title="Dim nodes the builds share; show only where they differ"
+    >
+      Changes only
+    </button>
+  );
+}
+
 // Wraps a tree/comparison panel so it scales to fit the viewport width, centered.
 // FitToWidth is the full-width measurer; the inner card hugs its content (w-max).
 function TreeCard({ children }) {
@@ -216,6 +239,10 @@ function MainView() {
     () => ({ active: query.trim().length > 0, matchIds }),
     [query, matchIds],
   );
+
+  // "Changes only" filter, applied to the diff (2 builds) and heatmap (3+). A view
+  // preference, so it stays in component state rather than the persisted store.
+  const [changesOnly, setChangesOnly] = useState(false);
 
   if (!treeData) return null;
 
@@ -317,7 +344,16 @@ function MainView() {
         </div>
       )}
 
-      {comparisonEl}
+      {/* Changes-only toggle: only meaningful once there are builds to compare. */}
+      {valid.length >= 2 && (
+        <div className="mt-4 flex justify-center">
+          <ChangesFilterToggle value={changesOnly} onChange={setChangesOnly} />
+        </div>
+      )}
+
+      <ChangesFilterContext.Provider value={changesOnly}>
+        {comparisonEl}
+      </ChangesFilterContext.Provider>
     </>,
   );
 }

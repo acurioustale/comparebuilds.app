@@ -2,8 +2,13 @@ import { useMemo } from "react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 import { iconUrl, onIconError } from "../lib/iconUrl";
-import { useSearchHighlight } from "./SearchContext";
-import { rarityTier, computeStats, computeLegendTiers } from "../lib/heatmap";
+import { useNodeEmphasis } from "./SearchContext";
+import {
+  rarityTier,
+  isDivergent,
+  computeStats,
+  computeLegendTiers,
+} from "../lib/heatmap";
 import {
   CELL,
   ICON,
@@ -81,8 +86,14 @@ function HeatmapNode({ node, px, py, stat, totalBuilds }) {
   const tier = rarityTier(count, totalBuilds);
   const rarity = RARITY[tier];
 
-  // Search highlight (see TalentTree): dim non-matches, ring matches.
-  const { effOpacity, searchRing } = useSearchHighlight(node.id);
+  // Search highlight + changes-only filter (see TalentTree): dim non-matches/non-
+  // changes, ring matches. A heatmap "change" is a node the builds didn't all treat
+  // the same — split adoption or a choice node with diverging picks; unanimous,
+  // identically-taken nodes are agreement and dim.
+  const { effOpacity, searchRing } = useNodeEmphasis(
+    node.id,
+    isDivergent(count, totalBuilds, choiceVotes),
+  );
   const ringShadow = (shadow) =>
     searchRing ? `${shadow}, ${searchRing}` : shadow;
 
@@ -124,6 +135,7 @@ function HeatmapNode({ node, px, py, stat, totalBuilds }) {
                 borderRadius: 6,
                 border: `2px solid ${rarity.color}`,
                 boxShadow: ringShadow(`0 0 7px ${rarity.glow}`),
+                opacity: effOpacity(1),
                 pointerEvents: "none",
               }}
             />
@@ -171,6 +183,7 @@ function HeatmapNode({ node, px, py, stat, totalBuilds }) {
               top: CHOICE_ICON + 3,
               left: 0,
               width: totalW,
+              opacity: effOpacity(1),
               pointerEvents: "none",
             }}
           >

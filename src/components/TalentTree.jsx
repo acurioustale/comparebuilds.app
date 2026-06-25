@@ -4,7 +4,7 @@ import "tippy.js/dist/tippy.css";
 import { iconUrl, onIconError } from "../lib/iconUrl";
 import { activeHeroSubtree } from "../lib/spendRules";
 import { prereqChain } from "../lib/prereqChain";
-import { useSearchHighlight } from "./SearchContext";
+import { useNodeEmphasis } from "./SearchContext";
 import {
   CELL,
   ICON,
@@ -260,9 +260,14 @@ function TalentNode({
       : "pointer"
     : "default";
 
-  // Search highlight: when a query is active, matches keep their opacity and gain
-  // a ring; everything else dims. Layers on top of the existing diff/invalid styling.
-  const { searchHit, effOpacity, searchRing } = useSearchHighlight(node.id);
+  // Search highlight + changes-only filter: matches/changes keep their opacity (a
+  // match also gains a ring), everything else dims. In the diff a "change" is any
+  // node carrying a highlight (a-only/b-only/differing). Layers on top of the
+  // existing diff/invalid styling.
+  const { searchHit, effOpacity, searchRing } = useNodeEmphasis(
+    node.id,
+    highlight != null,
+  );
   // Appends the search-match and prereq-chain rings (when active) onto a node's
   // existing shadow, so they layer over diff/invalid styling without replacing it.
   const withSearchShadow = (shadow) => {

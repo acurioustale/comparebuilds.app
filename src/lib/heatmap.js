@@ -19,6 +19,38 @@ export function rarityTier(count, total) {
 }
 
 /**
+ * Whether a node is *contested* — picked by some builds but not all.
+ * @param {number} count  builds that selected the node
+ * @param {number} total  total builds compared
+ */
+export function isContested(count, total) {
+  return count > 0 && count < total;
+}
+
+/**
+ * The heatmap's notion of a "change" for the changes-only filter: a node the
+ * builds didn't all treat the same way. That means either split adoption, or a
+ * choice node every build takes but where the picks diverge. Nodes all builds
+ * take identically (or none take) are agreement and get dimmed.
+ *
+ * Rank isn't tracked per build in the heatmap stats, so equal adoption of a
+ * ranked node reads as agreement even if the invested points differ — consistent
+ * with the heatmap being an adoption view rather than a rank view.
+ *
+ * @param {number} count               builds that selected the node
+ * @param {number} total               total builds compared
+ * @param {(number|null)[]} choiceVotes per-build entryChosen (null = not picked)
+ */
+export function isDivergent(count, total, choiceVotes = []) {
+  if (isContested(count, total)) return true;
+  if (count === total) {
+    const picks = choiceVotes.filter((v) => v != null);
+    return picks.some((v) => v !== picks[0]);
+  }
+  return false;
+}
+
+/**
  * For each node, computes how many builds include it and which choice each
  * build picked.
  *

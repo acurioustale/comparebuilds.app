@@ -4,7 +4,13 @@
 
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
-import { rarityTier, computeStats, computeLegendTiers } from "./heatmap.js";
+import {
+  rarityTier,
+  isContested,
+  isDivergent,
+  computeStats,
+  computeLegendTiers,
+} from "./heatmap.js";
 
 describe("rarityTier", () => {
   test("zero adoption is poor", () =>
@@ -15,6 +21,30 @@ describe("rarityTier", () => {
   test(">= 50% is rare", () => assert.strictEqual(rarityTier(2, 4), "rare"));
   test("below 50% is uncommon", () =>
     assert.strictEqual(rarityTier(1, 4), "uncommon"));
+});
+
+describe("isContested", () => {
+  test("unanimous adoption is not contested", () =>
+    assert.strictEqual(isContested(4, 4), false));
+  test("zero adoption is not contested", () =>
+    assert.strictEqual(isContested(0, 4), false));
+  test("a split is contested", () => {
+    assert.strictEqual(isContested(1, 4), true);
+    assert.strictEqual(isContested(3, 4), true);
+  });
+});
+
+describe("isDivergent", () => {
+  test("split adoption diverges", () =>
+    assert.strictEqual(isDivergent(2, 3, [0, 0, null]), true));
+  test("nobody takes it: agreement", () =>
+    assert.strictEqual(isDivergent(0, 3, [null, null, null]), false));
+  test("all take a ranked/passive node the same way: agreement", () =>
+    assert.strictEqual(isDivergent(3, 3, [null, null, null]), false));
+  test("all take a choice node with the same pick: agreement", () =>
+    assert.strictEqual(isDivergent(3, 3, [1, 1, 1]), false));
+  test("all take a choice node but picks diverge: change", () =>
+    assert.strictEqual(isDivergent(3, 3, [0, 1, 0]), true));
 });
 
 describe("computeStats", () => {
