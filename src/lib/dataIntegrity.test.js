@@ -56,6 +56,57 @@ test("every implemented class in the index has a data file", () => {
   }
 });
 
+// ── 1b. Gate-checkpoint consistency ───────────────────────────────────────────
+//
+// A section's visual gate dividers (spec.checkpoints) and its per-node gate
+// thresholds (node.spentRequired) are produced separately at ingest, so they can
+// silently drift — and a drift would make a node "look locked" at a row it doesn't
+// actually gate at, or hide a real gate. The two legitimately differ per node (a
+// node may sit visually in a gated row yet unlock earlier — e.g. Discipline
+// Priest's "Divine Procession" at row 7 needs only 8 points), so this asserts the
+// weaker structural agreement that must always hold:
+//   - checkpoint rows and points both strictly increase (a real gate ladder);
+//   - every checkpoint reflects a real node — some node at that exact posY carries
+//     that spentRequired (no phantom divider);
+//   - every distinct non-zero spentRequired in the section is shown as a checkpoint
+//     (no gate tier missing from the legend).
+for (const cls of implemented) {
+  test(`${cls.displayName} gate checkpoints agree with node thresholds`, () => {
+    const data = require(`../data/${cls.name}.json`);
+    for (const [slug, spec] of Object.entries(data.specs)) {
+      for (const section of ["class", "spec"]) {
+        const cps = spec.checkpoints?.[section] ?? [];
+        const nodes = spec.nodes.filter((n) => n.treeType === section);
+        const where = `${slug}/${section}`;
+
+        for (let i = 1; i < cps.length; i++) {
+          assert.ok(
+            cps[i].row > cps[i - 1].row && cps[i].points > cps[i - 1].points,
+            `${where}: checkpoints must ascend by row and points: ${JSON.stringify(cps)}`,
+          );
+        }
+
+        for (const c of cps) {
+          assert.ok(
+            nodes.some((n) => n.posY === c.row && n.spentRequired === c.points),
+            `${where}: checkpoint ${JSON.stringify(c)} has no node at posY ${c.row} requiring ${c.points} points`,
+          );
+        }
+
+        const cpPoints = new Set(cps.map((c) => c.points));
+        for (const req of new Set(
+          nodes.map((n) => n.spentRequired).filter((r) => r > 0),
+        )) {
+          assert.ok(
+            cpPoints.has(req),
+            `${where}: nodes require ${req} points but no checkpoint shows that gate`,
+          );
+        }
+      }
+    }
+  });
+}
+
 // ── 2. Wire-layout snapshot ───────────────────────────────────────────────────
 
 const current = {};
