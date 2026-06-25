@@ -50,11 +50,15 @@ function mockShareFetch(builds) {
 beforeEach(() => {
   useBuildsStore.getState().clearAllBuilds()
   window.location.hash = ''
+  window.localStorage.clear()
+  delete document.documentElement.dataset.theme
 })
 
 afterEach(() => {
   cleanup()
   window.location.hash = ''
+  window.localStorage.clear()
+  delete document.documentElement.dataset.theme
   vi.restoreAllMocks()
   delete global.fetch
 })
@@ -104,5 +108,18 @@ describe('share rehydration', () => {
     // The useRef guard prevents StrictMode's double effect invocation from
     // fetching (and adding the builds) twice.
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('theme toggle', () => {
+  test('switches between dark and light mode and persists the choice', () => {
+    render(<App />)
+
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    fireEvent.click(screen.getByRole('button', { name: /switch to light mode/i }))
+
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(window.localStorage.getItem('comparebuilds-theme')).toBe('light')
+    expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument()
   })
 })

@@ -9,6 +9,44 @@ import { buildGrantedSeed, computeInvalidNodeIds } from './lib/treeLogic'
 import { byId } from './components/treeLayout'
 import FitToWidth from './components/FitToWidth'
 
+const THEME_STORAGE_KEY = 'comparebuilds-theme'
+
+function getInitialTheme() {
+  if (typeof window === 'undefined') return 'dark'
+  return window.localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark'
+}
+
+function useTheme() {
+  const [theme, setTheme] = useState(getInitialTheme)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+    document.querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'light' ? '#f4ead2' : '#0d0d14')
+  }, [theme])
+
+  return {
+    theme,
+    toggleTheme: () => setTheme((current) => current === 'dark' ? 'light' : 'dark'),
+  }
+}
+
+function ThemeToggle({ theme, onToggle }) {
+  const isLight = theme === 'light'
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="wow-btn rounded px-3 py-1.5 text-xs"
+      aria-pressed={isLight}
+      aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+    >
+      {isLight ? 'Dark mode' : 'Light mode'}
+    </button>
+  )
+}
+
 // Wraps a tree/comparison panel so it scales to fit the viewport width, centered.
 // FitToWidth is the full-width measurer; the inner card hugs its content (w-max).
 function TreeCard({ children }) {
@@ -164,19 +202,23 @@ function useShareRehydration() {
 
 export default function App() {
   const { shareError, dismissShareError } = useShareRehydration()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <>
     <div className="min-h-screen text-wow-text flex flex-col relative">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="wow-chrome py-5 px-4 border-b border-wow-dim text-center select-none">
+      <header className="wow-chrome py-5 px-4 border-b border-wow-dim text-center select-none relative">
         <h1
           className="text-[2.75rem] text-wow-gold tracking-widest leading-none"
           style={{ fontFamily: "'FrizQuadrata', 'Palatino Linotype', serif" }}
         >
           Compare Builds
         </h1>
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        </div>
       </header>
 
       {/* ── Main ───────────────────────────────────────────────────────────── */}
