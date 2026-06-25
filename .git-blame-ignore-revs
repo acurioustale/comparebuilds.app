@@ -7,3 +7,6 @@
 
 # chore: adopt prettier and format the codebase
 1d3a6182cf62b529452bddfb765ff9cae259fb05
+
+# chore: apply php-cs-fixer and stylelint autofixes
+8acf95130e149842aa9c795147faf67f4f62ea77
