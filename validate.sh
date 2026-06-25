@@ -90,6 +90,9 @@ npm run lint:css
 step "Markdown (markdownlint)"
 npm run lint:md
 
+step "SVG (svgo)"
+npm run lint:svg
+
 step "Tests + coverage thresholds"
 npm run coverage
 

@@ -52,6 +52,9 @@ jobs:
       - name: Lint Markdown
         run: npm run lint:md
 
+      - name: Check SVG (svgo)
+        run: npm run lint:svg
+
       - name: Run tests with coverage thresholds
         run: npm run coverage
 
