@@ -181,12 +181,13 @@ function MainView() {
 // ─── Share rehydration ────────────────────────────────────────────────────────
 
 function useShareRehydration() {
-  const { addBuild, clearAllBuilds, rehydrateTreeData, setBuildNames } = useBuildsStore(
+  const { addBuild, clearAllBuilds, rehydrateTreeData, setBuildNames, preloadSpec } = useBuildsStore(
     useShallow((s) => ({
       addBuild: s.addBuild,
       clearAllBuilds: s.clearAllBuilds,
       rehydrateTreeData: s.rehydrateTreeData,
       setBuildNames: s.setBuildNames,
+      preloadSpec: s.preloadSpec,
     })),
   )
   const [shareError, setShareError] = useState(null)
@@ -205,6 +206,15 @@ function useShareRehydration() {
     // here we rebuild the derived tree/parsed state from the restored builds.
     if (route.kind === 'local') {
       rehydrateTreeData()
+      return
+    }
+
+    // A prerendered spec landing page (/<class>/<spec>). For a first-time visitor
+    // (nothing persisted) open that spec's calculator; a returning user's saved
+    // work takes precedence so a marketing/search link never discards it.
+    if (route.kind === 'spec-page') {
+      if (useBuildsStore.getState().specId == null) preloadSpec(route.specId)
+      else rehydrateTreeData()
       return
     }
 

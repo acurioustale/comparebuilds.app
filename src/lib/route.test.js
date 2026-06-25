@@ -1,6 +1,6 @@
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
-import { resolveRoute } from './route.js'
+import { resolveRoute, specIdForPath } from './route.js'
 
 describe('resolveRoute', () => {
   test('a 6-char alphanumeric hash is a server short-link', () => {
@@ -24,5 +24,35 @@ describe('resolveRoute', () => {
     // A 5- or 7-char hash is not a valid share id.
     assert.deepStrictEqual(resolveRoute({ hash: '#abcde' }), { kind: 'local' })
     assert.deepStrictEqual(resolveRoute({ hash: '#abcdefg' }), { kind: 'local' })
+  })
+
+  test('a /<class>/<spec> path resolves to that spec', () => {
+    // death_knight/blood → specId 250 (with or without a trailing slash).
+    assert.deepStrictEqual(resolveRoute({ hash: '', pathname: '/death-knight/blood' }), { kind: 'spec-page', specId: 250 })
+    assert.deepStrictEqual(resolveRoute({ hash: '', pathname: '/death-knight/blood/' }), { kind: 'spec-page', specId: 250 })
+  })
+
+  test('a share hash beats a spec path', () => {
+    assert.deepStrictEqual(
+      resolveRoute({ hash: '#aB3xZ9', pathname: '/death-knight/blood' }),
+      { kind: 'server-share', id: 'aB3xZ9' },
+    )
+  })
+
+  test('an unknown path is local', () => {
+    assert.deepStrictEqual(resolveRoute({ hash: '', pathname: '/not/a-spec' }), { kind: 'local' })
+    assert.deepStrictEqual(resolveRoute({ hash: '', pathname: '/' }), { kind: 'local' })
+  })
+})
+
+describe('specIdForPath', () => {
+  test('maps known class/spec segments to a spec id', () => {
+    assert.strictEqual(specIdForPath('/death-knight/blood/'), 250)
+    assert.strictEqual(specIdForPath('death-knight/blood'), 250)
+  })
+  test('returns null for unknown or malformed paths', () => {
+    assert.strictEqual(specIdForPath('/death-knight'), null)
+    assert.strictEqual(specIdForPath('/nope/nope'), null)
+    assert.strictEqual(specIdForPath(''), null)
   })
 })

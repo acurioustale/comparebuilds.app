@@ -325,8 +325,15 @@ export default function BuildManager() {
   // Local class selection used before any builds are loaded
   const [localClassId, setLocalClassId] = useState(null)
 
-  // Store classId takes precedence once builds exist
-  const activeClassId = classId ?? localClassId
+  // Class that owns the loaded spec — lets a spec-page landing (which sets specId
+  // but not classId) highlight the right class without locking the grid.
+  const specClassId = specId != null
+    ? classesIndex.find((c) => c.specs.some((s) => s.id === specId))?.id ?? null
+    : null
+
+  // Store classId takes precedence once builds exist; then an explicit local pick;
+  // then the loaded spec's class.
+  const activeClassId = classId ?? localClassId ?? specClassId
   const activeClass   = classesIndex.find((c) => c.id === activeClassId)
   const classLocked   = classId !== null
 

@@ -10,7 +10,13 @@ WoW talent build comparison tool — deployed at comparebuilds.app.
 npm run build
 ```
 
-This produces a `dist/` folder containing the static site.
+This produces a `dist/` folder containing the static site. It also prerenders a
+crawlable landing page per class+spec (`dist/<class>/<spec>/index.html`, e.g.
+`/death-knight/blood/`) with its own title/description/Open Graph tags and a
+static summary, plus `sitemap.xml` and `robots.txt`. These are plain files inside
+`dist/`, so they ship with the normal upload — no extra step. The live app still
+uses hash routing; the spec pages exist so search engines and link unfurls have
+real content, and opening one boots the calculator on that spec.
 
 ### 2. Upload files to the server
 
