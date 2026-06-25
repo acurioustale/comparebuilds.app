@@ -21,9 +21,9 @@ import TalentSearch from "./components/TalentSearch";
 import {
   THEME_STORAGE_KEY,
   THEME_COLORS,
-  normalizeStoredTheme,
+  resolveMode,
   resolveTheme,
-  nextTheme,
+  nextMode,
 } from "./lib/theme";
 
 // Stable empty match set so the search memo keeps a constant reference when idle.
@@ -39,8 +39,8 @@ function prefersLight() {
 }
 
 // localStorage can be absent (SSR/tests) or throw on access (Safari private
-// mode), so every touch is guarded — a failure just means "no stored override".
-function readStoredTheme() {
+// mode), so every touch is guarded — a failure just means "no stored mode".
+function readStoredMode() {
   try {
     return window.localStorage.getItem(THEME_STORAGE_KEY);
   } catch {
@@ -48,69 +48,82 @@ function readStoredTheme() {
   }
 }
 
-function writeStoredTheme(theme) {
+// "auto" is the absence of an override, so it clears the key rather than storing
+// a value (matching acurioustale.de and the inline script, which only honours an
+// explicit light/dark).
+function writeStoredMode(mode) {
   try {
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    if (mode === "auto") window.localStorage.removeItem(THEME_STORAGE_KEY);
+    else window.localStorage.setItem(THEME_STORAGE_KEY, mode);
   } catch {
     /* ignore */
   }
 }
 
-// Reflect the active theme on the document. The inline script in index.html has
-// already done this for first paint; this keeps it in sync on toggle/OS change.
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
+// Reflect the chosen mode on the document. Only an explicit light/dark override
+// sets data-theme (which flips color-scheme in CSS); "auto" removes it so the
+// `color-scheme: light dark` + light-dark() palette follows the OS on its own.
+// The <meta name="theme-color"> chrome colour still needs the *resolved* theme,
+// since light-dark() doesn't reach the meta tag.
+function applyTheme(mode, resolvedTheme) {
+  const root = document.documentElement;
+  if (mode === "auto") delete root.dataset.theme;
+  else root.dataset.theme = mode;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", THEME_COLORS[theme]);
+    ?.setAttribute("content", THEME_COLORS[resolvedTheme]);
 }
 
 function useTheme() {
-  const [theme, setTheme] = useState(() =>
-    resolveTheme(readStoredTheme(), prefersLight()),
-  );
+  const [mode, setMode] = useState(() => resolveMode(readStoredMode()));
+  const [systemLight, setSystemLight] = useState(prefersLight);
+
+  // The resolved theme: "auto" follows the OS, explicit modes win. Used for the
+  // meta theme-color (CSS handles the palette itself via color-scheme).
+  const theme = resolveTheme(mode, systemLight);
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    applyTheme(mode, theme);
+  }, [mode, theme]);
 
-  // Follow the OS while the user hasn't set an explicit override (the toggle
-  // persists one, making the choice sticky across reloads and OS changes).
+  // Track the OS preference live so "auto" re-resolves on an OS change and the
+  // cycle order (derived from the OS) stays correct between clicks.
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e) => {
-      if (!normalizeStoredTheme(readStoredTheme()))
-        setTheme(e.matches ? "light" : "dark");
-    };
+    const onChange = (e) => setSystemLight(e.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const toggleTheme = () =>
-    setTheme((current) => {
-      const next = nextTheme(current);
-      writeStoredTheme(next);
+  const cycleTheme = () =>
+    setMode((current) => {
+      const next = nextMode(current, systemLight);
+      writeStoredMode(next);
       return next;
     });
 
-  return { theme, toggleTheme };
+  return { mode, theme, next: nextMode(mode, systemLight), cycleTheme };
 }
 
-// Deliberately understated: a borderless glyph that blends into the header
-// chrome, dimmed by default and warming to gold on hover/focus. Dark is the
-// default look, so the toggle stays out of the way until you go looking for it.
-function ThemeToggle({ theme, onToggle }) {
-  const isLight = theme === "light";
+// A three-way cycle: auto (follow OS) → light → dark, with the glyph showing the
+// CURRENT mode and the label announcing where the next click lands. Deliberately
+// understated: a borderless glyph that blends into the header chrome, dimmed by
+// default and warming to gold on hover/focus, so it stays out of the way until
+// you go looking for it. Glyphs and label match the toggle on acurioustale.de so
+// the two sites read identically.
+const MODE_GLYPH = { auto: "◐", light: "☼", dark: "☾" };
+
+function ThemeToggle({ mode, next, onCycle }) {
+  const label = `Theme: ${mode} — switch to ${next}`;
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={onCycle}
       className="bg-transparent border-0 p-1 rounded text-lg leading-none cursor-pointer text-wow-muted/50 hover:text-wow-gold focus-visible:text-wow-gold transition-colors"
-      aria-pressed={isLight}
-      aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
-      title={`Switch to ${isLight ? "dark" : "light"} mode`}
+      aria-label={label}
+      title={label}
     >
-      {isLight ? "☾" : "☀"}
+      {MODE_GLYPH[mode]}
     </button>
   );
 }
@@ -417,7 +430,7 @@ function useShareRehydration() {
 
 export default function App() {
   const { shareError, dismissShareError } = useShareRehydration();
-  const { theme, toggleTheme } = useTheme();
+  const { mode, next, cycleTheme } = useTheme();
 
   return (
     <div className="min-h-screen text-wow-text flex flex-col relative">
@@ -431,7 +444,7 @@ export default function App() {
         }}
       >
         <div className="absolute right-4 top-4">
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <ThemeToggle mode={mode} next={next} onCycle={cycleTheme} />
         </div>
         <div className="flex items-center justify-center gap-3">
           <img

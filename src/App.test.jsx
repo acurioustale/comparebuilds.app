@@ -159,20 +159,45 @@ describe("theme toggle", () => {
     delete window.localStorage;
   });
 
-  test("defaults to dark, switches to light, and persists the choice", () => {
+  // The matchMedia stub reports prefers-color-scheme: light → false, so the OS
+  // is dark here. The cycle order is therefore auto → light → dark → auto. "auto"
+  // sets no data-theme attribute — the CSS color-scheme/light-dark() palette
+  // follows the OS itself — so the attribute is present only for explicit modes.
+  test("defaults to auto (no data-theme attribute) and offers the light step first", () => {
     render(<App />);
 
-    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    // Nothing is persisted until the user actually cycles.
+    expect(window.localStorage.getItem("comparebuilds-theme")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /switch to light/i }),
+    ).toBeInTheDocument();
+  });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /switch to light mode/i }),
-    );
+  test("cycles auto → light → dark → auto, sets data-theme only for explicit modes, and persists each", () => {
+    render(<App />);
 
+    const toggle = () => screen.getByRole("button", { name: /switch to/i });
+
+    // auto → light: explicit override sets the attribute and persists.
+    fireEvent.click(toggle());
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(window.localStorage.getItem("comparebuilds-theme")).toBe("light");
-    // The button now offers the way back.
+
+    // light → dark.
+    fireEvent.click(toggle());
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(window.localStorage.getItem("comparebuilds-theme")).toBe("dark");
+
+    // dark → auto: the override is cleared — no attribute, no stored value, back
+    // to following the OS.
+    fireEvent.click(toggle());
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(window.localStorage.getItem("comparebuilds-theme")).toBeNull();
+
+    // Back at auto, the cycle offers the light step again.
     expect(
-      screen.getByRole("button", { name: /switch to dark mode/i }),
+      screen.getByRole("button", { name: /switch to light/i }),
     ).toBeInTheDocument();
   });
 
@@ -183,7 +208,18 @@ describe("theme toggle", () => {
 
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(
-      screen.getByRole("button", { name: /switch to dark mode/i }),
+      screen.getByRole("button", { name: /switch to dark/i }),
+    ).toBeInTheDocument();
+  });
+
+  test("treats a legacy stored 'auto' as no override (no attribute)", () => {
+    window.localStorage.setItem("comparebuilds-theme", "auto");
+
+    render(<App />);
+
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(
+      screen.getByRole("button", { name: /switch to light/i }),
     ).toBeInTheDocument();
   });
 });

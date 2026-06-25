@@ -4,29 +4,52 @@
  * inline anti-flash script in index.html), so this stays Node-testable under the
  * lib/ coverage gate.
  *
- * The model: dark is the default. A user's explicit toggle is a "sticky"
- * override persisted under THEME_STORAGE_KEY; with no override we follow the OS
- * `prefers-color-scheme`. Light/dark only — there is no separate "system" state.
+ * The model: a three-way mode — "auto" (follow the OS), "light", "dark" —
+ * persisted under THEME_STORAGE_KEY. "auto" is the default when nothing valid is
+ * stored. The *resolved* theme (what the DOM actually paints) is always light or
+ * dark; "auto" resolves through the OS `prefers-color-scheme`.
  */
 
+// Resolved colours the DOM can actually be in.
 export const THEMES = ["dark", "light"];
+
+// The toggle's three cycle states.
+export const MODES = ["auto", "light", "dark"];
 
 export const THEME_STORAGE_KEY = "comparebuilds-theme";
 
-// Drives the <meta name="theme-color"> chrome colour per theme.
+// Drives the <meta name="theme-color"> chrome colour per resolved theme.
 export const THEME_COLORS = { dark: "#0d0d14", light: "#f3e7cb" };
 
-// A persisted value is only honoured if it's one of the explicit themes the user
-// could have chosen; anything else (null, stale, tampered) means "no override".
-export function normalizeStoredTheme(value) {
-  return value === "light" || value === "dark" ? value : null;
+// A persisted value is honoured only if it's one of the three modes; anything
+// else (null, stale, tampered) means "no stored mode".
+export function normalizeStoredMode(value) {
+  return value === "light" || value === "dark" || value === "auto"
+    ? value
+    : null;
 }
 
-// The active theme: an explicit stored override wins, otherwise the OS preference.
-export function resolveTheme(stored, prefersLight) {
-  return normalizeStoredTheme(stored) ?? (prefersLight ? "light" : "dark");
+// The persisted mode, defaulting to "auto" when nothing valid is stored.
+export function resolveMode(stored) {
+  return normalizeStoredMode(stored) ?? "auto";
 }
 
-export function nextTheme(current) {
-  return current === "dark" ? "light" : "dark";
+// The active theme: explicit light/dark modes win; "auto" follows the OS.
+export function resolveTheme(mode, prefersLight) {
+  if (mode === "light" || mode === "dark") return mode;
+  return prefersLight ? "light" : "dark";
+}
+
+// "auto" renders identically to the OS preference, so exactly one step of the
+// three-way cycle is always colour-neutral. Deriving the order from the OS — so
+// the explicit theme that MATCHES the OS is visited LAST — parks that neutral
+// step on the wrap back to "auto" (where "return to automatic looks the same"
+// reads as intentional). Every other click then visibly flips light/dark, with
+// no dead first click. Recomputed from live `prefersLight` each call, so an OS
+// change between clicks is handled for free.
+export function nextMode(current, prefersLight) {
+  const order = prefersLight
+    ? ["auto", "dark", "light"]
+    : ["auto", "light", "dark"];
+  return order[(order.indexOf(current) + 1) % order.length];
 }

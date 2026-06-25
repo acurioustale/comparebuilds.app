@@ -11,25 +11,21 @@
     />
     <meta name="theme-color" content="#0d0d14" />
 
-    <!-- Resolve the theme before first paint to avoid a flash of the wrong one.
-         #root is empty until React mounts, so there is no no-JS path to support:
-         a stored override wins, otherwise follow the OS. Mirrors resolveTheme()
-         in src/lib/theme.js; kept inline and synchronous on purpose.
+    <!-- Apply an explicit theme override before first paint so a stored choice
+         never flashes. "auto" (no stored override) needs nothing here: the CSS
+         `color-scheme: light dark` + light-dark() palette follows the OS on its
+         own, with no JS. Mirrors src/index.css and the toggle on acurioustale.de.
          NOTE: this inline script is allowlisted in the CSP (public/.htaccess) by
-         its sha256 hash. If you edit it, recompute the hash there or production
+         its sha256 hash (base64 of the sha256 of the exact, prettier-formatted
+         script text). If you edit it, recompute the hash there or production
          will block it. -->
     <script>
       try {
-        var stored = localStorage.getItem("comparebuilds-theme");
-        var theme =
-          stored === "light" || stored === "dark"
-            ? stored
-            : matchMedia("(prefers-color-scheme: light)").matches
-              ? "light"
-              : "dark";
-        document.documentElement.dataset.theme = theme;
+        var t = localStorage.getItem("comparebuilds-theme");
+        if (t === "light" || t === "dark")
+          document.documentElement.dataset.theme = t;
       } catch (e) {
-        /* localStorage/matchMedia unavailable — CSS defaults to dark */
+        /* localStorage unavailable — CSS follows the OS preference */
       }
     </script>
 
