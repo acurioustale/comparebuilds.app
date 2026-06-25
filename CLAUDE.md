@@ -11,17 +11,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev          # Vite dev server (PHP API is NOT available locally — share links 404 locally)
 npm run build        # produce static site in dist/
-npm run lint         # ESLint (flat config); CI runs this before the tests
+npm run lint         # ESLint (flat config)
+npm run format       # Prettier write across the repo (format:check verifies; used by CI)
 npm test             # run all Vitest suites once
 npm run test:watch   # watch mode
 npm run coverage     # run with coverage; FAILS below the thresholds in vite.config.js
+./validate.sh        # run the FULL gate locally: shell, php, lint, format, css/md/svg, tests, build
 npx vitest run src/lib/buildString.test.js   # run a single test file
 npx vitest run -t "round-trip"               # run tests matching a name
 node scripts/ingestTalentData.js             # regenerate src/data/ from the upstream source
 UPDATE_SNAPSHOTS=1 npm test                  # deliberately rewrite wireLayout snapshots (see below)
 ```
 
-CI (`.github/workflows`) runs `npm run lint`, then `npm run coverage` (enforcing thresholds), then `npm run build` on every push/PR. Coverage is gated only over `src/lib/**` and `src/store/**` — keep logic there, keep components thin. The thresholds in `vite.config.js` are a ratchet: raise as coverage climbs, never lower.
+CI (`.github/workflows/ci.yml`) runs the full quality gate on every push/PR: ESLint, Prettier, stylelint (CSS), markdownlint, svgo (SVG), `php -l` + php-cs-fixer + PHPUnit (the share API), shfmt + shellcheck (shell scripts), actionlint (workflows), then `npm run coverage` (enforcing thresholds) and `npm run build`. `./validate.sh` mirrors this gate locally — the brew-installed CLIs (shellcheck, shfmt, php-cs-fixer, phpunit, actionlint) are skipped with a notice when absent, while CI pins them; the npm tools always run. Link checking (lychee) lives in a separate `links.yml` workflow, deliberately kept out of the deploy-gating CI so a dead link never blocks a release. Coverage is gated only over `src/lib/**` and `src/store/**` — keep logic there, keep components thin. The thresholds in `vite.config.js` are a ratchet: raise as coverage climbs, never lower.
 
 ## Architecture
 
@@ -55,8 +57,10 @@ Tests default to the `node` environment. Component suites that need a DOM opt in
 
 ## Deployment
 
-Pushes to `main` auto-deploy via GitHub Actions, but the deploy workflow is gated on a successful CI run — a red push never ships. The manual/local path is `npm run build` → upload the **contents** of `dist/` to the web root, and `api/share.php` into an `api/` subfolder there. `config.php` (MariaDB credentials + `SHARE_IP_SALT`) lives one level **above** the web root so it stays private if PHP processing fails. `share.php` runs `CREATE TABLE IF NOT EXISTS` itself and prunes rows older than 90 days. Full steps, server layout, and the share-link API contract/limits are in `README.md`. The API is hardened for public exposure (per-IP rate limit, body cap, strict validation, same-origin only, prepared statements) — preserve those properties when touching `share.php`.
+Pushes to `main` auto-deploy via GitHub Actions, but the deploy workflow is gated on a successful CI run — a red push never ships. The manual/local path is `npm run build` → upload the **contents** of `dist/` to the web root, and `api/share.php` into an `api/` subfolder there. `config.php` (MariaDB credentials + `SHARE_IP_SALT`) lives one level **above** the web root so it stays private if PHP processing fails. `share.php` runs `CREATE TABLE IF NOT EXISTS` itself and prunes rows older than 90 days. Full steps, server layout, and the share-link API contract/limits are in `README.md`. The API is hardened for public exposure (per-IP rate limit, body cap, strict validation, same-origin only, prepared statements) — preserve those properties when touching `share.php`. Its input validation lives in pure, PHPUnit-covered helpers (`validate_share_input` / `valid_share_id`, tests in `tests/`); the request dispatch is guarded behind `SHARE_API_NO_MAIN` so those helpers can be included and tested without a database. PHP is held to PSR-12 by php-cs-fixer.
 
 ## Conventions
 
 Commits follow Conventional Commits (`type(scope): imperative`, lowercase, ≤72-char header, no attribution trailers, hyphens not dashes). Scopes seen in history: `ui`, `api`, `security`, `interactive`, `deps`. Versioning is SemVer.
+
+Formatting and linting are tool-enforced (Prettier, shfmt, php-cs-fixer, stylelint, markdownlint, svgo, actionlint) — run `./validate.sh` before pushing to catch exactly what CI gates. Keep a large mechanical reformat in its own commit and list it in `.git-blame-ignore-revs` so `git blame` skips it.

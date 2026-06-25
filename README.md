@@ -180,6 +180,30 @@ npm run dev
 
 The PHP API is not available in the local dev server. Sharing links will 404 locally — test that feature on the deployed site.
 
+### Quality gate
+
+`./validate.sh` runs the full CI gate locally, in the same order CI does — lint,
+formatting, the per-language linters, the PHP and shell checks, tests, and the
+build:
+
+```bash
+./validate.sh          # everything CI enforces
+./validate.sh --clean  # reinstall deps with `npm ci` first (matches CI)
+npm run format         # auto-fix formatting (Prettier)
+```
+
+The npm-based tools (ESLint, Prettier, stylelint, markdownlint, svgo, Vitest)
+come with `npm install`. The standalone CLIs are optional locally — `validate.sh`
+skips any that are missing with a notice, and CI pins them — but to run the whole
+gate, install them too:
+
+```bash
+brew install shellcheck shfmt php-cs-fixer phpunit actionlint lychee
+```
+
+Link checking (lychee) runs in its own GitHub workflow, separate from the
+deploy-gating CI; run it locally with `npm run links`.
+
 ## Talent data
 
 The app reads only the normalised JSON in `src/data/` — it never talks to any
@@ -218,6 +242,11 @@ correctness — the most important to understand before editing `src/data/`:
 
 The rest cover the store, the diff/heatmap logic, the HTML sanitiser, and the
 React components.
+
+The PHP share API has its own PHPUnit suite in `tests/`, covering the
+public-input validation surface (id format, build-string limits, label/name
+caps, and the client-IP handling). Run it with `phpunit`, or let `./validate.sh`
+run everything — JavaScript, PHP, the linters, and the build — at once.
 
 ### Editing or repopulating the data
 
