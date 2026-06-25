@@ -15,7 +15,7 @@ site and runs `deploy.sh`. `deploy.sh` stages the built `dist/` together with th
 (`api/share.php`, `api/og.php`, `api/fonts/`) into one tree and mirrors it with a
 single `rsync -avz --delete` to the web root:
 
-```
+```text
 web4186@http2.core-networks.de:html/comparebuilds.app/
 ```
 
@@ -68,7 +68,7 @@ Upload the **contents** of `dist/` to the web root folder (the folder that compa
 
 Expected layout on the server:
 
-```
+```text
 /home/username/
 ├── config.php          ← credentials file, above the web root
 └── www/                ← web root (comparebuilds.app → this folder)

@@ -57,11 +57,31 @@ else
 	echo "note: php not installed - skipping PHP checks (CI enforces them)." >&2
 fi
 
+if command -v php-cs-fixer >/dev/null; then
+	step "PHP format (php-cs-fixer)"
+	php-cs-fixer fix --dry-run --config .php-cs-fixer.dist.php
+else
+	echo "note: php-cs-fixer not installed - skipping (CI enforces it)." >&2
+fi
+
+if command -v actionlint >/dev/null; then
+	step "Workflows (actionlint)"
+	actionlint
+else
+	echo "note: actionlint not installed - skipping (CI enforces it)." >&2
+fi
+
 step "Lint"
 npm run lint
 
 step "Format (Prettier)"
 npm run format:check
+
+step "CSS (stylelint)"
+npm run lint:css
+
+step "Markdown (markdownlint)"
+npm run lint:md
 
 step "Tests + coverage thresholds"
 npm run coverage

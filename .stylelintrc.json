@@ -1,0 +1,27 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "import-notation": "string",
+    "no-descending-specificity": null,
+    "property-no-vendor-prefix": null,
+    "value-no-vendor-prefix": null,
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "theme",
+          "tailwind",
+          "apply",
+          "variant",
+          "custom-variant",
+          "utility",
+          "source",
+          "reference",
+          "config",
+          "plugin",
+          "layer"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  // Line length is off: the docs intentionally don't hard-wrap prose, and
+  // Prettier formats markdown with proseWrap "preserve".
+  "config": {
+    "default": true,
+    "MD013": false,
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules", "dist", "coverage"],
+}
