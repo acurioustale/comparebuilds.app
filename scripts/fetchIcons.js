@@ -61,6 +61,14 @@ const SLUG_FIXES = {
     "achievement_guildperk_havegroup-willtravel",
   inv_10_specialreagentfoozles_tuskclaw_ice:
     "inv_10_specialreagentfoozles_tuskclaw-ice",
+  inv_belt_inv_leather_raidmonkmythic_s_01:
+    "inv_belt__inv_leather_raidmonkmythic_s_01",
+  inv_shoulder_inv_leather_raidmonkmythic_s_01:
+    "inv_shoulder__inv_leather_raidmonkmythic_s_01",
+  warlock_bloodstone: "warlock_-bloodstone",
+  achievement_firelands_raid_ragnaros: "achievement_firelands-raid_ragnaros",
+  inv12_apextalent_demonhunter_untetheredrage:
+    "inv12_apextalent_demonhunter-_untetheredrage",
 };
 
 // Walk an arbitrary JSON value, collecting every non-empty `icon` string.
