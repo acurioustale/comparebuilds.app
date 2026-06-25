@@ -201,9 +201,9 @@ npm run test:watch  # watch mode
 npm run coverage    # run with a coverage report (text + html in coverage/)
 ```
 
-The suite spans the logic layer and the components (Vitest, ~430 tests across a
-dozen-plus files in `src/`). The ones that specifically guard data correctness — the
-most important to understand before editing `src/data/`:
+The suite spans the logic layer and the components (Vitest, several hundred tests
+across a dozen-plus files in `src/`). The ones that specifically guard data
+correctness — the most important to understand before editing `src/data/`:
 
 - **`treeLogic.test.js`** — prerequisite/gate cascade logic.
 - **`buildString.test.js`** — per-class encode→decode round-trips, so a data
