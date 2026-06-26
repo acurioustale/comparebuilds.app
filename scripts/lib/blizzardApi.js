@@ -2,8 +2,8 @@
  * scripts/lib/blizzardApi.js
  * --------------------------
  * Thin client for Blizzard's World of Warcraft Game Data API — the authoritative
- * upstream that both Icy Veins and Wowhead copy from. Used only by the build-time
- * ingest (scripts/ingestBlizzard.js); never imported by the browser app.
+ * upstream for talent data. Used only by the build-time ingest
+ * (scripts/ingestBlizzard.js); never imported by the browser app.
  *
  * Auth is OAuth2 client-credentials: POST the client id/secret to the OAuth
  * endpoint for a bearer token (valid ~24h), then send it on every Game Data
@@ -29,6 +29,7 @@ import {
   mkdirSync,
   writeFileSync,
   readdirSync,
+  rmSync,
 } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
@@ -37,6 +38,14 @@ import { createHash } from "node:crypto";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const CACHE_DIR = join(__dirname, "..", ".cache", "blizzard");
+
+/** Remove every entry under `parent` except `keep` — drops stale per-build caches. */
+export function pruneSiblingDirs(parent, keep) {
+  if (!existsSync(parent)) return;
+  for (const name of readdirSync(parent))
+    if (name !== keep)
+      rmSync(join(parent, name), { recursive: true, force: true });
+}
 
 // ---------------------------------------------------------------------------
 // Credential loading
@@ -113,7 +122,11 @@ export class BlizzardApi {
     this.locale = locale;
     this.useCache = cache;
     this._token = null;
-    if (cache) mkdirSync(CACHE_DIR, { recursive: true });
+    this._build = null;
+    // Build-scoped once resolvedBuild() runs, so a game patch (new build) gets a
+    // fresh cache instead of serving stale responses under the same request URL.
+    this.cacheDir = CACHE_DIR;
+    if (cache) mkdirSync(this.cacheDir, { recursive: true });
   }
 
   async token() {
@@ -154,20 +167,25 @@ export class BlizzardApi {
     if (this.useCache && cacheFile && existsSync(cacheFile)) {
       return JSON.parse(readFileSync(cacheFile, "utf8"));
     }
-    const token = await this.token();
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
-    const json = await res.json();
+    const json = await this._fetchJson(url);
     if (this.useCache && cacheFile) {
       writeFileSync(cacheFile, JSON.stringify(json), "utf8");
     }
     return json;
   }
 
-  _url(path, params) {
+  /** Authenticated GET → JSON, no caching. */
+  async _fetchJson(url) {
+    const token = await this.token();
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
+    return res.json();
+  }
+
+  _url(path, params = {}) {
     const u = path.startsWith("http")
       ? new URL(path)
       : new URL(path, apiHost(this.region));
@@ -181,27 +199,40 @@ export class BlizzardApi {
 
   _cachePath(url) {
     if (!this.useCache) return null;
-    // Hash without the (volatile, version-pinned) namespace so cache keys are
-    // stable across the patch bumps Blizzard injects into returned hrefs.
+    // Key strips the (constant alias) namespace param; build-pinning comes from
+    // this.cacheDir (set once the build is resolved), not the key.
     const key = url.replace(/([?&])namespace=[^&]*/, "");
     const hash = createHash("sha256").update(key).digest("hex").slice(0, 24);
-    return join(CACHE_DIR, `${hash}.json`);
+    return join(this.cacheDir, `${hash}.json`);
   }
 
   /**
    * The exact client build the API is currently serving, in wago.tools form
    * (e.g. "12.0.7.67808"). Read from the version-pinned namespace Blizzard echoes
-   * back in any response href (`static-12.0.7_67808-us`). Used to pin the DB2
-   * pull to the same build the tree data came from.
+   * back in any response href (`static-12.0.7_67808-us`). Pins both the API cache
+   * dir and the DB2 pull to the same build the tree data came from. The index is
+   * fetched fresh (not cached) so a patch is detected even with a warm cache.
    */
   async resolvedBuild() {
     if (this._build) return this._build;
-    const idx = await this.get("/data/wow/talent-tree/index");
-    const href = idx?._links?.self?.href ?? "";
-    const m = href.match(new RegExp(`static-(.+?)-${this.region}\\b`));
-    this._build = m ? m[1].replace("_", ".") : null;
+    const idx = await this._fetchJson(this._url("/data/wow/talent-tree/index"));
+    this._build = buildFromNamespaceHref(idx?._links?.self?.href, this.region);
+    if (this.useCache && this._build) {
+      this.cacheDir = join(CACHE_DIR, this._build);
+      pruneSiblingDirs(CACHE_DIR, this._build);
+      mkdirSync(this.cacheDir, { recursive: true });
+    }
     return this._build;
   }
+}
+
+/**
+ * Extract the wago.tools build (e.g. "12.0.7.67808") from a version-pinned
+ * namespace href like ".../?namespace=static-12.0.7_67808-us". Pure.
+ */
+export function buildFromNamespaceHref(href, region) {
+  const m = (href ?? "").match(new RegExp(`static-(.+?)-${region}\\b`));
+  return m ? m[1].replace("_", ".") : null;
 }
 
 /** Convenience: a spell's icon NAME (basename, no extension) via the Media API. */

@@ -47,13 +47,13 @@
         "left": {
           "name": "Scalecommander",
           "icon": "Scalecommander",
-          "description": "",
+          "description": "Scalecommanders are natural born leaders, capable of inspiring those around them to become better. They are the chosen generals of the Dracthyr and use their empower spells to send battle commands and summon troops.",
           "rootNodeId": 94939
         },
         "right": {
           "name": "Chronowarden",
           "icon": "Chronowarden",
-          "description": "",
+          "description": "Chronowardens can manipulate time, giving them glimpses of the future to speed their attacks or recalling echoes to revisit past actions. Specialization in bronze magic can cause instabilities due to the many future possibilities they constantly see.",
           "rootNodeId": 94954
         }
       },
@@ -2422,13 +2422,13 @@
         "left": {
           "name": "Scalecommander",
           "icon": "Scalecommander",
-          "description": "",
+          "description": "Scalecommanders are natural born leaders, capable of inspiring those around them to become better. They are the chosen generals of the Dracthyr and use their empower spells to send battle commands and summon troops.",
           "rootNodeId": 94939
         },
         "right": {
           "name": "Flameshaper",
           "icon": "Flameshaper",
-          "description": "",
+          "description": "Flameshapers are closely attuned to Alexstrasza and specialize in protecting allies, rejuvenation, and renewal. They also have the unique ability to spread, intensify, and manipulate dragonflame.",
           "rootNodeId": 94950
         }
       },
@@ -4644,13 +4644,13 @@
         "left": {
           "name": "Flameshaper",
           "icon": "Flameshaper",
-          "description": "",
+          "description": "Flameshapers are closely attuned to Alexstrasza and specialize in protecting allies, rejuvenation, and renewal. They also have the unique ability to spread, intensify, and manipulate dragonflame.",
           "rootNodeId": 94950
         },
         "right": {
           "name": "Chronowarden",
           "icon": "Chronowarden",
-          "description": "",
+          "description": "Chronowardens can manipulate time, giving them glimpses of the future to speed their attacks or recalling echoes to revisit past actions. Specialization in bronze magic can cause instabilities due to the many future possibilities they constantly see.",
           "rootNodeId": 94954
         }
       },

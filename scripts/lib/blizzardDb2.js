@@ -34,6 +34,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { pruneSiblingDirs } from "./blizzardApi.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CACHE_ROOT = join(__dirname, "..", ".cache", "blizzard-db2");
@@ -52,7 +53,7 @@ const COND_TYPE_SPENT_GATE = "0";
 // Minimal RFC 4180 CSV parser (handles quoted fields, embedded commas/newlines)
 // ---------------------------------------------------------------------------
 
-function parseCsv(text) {
+export function parseCsv(text) {
   const rows = [];
   let row = [];
   let field = "";
@@ -101,7 +102,10 @@ export class BlizzardDb2 {
     this.build = build;
     this.useCache = cache;
     this.cacheDir = join(CACHE_ROOT, build);
-    if (cache) mkdirSync(this.cacheDir, { recursive: true });
+    if (cache) {
+      pruneSiblingDirs(CACHE_ROOT, build); // drop stale per-build caches
+      mkdirSync(this.cacheDir, { recursive: true });
+    }
     this._loaded = false;
   }
 
@@ -121,7 +125,7 @@ export class BlizzardDb2 {
   /** Fetch + index the trait tables. Idempotent. */
   async load() {
     if (this._loaded) return this;
-    const [nx, entry, def, cond, ncond, gxn, gxc] = await Promise.all([
+    const [nx, entry, def, cond, ncond, gxn, gxc, subtree] = await Promise.all([
       this._table("TraitNodeXTraitNodeEntry"),
       this._table("TraitNodeEntry"),
       this._table("TraitDefinition"),
@@ -129,11 +133,22 @@ export class BlizzardDb2 {
       this._table("TraitNodeXTraitCond"),
       this._table("TraitNodeGroupXTraitNode"),
       this._table("TraitNodeGroupXTraitCond"),
+      this._table("TraitSubTree"),
     ]);
+    this.index({ nx, entry, def, cond, ncond, gxn, gxc, subtree });
+    return this;
+  }
 
+  /**
+   * Build the lookup indexes from already-parsed table rows. Separated from load()
+   * so the join logic is unit-testable without the network. Each arg is an array
+   * of row objects (as parseCsv returns).
+   */
+  index({ nx, entry, def, cond, ncond, gxn, gxc, subtree }) {
     this._entryById = new Map(entry.map((r) => [r.ID, r]));
     this._defById = new Map(def.map((r) => [r.ID, r]));
     this._condById = new Map(cond.map((r) => [r.ID, r]));
+    this._subtreeById = new Map(subtree.map((r) => [r.ID, r]));
 
     this._entriesByNode = new Map();
     for (const r of nx) {
@@ -229,5 +244,13 @@ export class BlizzardDb2 {
       if (lvl != null) levels.push(lvl);
     }
     return levels;
+  }
+
+  /** A hero subtree's { name, description } by id (= the API hero-tree id), or null. */
+  subtree(subTreeId) {
+    const r = this._subtreeById.get(String(subTreeId));
+    return r
+      ? { name: r.Name_lang, description: r.Description_lang ?? "" }
+      : null;
   }
 }

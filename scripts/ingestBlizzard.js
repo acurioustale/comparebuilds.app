@@ -228,7 +228,7 @@ async function normaliseNode(
  * spentRequired) pairs keeps it consistent with the per-node gates by
  * construction (see dataIntegrity's gate-checkpoint test).
  */
-function checkpointsFromNodes(nodes) {
+export function checkpointsFromNodes(nodes) {
   const section = (treeType) => {
     const firstRow = new Map(); // points → min posY
     for (const n of nodes) {
@@ -293,24 +293,12 @@ async function buildApexNode(raw, chain, iconOf, spellDescOf, gateOf) {
  * @param {object} fns        { iconOf, descOf, spellDescOf }
  * @returns {object} the normalised spec
  */
-async function normaliseSpec(specInfo, tree, db2, fns) {
+export async function normaliseSpec(specInfo, tree, db2, fns) {
   const { iconOf, descOf, spellDescOf } = fns;
   // The per-spec endpoint returns ALL of the class's hero trees; keep only the
   // two that actually apply to this spec (its playable_specializations include it).
   const heroTrees = (tree.hero_talent_trees ?? []).filter((ht) =>
     (ht.playable_specializations ?? []).some((s) => s.id === specInfo.id),
-  );
-  // Deterministic left/right: by tree id. The API does not encode an order, and
-  // the gate's [left,right] pairing is part of the unexposed gate node — so this
-  // ordering is provisional (SOFT for the wire layout) until the gate is sourced.
-  const sortedHero = [...heroTrees].sort((a, b) => a.id - b.id);
-  const [left, right] = sortedHero;
-
-  // The API embeds the hero nodes inside spec_talent_nodes too; source them only
-  // from the hero trees (so they carry treeType "hero" + heroSubtree) and skip
-  // those ids in the spec pass to avoid duplicates.
-  const heroIds = new Set(
-    sortedHero.flatMap((ht) => (ht.hero_talent_nodes ?? []).map((n) => n.id)),
   );
 
   // Lift the placeholder (spell-less) nodes out so they don't become talents.
@@ -327,6 +315,18 @@ async function normaliseSpec(specInfo, tree, db2, fns) {
   }
   const placeholderIds = new Set(
     classAndSpec.filter(isEmptyNode).map((n) => n.id),
+  );
+
+  // Left/right by subtree id ascending — this matches the in-game panel order
+  // (verified against all 40 specs' original layout). The gate node's choice-entry
+  // order is NOT it (it's the reverse for most specs).
+  const [left, right] = [...heroTrees].sort((a, b) => a.id - b.id);
+
+  // The API embeds the hero nodes inside spec_talent_nodes too; source them only
+  // from the hero trees (so they carry treeType "hero" + heroSubtree) and skip
+  // those ids in the spec pass to avoid duplicates.
+  const heroIds = new Set(
+    heroTrees.flatMap((ht) => (ht.hero_talent_nodes ?? []).map((n) => n.id)),
   );
 
   // Per-node points gate, from DB2's authoritative group conditions (NOT inferred
@@ -353,7 +353,7 @@ async function normaliseSpec(specInfo, tree, db2, fns) {
 
   for (const n of tree.class_talent_nodes ?? []) await emit(n, "class", null);
   for (const n of tree.spec_talent_nodes ?? []) await emit(n, "spec", null);
-  for (const ht of sortedHero) {
+  for (const ht of [left, right].filter(Boolean)) {
     for (const n of ht.hero_talent_nodes ?? []) {
       if (seen.has(n.id)) continue;
       seen.add(n.id);
@@ -384,12 +384,16 @@ async function normaliseSpec(specInfo, tree, db2, fns) {
     : 0;
   const apex = nodes.find((n) => n.type === "apex");
 
+  // icon stays the subtree name (the renderer shows subtree headers as text, not
+  // an icon file); description comes from DB2's TraitSubTree.
   const subtreeMeta = (ht) =>
     ht
       ? {
           name: ht.name,
           icon: ht.name,
-          description: "",
+          description: sanitizeDescription(
+            db2.subtree(ht.id)?.description ?? "",
+          ),
           rootNodeId: heroRootId(ht.hero_talent_nodes ?? []),
         }
       : { name: "Unknown", icon: "Unknown", description: "", rootNodeId: null };
@@ -464,15 +468,16 @@ export async function buildBlizzardClasses({
   const log = quiet ? () => {} : (...a) => console.log(...a);
   const api = new BlizzardApi({ cache });
 
-  log("Resolving talent-tree index…");
-  const treeMap = await fetchSpecTreeMap(api);
-
-  // DB2 supplies the apex rank chains the web API flattens. It determines the
-  // apex maxRanks (a HARD, snapshot-relevant field), so it loads on every run —
-  // unlike icons/descriptions. Pin it to the exact build the API is serving.
+  // Resolve the build FIRST: it pins the API cache dir (so a patch doesn't serve
+  // stale responses) and the DB2 pull to the same build.
   const build = await api.resolvedBuild();
   log(`Loading client DB2 trait tables (build ${build})…`);
+  // DB2 supplies the apex rank chains the web API flattens (a HARD,
+  // snapshot-relevant field), so it loads on every run — unlike icons/descriptions.
   const db2 = await new BlizzardDb2({ build, cache }).load();
+
+  log("Resolving talent-tree index…");
+  const treeMap = await fetchSpecTreeMap(api);
 
   // Icons + descriptions are SOFT (no effect on schema or the snapshot), so
   // verify runs skip them for speed. Icons cost one Media call per spell;

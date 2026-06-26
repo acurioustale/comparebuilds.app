@@ -2,11 +2,10 @@
  * fetchIcons.js
  * -------------
  * Downloads every talent/spec/class icon referenced by src/data/ into
- * public/talent-icons/, so the app can serve icons first-party instead of hotlinking
- * wow.zamimg.com. Third-party icon requests are blocked by common content
- * blockers and browser tracking protection (the icons live on a Fandom/ZAM
- * domain), which left users staring at broken images; same-origin icons are
- * never blocked.
+ * public/talent-icons/, so the app can serve icons first-party instead of
+ * hotlinking a third-party CDN. Third-party icon requests are blocked by common
+ * content blockers and browser tracking protection, which left users staring at
+ * broken images; same-origin icons are never blocked.
  *
  * Like the talent-data ingest, this is a run-when-needed step whose output is
  * committed to the repo — it is NOT part of the build. Re-run it after a data
@@ -17,12 +16,16 @@
  * It is incremental: icons already present in public/talent-icons/ are skipped, so a
  * re-run only fetches what's new. Delete public/talent-icons/ to force a full refetch.
  *
- * Source/size mirror what the app requests: the "medium" (36x36) JPEGs at
- *   https://wow.zamimg.com/images/wow/icons/medium/<name>.jpg
+ * Icons are downloaded from Blizzard's own render CDN (first-party, and the exact
+ * file names the Game Data Media API reports, so the names always match src/data
+ * with no slug-translation map to maintain):
+ *   https://render.worldofwarcraft.com/us/icons/56/<name>.jpg
+ * We still self-host the result (this is a build-time download, not a runtime
+ * hotlink) because third-party hotlinks were blocked by content blockers.
  *
- * Icon names that 404 (e.g. hero-subtree placeholders that were never real
- * icon slugs) are reported at the end and simply have no local file — the app
- * already falls back to a blank pixel for those.
+ * Names with no real art (e.g. hero-subtree placeholders, which are rendered as
+ * text) return 403/404; they're reported at the end and simply have no local file
+ * — the app already falls back to a blank pixel for those.
  */
 
 import {
@@ -38,52 +41,8 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "src", "data");
 const OUT_DIR = join(__dirname, "..", "public", "talent-icons");
-const BASE_URL = "https://wow.zamimg.com/images/wow/icons/medium";
+const BASE_URL = "https://render.worldofwarcraft.com/us/icons/56";
 const CONCURRENCY = 16;
-
-// Some slugs in src/data don't match a real zamimg filename: the upstream data
-// flattened hyphens to underscores (e.g. ring_of_frost vs the real ring-of-frost),
-// so iconUrl(node.icon) 404s and the talent node renders blank. Map the requested
-// slug to the slug that actually serves the art; we still SAVE the file under the
-// requested name, so the app resolves it without touching the committed data
-// (which the ingest would overwrite). Corrected slugs were verified via the spell
-// IDs on Wowhead. Re-derive with: node scripts/fetchIcons.js.
-const SLUG_FIXES = {
-  spell_frost_ring_of_frost: "spell_frost_ring-of-frost",
-  spell_frost_ice_shards: "spell_frost_ice-shards",
-  spell_firefrost_orb: "spell_firefrost-orb",
-  spell_frostfire_orb: "spell_frostfire-orb",
-  spell_priest_power_word: "spell_priest_power-word",
-  spell_priest_void_flay: "spell_priest_void-flay",
-  spell_priest_void_blast: "spell_priest_void-blast",
-  ability_rogue_shuriken_storm: "ability_rogue_shuriken-storm",
-  achievement_guildperk_havegroup_willtravel:
-    "achievement_guildperk_havegroup-willtravel",
-  inv_10_specialreagentfoozles_tuskclaw_ice:
-    "inv_10_specialreagentfoozles_tuskclaw-ice",
-  inv_belt_inv_leather_raidmonkmythic_s_01:
-    "inv_belt__inv_leather_raidmonkmythic_s_01",
-  inv_shoulder_inv_leather_raidmonkmythic_s_01:
-    "inv_shoulder__inv_leather_raidmonkmythic_s_01",
-  warlock_bloodstone: "warlock_-bloodstone",
-  achievement_firelands_raid_ragnaros: "achievement_firelands-raid_ragnaros",
-  inv12_apextalent_demonhunter_untetheredrage:
-    "inv12_apextalent_demonhunter-_untetheredrage",
-  // Blizzard's Media API spells these icons as one word where Wowhead's CDN uses
-  // hyphens; map the Blizzard spelling to the same real Wowhead slug as above.
-  spell_frost_iceshards: "spell_frost_ice-shards",
-  spell_frost_ringoffrost: "spell_frost_ring-of-frost",
-  spell_firefrostorb: "spell_firefrost-orb",
-  spell_frostfireorb: "spell_frostfire-orb",
-  spell_priest_powerword: "spell_priest_power-word",
-  spell_priest_voidflay: "spell_priest_void-flay",
-  spell_priest_voidblast: "spell_priest_void-blast",
-  achievement_guildperk_havegroupwilltravel:
-    "achievement_guildperk_havegroup-willtravel",
-  achievement_firelandsraid_ragnaros: "achievement_firelands-raid_ragnaros",
-  inv_10_specialreagentfoozles_tuskclawice:
-    "inv_10_specialreagentfoozles_tuskclaw-ice",
-};
 
 // Walk an arbitrary JSON value, collecting every non-empty `icon` string.
 function collectIcons(value, sink) {
@@ -118,14 +77,14 @@ function gatherIconNames() {
 async function fetchOne(name) {
   const dest = join(OUT_DIR, `${name}.jpg`);
   if (existsSync(dest)) return "skipped";
-  const remote = SLUG_FIXES[name] ?? name;
   let lastErr;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await fetch(`${BASE_URL}/${remote}.jpg`, {
+      const res = await fetch(`${BASE_URL}/${name}.jpg`, {
         signal: AbortSignal.timeout(15000),
       });
-      if (res.status === 404) return "missing";
+      // 403/404 = no real art (e.g. subtree placeholder names); not an error.
+      if (res.status === 404 || res.status === 403) return "missing";
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buf = Buffer.from(await res.arrayBuffer());
       if (buf.length === 0) throw new Error("empty body");

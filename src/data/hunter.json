@@ -45,13 +45,13 @@
         "left": {
           "name": "Pack Leader",
           "icon": "Pack Leader",
-          "description": "",
+          "description": "Pack Leaders have formed a deep bond with their animal companions and nature itself, allowing the Hunter and their pack to hunt with a vicious coordination on the battlefield and summon aid from powerful beasts.",
           "rootNodeId": 94991
         },
         "right": {
           "name": "Dark Ranger",
           "icon": "Dark Ranger",
-          "description": "",
+          "description": "Embrace hatred and strike from the shadows, assaulting your enemies with necrotic, shadow-empowered abilities. Enemies who fall from your abilities further empower your dark energies.",
           "rootNodeId": 94987
         }
       },
@@ -2353,13 +2353,13 @@
         "left": {
           "name": "Sentinel",
           "icon": "Sentinel",
-          "description": "",
+          "description": "Sentinels draw their power from nature&#39;s forces, dealing bonus Arcane damage with their abilities and calling upon the power of the moon to rain destruction on their enemies.",
           "rootNodeId": 94976
         },
         "right": {
           "name": "Dark Ranger",
           "icon": "Dark Ranger",
-          "description": "",
+          "description": "Embrace hatred and strike from the shadows, assaulting your enemies with necrotic, shadow-empowered abilities. Enemies who fall from your abilities further empower your dark energies.",
           "rootNodeId": 94987
         }
       },
@@ -4670,13 +4670,13 @@
         "left": {
           "name": "Sentinel",
           "icon": "Sentinel",
-          "description": "",
+          "description": "Sentinels draw their power from nature&#39;s forces, dealing bonus Arcane damage with their abilities and calling upon the power of the moon to rain destruction on their enemies.",
           "rootNodeId": 94976
         },
         "right": {
           "name": "Pack Leader",
           "icon": "Pack Leader",
-          "description": "",
+          "description": "Pack Leaders have formed a deep bond with their animal companions and nature itself, allowing the Hunter and their pack to hunt with a vicious coordination on the battlefield and summon aid from powerful beasts.",
           "rootNodeId": 94991
         }
       },

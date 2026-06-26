@@ -265,53 +265,47 @@ change, run `npm test`:
   UPDATE_SNAPSHOTS=1 npm test
   ```
 
-Every importer runs the same validation on every class and refreshes the
-snapshot automatically; it aborts without updating the snapshot if any class
-fails validation.
+The ingest runs the same validation on every class and refreshes the snapshot
+automatically; it aborts without updating the snapshot if any class fails
+validation.
 
-### Sources: Blizzard (primary) + Icy Veins / Wowhead (fallbacks)
+### Source: Blizzard (Game Data API + client DB2)
 
-The data is sourced from Blizzard directly, with two scrapers kept ready as
-fallbacks so it isn't hostage to a single upstream being offline or slow for a
-new patch. All importers map their source to the same schema and hand off to the
-shared pipeline in `scripts/lib/ingestCore.js`. Because every source uses
-Blizzard's own trait-node IDs, build strings stay interchangeable across them,
-and the wire-layout snapshot is the proof: a source whose fingerprints match the
-committed snapshot is build-string-compatible.
+The data comes straight from Blizzard. `scripts/ingestBlizzard.js` reads
+Blizzard's official **Game Data API** for the tree structure, and the client's
+**DB2** tables (via [wago.tools](https://wago.tools),
+`scripts/lib/blizzardDb2.js`) for the things the web API doesn't expose cleanly:
+the spec **apex** capstone's true rank chain (it flattens that node to a single
+rank), the authoritative per-node points gate, and hero-subtree descriptions. It
+maps everything to the shared schema and hands off to the pipeline in
+`scripts/lib/ingestCore.js`.
 
-- **`scripts/ingestBlizzard.js` (primary).** Reads Blizzard's official Game Data
-  API for the tree structure, and the client's DB2 tables (via
-  [wago.tools](https://wago.tools), `scripts/lib/blizzardDb2.js`) for the two
-  things the web API doesn't expose cleanly: the spec **apex** capstone's true
-  rank chain (it flattens that node to a single rank) and the authoritative
-  per-node points gate. Needs a free Battle.net API client — copy `.env.example`
-  to `.env` and fill in `BLIZZARD_CLIENT_ID`/`BLIZZARD_CLIENT_SECRET` (build-time
-  only; never deployed). See [develop.battle.net](https://develop.battle.net/access/clients).
-- **`scripts/ingestIcyVeins.js` / `scripts/ingestWowhead.js` (fallbacks).**
-  Prepared alternate importers; `--promote` switches the live writer.
+Needs a free Battle.net API client — copy `.env.example` to `.env` and fill in
+`BLIZZARD_CLIENT_ID`/`BLIZZARD_CLIENT_SECRET` (build-time only; never deployed).
+See [develop.battle.net](https://develop.battle.net/access/clients).
 
 ```bash
-node scripts/ingestBlizzard.js                # verify Blizzard vs the snapshot + schema (writes nothing)
-node scripts/ingestBlizzard.js --promote      # make Blizzard the live source (writes src/data/)
-node scripts/compareSources.js --source=blizzard   # diff Blizzard (API+DB2) vs the committed data
-node scripts/compareSources.js                # diff Wowhead vs the committed data (default source)
+node scripts/ingestBlizzard.js                # verify vs the snapshot + schema (writes nothing)
+node scripts/ingestBlizzard.js --promote      # regenerate src/data/ from Blizzard
+node scripts/compareSources.js                # re-derive from Blizzard live and diff vs committed
 node scripts/fetchIcons.js                    # download any newly-referenced icons (commit the result)
 ```
 
-`compareSources.js` separates **hard** divergences — the build-string wire
-layout, ranks, choice arity, gates, and prerequisites, which must agree — from
-**soft** ones (positions, names, descriptions, and the occasional per-spec
-membership difference where sources disagree about display). It runs in the
-non-gating `sources.yml` workflow, kept out of the release gate because it
-fetches live upstreams. Descriptions reflect _current_ game data and so differ
-between sources; description text doesn't affect build strings or any gate.
-Because Blizzard's layout is the game's own grid, promoting it re-lays-out every
-tree (positions are soft) and may change icon filenames — re-run
-`scripts/fetchIcons.js` after a promote and commit the new icons.
+`compareSources.js` is the drift/freshness check: it re-derives the data from
+Blizzard and diffs it against the committed `src/data`, separating **hard**
+divergences — the build-string wire layout, ranks, choice arity, gates, and
+prerequisites, which must agree — from **soft** ones (positions, names,
+descriptions, per-spec membership). It runs in the non-gating `sources.yml`
+workflow (it needs the API secrets and fetches live), so a red run means the
+committed data has drifted from a new game patch — investigate, not a blocked
+release. Icons come first-party from Blizzard's render CDN; re-run
+`scripts/fetchIcons.js` after an ingest that adds new icons and commit them.
 
-To add yet another source, write a sibling importer that emits the same schema
-and reuses `ingestCore.js`; the validator, snapshot, and `compareSources.js` will
-tell you when the output is correct.
+The pipeline is source-agnostic: a new source can be added by writing a sibling
+importer that emits the same schema and reuses `ingestCore.js` — the validator,
+snapshot, and `compareSources.js` tell you when the output is correct. (Icy Veins
+and Wowhead were earlier sources, removed once Blizzard + DB2 fully replaced
+them.)
 
 ## License
 

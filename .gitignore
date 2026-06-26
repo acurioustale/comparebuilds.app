@@ -19,7 +19,7 @@ coverage/
 .php-cs-fixer.cache
 .phpunit.cache
 .phpunit.result.cache
-# ingestWowhead.js per-spell description cache (rebuilt on demand)
+# Ingest caches (Blizzard API responses + DB2 tables; rebuilt on demand)
 scripts/.cache/
 
 # ─── Logs ───────────────────────────────────────────────────────────────────────

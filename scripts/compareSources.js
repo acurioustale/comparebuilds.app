@@ -1,157 +1,134 @@
 /**
  * compareSources.js
  * -----------------
- * Cross-validates an alternate talent-data source against the committed dataset
- * (src/data/, whatever the current primary writes). This is the "prove the
- * sources agree" / "fallback-readiness" check: if the alternate can reproduce the
- * same talent trees, we can switch to it when the primary is behind or down.
+ * Re-derives the talent data from Blizzard live (Game Data API + client DB2) and
+ * diffs it against the committed src/data/. This is the drift / freshness check:
+ * it catches when the committed data has gone stale against a new game patch, or
+ * when a hand-edit slipped something past the schema. Needs API credentials (see
+ * .env.example).
  *
- * Two sources can be cross-checked (`--source=`):
- *   - wowhead (default) — the calculator feed, normalised in memory.
- *   - blizzard          — the official Game Data API + client DB2 (the deepest,
- *                         truest oracle, since it's the data the others copy from).
- *                         Needs API credentials (see .env.example).
+ * (Blizzard is the sole source now; the name is kept for the workflow + history.)
  *
- * It normalises the chosen source in memory and diffs it node-by-node against
- * src/data/, separating:
- *   - HARD divergences — build-string / correctness fields that MUST agree:
- *     the per-class wire-layout fingerprint, and for nodes present in both: their
- *     maxRanks, choice arity, gate threshold (spentRequired), and prerequisite
- *     connections (restricted to shared nodes); plus per spec the hero gate node
- *     id. Any of these failing exits non-zero.
- *   - SOFT divergences — fields that legitimately differ between sources without
- *     affecting build strings: per-spec membership (a node one source shows and
- *     the other treats as unused or shows under a different spec), positions,
- *     names, descriptions, budgets, checkpoints. Reported, never fail the run.
+ * It normalises Blizzard in memory and diffs it node-by-node against src/data/,
+ * separating:
+ *   - HARD divergences — build-string / correctness fields that MUST agree: the
+ *     per-class wire-layout fingerprint, and for nodes present in both: maxRanks,
+ *     choice arity, gate threshold (spentRequired), and prerequisite connections
+ *     (restricted to shared nodes); plus per spec the hero gate node id. Any of
+ *     these failing exits non-zero.
+ *   - SOFT divergences — fields that don't affect build strings: per-spec
+ *     membership, positions, names, descriptions, budgets, checkpoints. Reported,
+ *     never fail the run.
  *
  * Run:
- *   node scripts/compareSources.js                    # wowhead vs committed
- *   node scripts/compareSources.js --source=blizzard  # blizzard (API+DB2) vs committed
- *   node scripts/compareSources.js --class=warrior    # one class
- *   node scripts/compareSources.js --descriptions     # also diff description text (soft)
+ *   node scripts/compareSources.js                  # all classes
+ *   node scripts/compareSources.js --class=warrior  # one class
+ *   node scripts/compareSources.js --descriptions   # also diff description text (soft)
  *
- * Network-dependent (fetches the live source), so this is intentionally NOT part
- * of the validate gate — see .github/workflows/sources.yml.
+ * Network-dependent (fetches Blizzard live), so this is intentionally NOT part of
+ * the validate gate — see .github/workflows/sources.yml.
  */
 
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { wireLayout } from "../src/lib/wireLayout.js";
-import { loadClassIndex, buildWowheadClasses } from "./ingestWowhead.js";
-import { buildBlizzardClasses } from "./ingestBlizzard.js";
+import { loadClassIndex, buildBlizzardClasses } from "./ingestBlizzard.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "src", "data");
 
-// Each comparable source: its in-memory builder and a label for the report.
-const SOURCES = {
-  wowhead: { label: "Wowhead", build: buildWowheadClasses },
-  blizzard: { label: "Blizzard (API+DB2)", build: buildBlizzardClasses },
-};
-
 function parseArgs(argv) {
-  const args = { classSlug: null, descriptions: false, source: "wowhead" };
+  const args = { classSlug: null, descriptions: false };
   for (const a of argv) {
     if (a === "--descriptions") args.descriptions = true;
     else if (a.startsWith("--class="))
       args.classSlug = a.slice("--class=".length);
-    else if (a.startsWith("--source="))
-      args.source = a.slice("--source=".length);
     else throw new Error(`unknown argument: ${a}`);
   }
-  if (!SOURCES[args.source])
-    throw new Error(
-      `unknown source "${args.source}" (expected: ${Object.keys(SOURCES).join(", ")})`,
-    );
   return args;
 }
 
 // Compare as a set: order and duplicates are insignificant for connections.
-// (Icy Veins sometimes lists a prerequisite more than once.)
 const sortedIds = (arr) =>
   [...new Set((arr ?? []).map(Number))].sort((a, b) => a - b);
 
-/** Compare one class's Wowhead data against its committed (Icy Veins) data. */
-function diffClass(slug, wh, iv, opts) {
+/** Diff one class's freshly-ingested data against its committed data. */
+function diffClass(slug, fresh, committed, opts) {
   const hard = [];
   const soft = [];
 
   // Wire-layout fingerprint — the build-string compatibility gate.
-  const whWire = wireLayout(wh);
-  const ivWire = wireLayout(iv);
-  if (whWire.hash !== ivWire.hash) {
+  const freshWire = wireLayout(fresh);
+  const committedWire = wireLayout(committed);
+  if (freshWire.hash !== committedWire.hash) {
     hard.push(
-      `wire layout differs (count ${ivWire.count}→${whWire.count}, hash ${ivWire.hash}→${whWire.hash})`,
+      `wire layout differs (count ${committedWire.count}→${freshWire.count}, hash ${committedWire.hash}→${freshWire.hash})`,
     );
   }
 
-  for (const specSlug of Object.keys(iv.specs)) {
-    const ivSpec = iv.specs[specSlug];
-    const whSpec = wh.specs[specSlug];
+  for (const specSlug of Object.keys(committed.specs)) {
+    const cSpec = committed.specs[specSlug];
+    const fSpec = fresh.specs[specSlug];
     const at = (kind, msg) =>
       (kind === "hard" ? hard : soft).push(`${specSlug}: ${msg}`);
-    if (!whSpec) {
-      hard.push(`${specSlug}: missing from Wowhead`);
+    if (!fSpec) {
+      hard.push(`${specSlug}: missing from fresh ingest`);
       continue;
     }
 
-    if (whSpec.heroGateNodeId !== ivSpec.heroGateNodeId)
+    if (fSpec.heroGateNodeId !== cSpec.heroGateNodeId)
       at(
         "hard",
-        `heroGateNodeId ${ivSpec.heroGateNodeId}→${whSpec.heroGateNodeId}`,
+        `heroGateNodeId ${cSpec.heroGateNodeId}→${fSpec.heroGateNodeId}`,
       );
 
-    const ivNodes = new Map(ivSpec.nodes.map((n) => [n.id, n]));
-    const whNodes = new Map(whSpec.nodes.map((n) => [n.id, n]));
+    const cNodes = new Map(cSpec.nodes.map((n) => [n.id, n]));
+    const fNodes = new Map(fSpec.nodes.map((n) => [n.id, n]));
 
     // Per-spec MEMBERSHIP can differ without breaking build strings — the wire
     // layout (a class-wide set) is unchanged, the node just displays under a
-    // different spec, or one source treats it as an unused placeholder. The
-    // hash check above is the build-string gate; membership is informational.
-    const onlyIv = [...ivNodes.keys()].filter((id) => !whNodes.has(id));
-    const onlyWh = [...whNodes.keys()].filter((id) => !ivNodes.has(id));
-    if (onlyIv.length || onlyWh.length)
+    // different spec, or is treated as an unused placeholder. The hash check above
+    // is the build-string gate; membership is informational.
+    const onlyCommitted = [...cNodes.keys()].filter((id) => !fNodes.has(id));
+    const onlyFresh = [...fNodes.keys()].filter((id) => !cNodes.has(id));
+    if (onlyCommitted.length || onlyFresh.length)
       at(
         "soft",
-        `membership: ${onlyIv.length} IV-only, ${onlyWh.length} Wowhead-only`,
+        `membership: ${onlyCommitted.length} committed-only, ${onlyFresh.length} fresh-only`,
       );
 
     let pos = 0,
       name = 0,
       desc = 0;
-    for (const [id, ivn] of ivNodes) {
-      const whn = whNodes.get(id);
-      if (!whn) continue; // membership-only, reported above
-      if (ivn.maxRanks !== whn.maxRanks)
-        at("hard", `node ${id} maxRanks ${ivn.maxRanks}→${whn.maxRanks}`);
-      if ((ivn.choices?.length ?? 0) !== (whn.choices?.length ?? 0))
+    for (const [id, cn] of cNodes) {
+      const fn = fNodes.get(id);
+      if (!fn) continue; // membership-only, reported above
+      if (cn.maxRanks !== fn.maxRanks)
+        at("hard", `node ${id} maxRanks ${cn.maxRanks}→${fn.maxRanks}`);
+      if ((cn.choices?.length ?? 0) !== (fn.choices?.length ?? 0))
         at("hard", `node ${id} choice arity differs`);
-      if (ivn.spentRequired !== whn.spentRequired)
-        at("hard", `node ${id} gate ${ivn.spentRequired}→${whn.spentRequired}`);
+      if (cn.spentRequired !== fn.spentRequired)
+        at("hard", `node ${id} gate ${cn.spentRequired}→${fn.spentRequired}`);
       // Compare only edges to nodes present in BOTH specs, so a membership
       // difference doesn't masquerade as miswiring — a genuine prerequisite
       // change between shared nodes still trips here.
       const common = (conns) =>
-        sortedIds(conns).filter((c) => ivNodes.has(c) && whNodes.has(c));
-      if (common(ivn.connections).join() !== common(whn.connections).join())
+        sortedIds(conns).filter((c) => cNodes.has(c) && fNodes.has(c));
+      if (common(cn.connections).join() !== common(fn.connections).join())
         at("hard", `node ${id} connections differ`);
-      if (ivn.posX !== whn.posX || ivn.posY !== whn.posY) pos++;
-      if (ivn.name !== whn.name) name++;
-      if (opts.descriptions && ivn.description !== whn.description) desc++;
+      if (cn.posX !== fn.posX || cn.posY !== fn.posY) pos++;
+      if (cn.name !== fn.name) name++;
+      if (opts.descriptions && cn.description !== fn.description) desc++;
     }
     if (pos) at("soft", `${pos} node position(s) differ`);
     if (name) at("soft", `${name} node name(s) differ`);
     if (desc) at("soft", `${desc} node description(s) differ`);
 
     // Checkpoints (visual gate ladder) — soft.
-    if (
-      JSON.stringify(ivSpec.checkpoints) !== JSON.stringify(whSpec.checkpoints)
-    )
+    if (JSON.stringify(cSpec.checkpoints) !== JSON.stringify(fSpec.checkpoints))
       at("soft", "checkpoints differ");
-    if (
-      JSON.stringify(ivSpec.pointBudget) !== JSON.stringify(whSpec.pointBudget)
-    )
+    if (JSON.stringify(cSpec.pointBudget) !== JSON.stringify(fSpec.pointBudget))
       at("soft", "pointBudget differs");
   }
 
@@ -160,32 +137,31 @@ function diffClass(slug, wh, iv, opts) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const src = SOURCES[args.source];
   const classIndex = loadClassIndex();
   let implemented = classIndex.filter((c) => c.implemented);
   if (args.classSlug)
     implemented = implemented.filter((c) => c.name === args.classSlug);
 
-  const altClasses = await src.build({
+  const fresh = await buildBlizzardClasses({
     implemented,
     descriptions: args.descriptions,
     icons: false, // compare never diffs icons; skip the per-spell media fetch
   });
 
-  console.log(`\n── ${src.label} vs committed ──`);
+  console.log("\n── Fresh Blizzard ingest vs committed ──");
   let hardTotal = 0;
   let softTotal = 0;
   for (const cls of implemented) {
-    const wh = altClasses[cls.name];
-    if (!wh) {
-      console.log(`  ✗ ${cls.name}: not produced by ${src.label}`);
+    const f = fresh[cls.name];
+    if (!f) {
+      console.log(`  ✗ ${cls.name}: not produced by the ingest`);
       hardTotal++;
       continue;
     }
-    const iv = JSON.parse(
+    const committed = JSON.parse(
       readFileSync(join(DATA_DIR, `${cls.name}.json`), "utf8"),
     );
-    const { hard, soft } = diffClass(cls.name, wh, iv, args);
+    const { hard, soft } = diffClass(cls.name, f, committed, args);
     hardTotal += hard.length;
     softTotal += soft.length;
 
