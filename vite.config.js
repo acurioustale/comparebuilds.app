@@ -12,7 +12,7 @@ export default defineConfig({
     environment: "node",
     globals: true,
     setupFiles: ["./src/test/setup.js"],
-    include: ["src/**/*.test.{js,jsx}"],
+    include: ["src/**/*.test.{js,jsx}", "scripts/**/*.test.js"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
