@@ -1,0 +1,43 @@
+name: sources
+
+# Cross-source validation lives in its own workflow ON PURPOSE: the deploy
+# workflow's `validate` gate is what blocks a release, and this check fetches a
+# third party (Wowhead) live — a momentary outage or a Wowhead shape change must
+# never block deploy. It runs compareSources.js, which normalises Wowhead and
+# diffs it against the committed (Icy Veins) data: HARD divergences (build-string
+# wire layout, ranks, gates, prereqs) fail the job; SOFT differences (positions,
+# names, descriptions, per-spec membership) are reported only.
+#
+# The weekly schedule catches the two sources drifting apart after a patch; the
+# PR trigger catches a data change that breaks parity. A red run here is a signal
+# to investigate the source mapping, not a blocked release.
+on:
+  pull_request:
+    paths:
+      - "scripts/ingestWowhead.js"
+      - "scripts/compareSources.js"
+      - "scripts/lib/**"
+      - "src/data/**"
+      - "src/lib/wireLayout.snapshot.json"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Compare Wowhead against committed data
+        # Descriptions are intentionally not fetched here — they are a soft field
+        # (no build-string impact) and would add thousands of requests per run.
+        run: node scripts/compareSources.js

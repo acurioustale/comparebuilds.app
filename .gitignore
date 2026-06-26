@@ -19,6 +19,8 @@ coverage/
 .php-cs-fixer.cache
 .phpunit.cache
 .phpunit.result.cache
+# ingestWowhead.js per-spell description cache (rebuilt on demand)
+scripts/.cache/
 
 # ─── Logs ───────────────────────────────────────────────────────────────────────
 logs/
