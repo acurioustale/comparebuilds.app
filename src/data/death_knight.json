@@ -45,13 +45,13 @@
         "left": {
           "name": "San'layn",
           "icon": "San'layn",
-          "description": "",
+          "description": "San&#39;layn excel at using blood and shadow magic to weaken their enemies and empower their own capabilities.",
           "rootNodeId": 95051
         },
         "right": {
           "name": "Deathbringer",
           "icon": "Deathbringer",
-          "description": "",
+          "description": "Become the emissary of death. Aim for the soul of your enemies with attacks empowered by the Shadowlands, and remind them of the inevitable.",
           "rootNodeId": 95062
         }
       },
@@ -2259,13 +2259,13 @@
         "left": {
           "name": "Rider of the Apocalypse",
           "icon": "Rider of the Apocalypse",
-          "description": "",
+          "description": "Riders of the Apoclypse call forth the power of the legendary Four Horsemen. They can call upon the Horsemen for aid and tap into the powers of death, famine and disease.",
           "rootNodeId": 95066
         },
         "right": {
           "name": "Deathbringer",
           "icon": "Deathbringer",
-          "description": "",
+          "description": "Become the emissary of death. Aim for the soul of your enemies with attacks empowered by the Shadowlands, and remind them of the inevitable.",
           "rootNodeId": 95062
         }
       },
@@ -4413,13 +4413,13 @@
         "left": {
           "name": "San'layn",
           "icon": "San'layn",
-          "description": "",
+          "description": "San&#39;layn excel at using blood and shadow magic to weaken their enemies and empower their own capabilities.",
           "rootNodeId": 95051
         },
         "right": {
           "name": "Rider of the Apocalypse",
           "icon": "Rider of the Apocalypse",
-          "description": "",
+          "description": "Riders of the Apoclypse call forth the power of the legendary Four Horsemen. They can call upon the Horsemen for aid and tap into the powers of death, famine and disease.",
           "rootNodeId": 95066
         }
       },

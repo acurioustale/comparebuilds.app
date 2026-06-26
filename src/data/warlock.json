@@ -45,13 +45,13 @@
         "left": {
           "name": "Soul Harvester",
           "icon": "Soul Harvester",
-          "description": "",
+          "description": "Few grasp the power hidden within souls, but many know the hunger demons share for spirits of the fallen. Soul Harvesters enter pacts with demons from the Twisting Nether, serving as their host and feeding them the souls of their foes in exchange for incredible power.",
           "rootNodeId": 94851
         },
         "right": {
           "name": "Hellcaller",
           "icon": "Hellcaller",
-          "description": "",
+          "description": "Amongst the satyr sects throughout Azeroth, Hellcallers are the most feared. Hellcaller warlocks have learned to weave together the vilest of shadow magic and entropic fel fire at the cost of corrupting their own soul.",
           "rootNodeId": 94840
         }
       },
@@ -2212,13 +2212,13 @@
         "left": {
           "name": "Soul Harvester",
           "icon": "Soul Harvester",
-          "description": "",
+          "description": "Few grasp the power hidden within souls, but many know the hunger demons share for spirits of the fallen. Soul Harvesters enter pacts with demons from the Twisting Nether, serving as their host and feeding them the souls of their foes in exchange for incredible power.",
           "rootNodeId": 94851
         },
         "right": {
           "name": "Diabolist",
           "icon": "Diabolist",
-          "description": "",
+          "description": "The defeat of the Legion left many powerful demons unbound. Diabolists command greater demons once thought to be uncontrollable and wield abyssal powers from the Twisting Nether on the battlefield.",
           "rootNodeId": 94855
         }
       },
@@ -4416,13 +4416,13 @@
         "left": {
           "name": "Hellcaller",
           "icon": "Hellcaller",
-          "description": "",
+          "description": "Amongst the satyr sects throughout Azeroth, Hellcallers are the most feared. Hellcaller warlocks have learned to weave together the vilest of shadow magic and entropic fel fire at the cost of corrupting their own soul.",
           "rootNodeId": 94840
         },
         "right": {
           "name": "Diabolist",
           "icon": "Diabolist",
-          "description": "",
+          "description": "The defeat of the Legion left many powerful demons unbound. Diabolists command greater demons once thought to be uncontrollable and wield abyssal powers from the Twisting Nether on the battlefield.",
           "rootNodeId": 94855
         }
       },

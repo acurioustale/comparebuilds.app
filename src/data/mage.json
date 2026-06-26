@@ -45,13 +45,13 @@
         "left": {
           "name": "Sunfury",
           "icon": "Sunfury",
-          "description": "",
+          "description": "By embracing arcane flames, Sunfury mages enhance their most devastating incantations, even calling on the aid of a spellfire phoenix.",
           "rootNodeId": 94647
         },
         "right": {
           "name": "Spellslinger",
           "icon": "Spellslinger",
-          "description": "",
+          "description": "Mastering the inherently unstable nature of magic allows Spellslingers to splinter their magic, creating powerful and volatile new effects.",
           "rootNodeId": 94664
         }
       },
@@ -2262,13 +2262,13 @@
         "left": {
           "name": "Sunfury",
           "icon": "Sunfury",
-          "description": "",
+          "description": "By embracing arcane flames, Sunfury mages enhance their most devastating incantations, even calling on the aid of a spellfire phoenix.",
           "rootNodeId": 94647
         },
         "right": {
           "name": "Frostfire",
           "icon": "Frostfire",
-          "description": "",
+          "description": "Frostfire mages take the reins of seemingly incompatible elemental forces. By mastering the opposing forces, they enhance their elemental attacks and can even combine them for more power.",
           "rootNodeId": 94636
         }
       },
@@ -4505,13 +4505,13 @@
         "left": {
           "name": "Spellslinger",
           "icon": "Spellslinger",
-          "description": "",
+          "description": "Mastering the inherently unstable nature of magic allows Spellslingers to splinter their magic, creating powerful and volatile new effects.",
           "rootNodeId": 94664
         },
         "right": {
           "name": "Frostfire",
           "icon": "Frostfire",
-          "description": "",
+          "description": "Frostfire mages take the reins of seemingly incompatible elemental forces. By mastering the opposing forces, they enhance their elemental attacks and can even combine them for more power.",
           "rootNodeId": 94636
         }
       },

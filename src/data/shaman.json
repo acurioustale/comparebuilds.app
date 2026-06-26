@@ -45,13 +45,13 @@
         "left": {
           "name": "Stormbringer",
           "icon": "Stormbringer",
-          "description": "",
+          "description": "Stormbringers harness the power of the storm, enhancing their dominion over lightning and shaping it to their will. Summon a fierce Tempest to unleash chaos upon your foes awakening the storm, creating devastation in your path.",
           "rootNodeId": 94892
         },
         "right": {
           "name": "Farseer",
           "icon": "Farseer",
-          "description": "",
+          "description": "Harness your spiritual magic, improving your spell casting capabilities and empowering you to call upon the spirits of your ancestors to aid you and your allies in combat.",
           "rootNodeId": 94888
         }
       },
@@ -2492,13 +2492,13 @@
         "left": {
           "name": "Totemic",
           "icon": "Totemic",
-          "description": "",
+          "description": "Totemic shamans excel at unlocking the full power of their totems, strengthening their totems and gaining access to new ones. They also hone their imbuement skills to maintain their threat up close.",
           "rootNodeId": 94877
         },
         "right": {
           "name": "Stormbringer",
           "icon": "Stormbringer",
-          "description": "",
+          "description": "Stormbringers harness the power of the storm, enhancing their dominion over lightning and shaping it to their will. Summon a fierce Tempest to unleash chaos upon your foes awakening the storm, creating devastation in your path.",
           "rootNodeId": 94892
         }
       },
@@ -4782,13 +4782,13 @@
         "left": {
           "name": "Totemic",
           "icon": "Totemic",
-          "description": "",
+          "description": "Totemic shamans excel at unlocking the full power of their totems, strengthening their totems and gaining access to new ones. They also hone their imbuement skills to maintain their threat up close.",
           "rootNodeId": 94877
         },
         "right": {
           "name": "Farseer",
           "icon": "Farseer",
-          "description": "",
+          "description": "Harness your spiritual magic, improving your spell casting capabilities and empowering you to call upon the spirits of your ancestors to aid you and your allies in combat.",
           "rootNodeId": 94888
         }
       },
