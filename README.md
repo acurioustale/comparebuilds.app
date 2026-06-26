@@ -154,7 +154,7 @@ Two ways to share builds:
 
 - **Copy link** — POSTs the builds to `api/share.php`, which returns a 6-char id; the
   link is `…/#xxxxxx` (or `…/s/xxxxxx`). Persistent, short, backed by the DB.
-- **Copy instant link** — encodes the builds straight into the URL hash
+- **Copy permalink** — encodes the builds straight into the URL hash
   (`…/#b=<token>`, base64url of the build strings). No server call, no rate limit,
   works offline; the trade-off is a long URL. Opening either kind loads the builds
   on page load (a share in the URL takes precedence over locally saved state).
