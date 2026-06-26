@@ -69,6 +69,20 @@ const SLUG_FIXES = {
   achievement_firelands_raid_ragnaros: "achievement_firelands-raid_ragnaros",
   inv12_apextalent_demonhunter_untetheredrage:
     "inv12_apextalent_demonhunter-_untetheredrage",
+  // Blizzard's Media API spells these icons as one word where Wowhead's CDN uses
+  // hyphens; map the Blizzard spelling to the same real Wowhead slug as above.
+  spell_frost_iceshards: "spell_frost_ice-shards",
+  spell_frost_ringoffrost: "spell_frost_ring-of-frost",
+  spell_firefrostorb: "spell_firefrost-orb",
+  spell_frostfireorb: "spell_frostfire-orb",
+  spell_priest_powerword: "spell_priest_power-word",
+  spell_priest_voidflay: "spell_priest_void-flay",
+  spell_priest_voidblast: "spell_priest_void-blast",
+  achievement_guildperk_havegroupwilltravel:
+    "achievement_guildperk_havegroup-willtravel",
+  achievement_firelandsraid_ragnaros: "achievement_firelands-raid_ragnaros",
+  inv_10_specialreagentfoozles_tuskclawice:
+    "inv_10_specialreagentfoozles_tuskclaw-ice",
 };
 
 // Walk an arbitrary JSON value, collecting every non-empty `icon` string.
