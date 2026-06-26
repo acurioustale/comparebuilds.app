@@ -13,10 +13,7 @@ export function selectionLabel(node, sel) {
     const ch = node.choices[sel.entryChosen];
     return ch?.name ?? `option ${sel.entryChosen + 1}`;
   }
-  if (node.type === "apex") {
-    return `${node.name} (${sel.pointsInvested}/${node.maxRanks})`;
-  }
-  if (node.maxRanks > 1) {
+  if (node.type === "apex" || node.maxRanks > 1) {
     return `${node.name} (${sel.pointsInvested}/${node.maxRanks})`;
   }
   return node.name;

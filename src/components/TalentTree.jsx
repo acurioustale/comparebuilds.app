@@ -511,7 +511,7 @@ function TalentNode({
       content={tip}
       placement="top"
       delay={300}
-      touch={interactive ? ["hold", TAP_HOLD_MS] : true}
+      touch={interactive ? "hold" : "tap"}
     >
       <div
         onClick={

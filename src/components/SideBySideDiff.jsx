@@ -181,6 +181,41 @@ function BuildTag({ label, color }) {
   );
 }
 
+// One labelled section pairing both builds' panels (A on the left, B on the
+// right), with the flanking section divider and per-panel build tags. Hoisted to
+// module scope so it isn't a fresh component type each render (which would remount
+// every panel and reset their hover state); layout-derived values come in as props.
+function SectionPair({
+  label,
+  a,
+  b,
+  labelA,
+  labelB,
+  pairRowClass,
+  tagWrapClass,
+  tagsAlways = false,
+}) {
+  return (
+    <div>
+      <SectionDivider>{label}</SectionDivider>
+      <div className={pairRowClass}>
+        <div>
+          <div className={tagWrapClass(tagsAlways)}>
+            <BuildTag label={labelA} color="A" />
+          </div>
+          {a}
+        </div>
+        <div>
+          <div className={tagWrapClass(tagsAlways)}>
+            <BuildTag label={labelB} color="B" />
+          </div>
+          {b}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function SideBySideDiff({
@@ -279,30 +314,14 @@ export default function SideBySideDiff({
   const tagWrapClass = (tagsAlways) =>
     tagsAlways ? undefined : layout === "row" ? "hidden" : undefined;
 
-  const Row = ({ label, a, b, tagsAlways = false }) => (
-    <div>
-      <SectionDivider>{label}</SectionDivider>
-      <div className={pairRowClass}>
-        <div>
-          <div className={tagWrapClass(tagsAlways)}>
-            <BuildTag label={labelA} color="A" />
-          </div>
-          {a}
-        </div>
-        <div>
-          <div className={tagWrapClass(tagsAlways)}>
-            <BuildTag label={labelB} color="B" />
-          </div>
-          {b}
-        </div>
-      </div>
-    </div>
-  );
+  // Shared props that pin each section's pairing to the current layout + labels.
+  const pairProps = { labelA, labelB, pairRowClass, tagWrapClass };
 
   return (
     <div>
       <div className="flex flex-col gap-8 pb-2">
-        <Row
+        <SectionPair
+          {...pairProps}
           label="Class"
           tagsAlways
           a={panel(
@@ -318,7 +337,8 @@ export default function SideBySideDiff({
             treeData.checkpoints?.class ?? [],
           )}
         />
-        <Row
+        <SectionPair
+          {...pairProps}
           label="Spec"
           a={panel(
             specNodes,
@@ -333,7 +353,8 @@ export default function SideBySideDiff({
             treeData.checkpoints?.spec ?? [],
           )}
         />
-        <Row
+        <SectionPair
+          {...pairProps}
           label={`${leftName} ✦ ${rightName}`}
           a={heroBlock(buildA, activeA, invalidA)}
           b={heroBlock(buildB, activeB, invalidB)}
