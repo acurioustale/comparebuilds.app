@@ -92,6 +92,33 @@
       name="twitter:image:alt"
       content="Compare Builds — WoW talent build comparison tool"
     />
+
+    <!-- Structured data for search engines. A data block (not executed JS), so
+         it is exempt from the CSP script-src and needs no hash. The prerendered
+         spec pages inherit it unchanged. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Compare Builds",
+        "url": "https://comparebuilds.app/",
+        "description": "Import, build, and compare World of Warcraft talent loadouts side by side, then share them with a short link.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Any (modern web browser)",
+        "browserRequirements": "Requires JavaScript.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Markus Spitzner",
+          "url": "https://acurioustale.de/"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
