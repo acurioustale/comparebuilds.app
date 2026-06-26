@@ -111,6 +111,13 @@ function draw_text($img, ?string $font, float $size, int $x, int $yBaseline, $co
     imagedestroy($tmp);
 }
 
+// When this file is included for unit testing (with OG_API_NO_MAIN defined), stop
+// here: everything above is pure (font discovery, hex parsing) and testable;
+// everything below reads the request, opens a DB connection, and emits an image.
+if (defined('OG_API_NO_MAIN')) {
+    return;
+}
+
 // ── Validate id ────────────────────────────────────────────────────────────────
 $id = $_GET['id'] ?? '';
 if (!is_string($id) || !preg_match('/^[A-Za-z0-9]{6}$/', $id)) {

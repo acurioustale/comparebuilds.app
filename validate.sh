@@ -29,6 +29,31 @@ if [[ "$local_node_major" != "$ci_node_major" ]]; then
 	echo "warning: local Node is v$local_node_major, CI uses v$ci_node_major." >&2
 fi
 
+# Versions of the brew-installed CLIs pinned in .github/workflows/deploy.yml.
+# Mirrored here so a local tool that has drifted from CI is caught before push
+# instead of surfacing as a mystery formatting/lint failure in the pipeline.
+# Keep in sync with deploy.yml. (Prettier and the other npm tools aren't listed:
+# they're pinned by package-lock.json and `npm ci`, so local always matches CI.)
+SHFMT_VERSION="3.13.1"
+PHPCSFIXER_VERSION="3.95.10"
+ACTIONLINT_VERSION="1.7.12"
+
+# Assert a present tool reports the pinned version; the needle is matched
+# literally so the surrounding "v"/extra output in --version lines doesn't
+# matter. Only called inside the command -v guards below, so an absent tool
+# still skips gracefully rather than failing the version check.
+require_version() {
+	local name="$1" want="$2" got="$3"
+	case "$got" in
+	*"$want"*) ;;
+	*)
+		echo "  $name version mismatch: want $want, got: $got" >&2
+		echo "  install the pinned version (see deploy.yml) so local matches CI" >&2
+		exit 1
+		;;
+	esac
+}
+
 step() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 
 if [[ "$do_clean" -eq 1 ]]; then
@@ -42,6 +67,7 @@ fi
 # findings fail the run via set -e.
 if command -v shellcheck >/dev/null && command -v shfmt >/dev/null; then
 	step "Shell scripts (shellcheck + shfmt)"
+	require_version shfmt "$SHFMT_VERSION" "$(shfmt --version)"
 	shellcheck ./*.sh
 	shfmt -d ./*.sh
 else
@@ -59,6 +85,7 @@ fi
 
 if command -v php-cs-fixer >/dev/null; then
 	step "PHP format (php-cs-fixer)"
+	require_version php-cs-fixer "$PHPCSFIXER_VERSION" "$(php-cs-fixer --version)"
 	php-cs-fixer fix --dry-run --config .php-cs-fixer.dist.php
 else
 	echo "note: php-cs-fixer not installed - skipping (CI enforces it)." >&2
@@ -73,6 +100,7 @@ fi
 
 if command -v actionlint >/dev/null; then
 	step "Workflows (actionlint)"
+	require_version actionlint "$ACTIONLINT_VERSION" "$(actionlint --version | head -1)"
 	actionlint
 else
 	echo "note: actionlint not installed - skipping (CI enforces it)." >&2

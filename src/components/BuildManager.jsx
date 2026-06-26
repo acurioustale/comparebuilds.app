@@ -9,7 +9,7 @@ import {
 import { encodeBuildsHash } from "../lib/shareLink";
 import classesIndex from "../data/classes.json";
 import { iconUrl, onIconError } from "../lib/iconUrl";
-import { activeHeroSubtree } from "../lib/spendRules";
+import { activeHeroSubtree, sectionPoints } from "../lib/spendRules";
 
 function ClassIcon({ name, size = 36 }) {
   // WoW class icons use the slug classicon_{name} with underscores removed.
@@ -149,13 +149,11 @@ function SlotStatus({ parsed, loading }) {
 function pointSummary(parsed, treeData) {
   if (!parsed || !treeData) return null;
   const budget = treeData.pointBudget;
-  const pts = { class: 0, spec: 0, hero: 0 };
-  for (const n of treeData.nodes) {
-    if (n.alreadyGranted) continue;
-    const s = parsed.nodes[n.id];
-    if (s) pts[n.treeType] = (pts[n.treeType] ?? 0) + (s.pointsInvested ?? 0);
-  }
-  return `Class: ${pts.class}/${budget.class} · Spec: ${pts.spec}/${budget.spec} · Hero: ${pts.hero}/${budget.hero}`;
+  // Reuse the interactive calculator's per-section tally so the two can't drift.
+  const cls = sectionPoints("class", treeData.nodes, parsed.nodes);
+  const spec = sectionPoints("spec", treeData.nodes, parsed.nodes);
+  const hero = sectionPoints("hero", treeData.nodes, parsed.nodes);
+  return `Class: ${cls}/${budget.class} · Spec: ${spec}/${budget.spec} · Hero: ${hero}/${budget.hero}`;
 }
 
 function FilledSlot({

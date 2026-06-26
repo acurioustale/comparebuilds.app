@@ -15,7 +15,7 @@
 # ─── Security headers ──────────────────────────────────────────────────────────
 <IfModule mod_headers.c>
   # Content-Security-Policy: everything the app needs is same-origin — bundled
-  # JS/CSS/fonts, talent icons under /icons (self-hosted; see scripts/fetchIcons.js)
+  # JS/CSS/fonts, talent icons under /talent-icons (self-hosted; see scripts/fetchIcons.js)
   # and the share API (fetch). So img-src and connect-src are 'self' only, with no
   # third-party origins. Inline styles are allowed because React sets element
   # style attributes.
