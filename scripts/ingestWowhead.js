@@ -13,13 +13,14 @@
  * per-class fingerprints match the committed snapshot is build-string-compatible.
  *
  * Roles (see CLAUDE.md "Data is the contract"):
- *   - Icy Veins remains the PRIMARY, snapshot-owning source.
+ *   - Blizzard's Game Data API + DB2 is the PRIMARY, snapshot-owning source (see
+ *     ingestBlizzard.js); Wowhead is a prepared fallback.
  *   - Wowhead runs in VERIFY mode by default: it validates, fingerprints, and
  *     compares against the committed snapshot + current src/data/, printing a
  *     report, WITHOUT writing anything. This is the cross-validation / fallback-
  *     readiness check.
  *   - `--promote` makes Wowhead the writer (writes src/data/), the fallback
- *     switch for when Icy Veins is behind/down. `--update-snapshot` additionally
+ *     switch for when the primary is behind/down. `--update-snapshot` additionally
  *     regenerates the snapshot — only do that deliberately (it redefines the
  *     build-string oracle).
  *

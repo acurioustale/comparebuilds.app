@@ -4,9 +4,10 @@
  * Fetches talent tree data from Icy Veins' CDN and writes normalised JSON
  * to src/data/ (one file per class + classes.json index).
  *
- * This is the Icy Veins ingest, and the primary, snapshot-owning source. The
- * script is named for its source so a sibling importer for a different source
- * (e.g. ingestWowhead.js) can live alongside it — each fetches its own format,
+ * This is the Icy Veins ingest, one of the prepared fallback sources (Blizzard's
+ * Game Data API + DB2 is the primary, snapshot-owning source — see
+ * ingestBlizzard.js). The script is named for its source so a sibling importer
+ * for a different source can live alongside it — each fetches its own format,
  * maps it to the same schema (enforced by src/lib/validateClassData.js), and
  * hands the result to the shared pipeline in scripts/lib/ingestCore.js, so
  * src/data/ stays the contract. This file owns only the Icy-Veins-specific
@@ -272,9 +273,9 @@ async function main() {
     console.log("done");
   }
 
-  // Icy Veins is the primary, snapshot-owning source: validate, write src/data/,
-  // and regenerate the wire-layout snapshot. The shared core exits the ingest
-  // loudly on validation failure without updating the snapshot.
+  // Promote this fallback to the live source: validate, write src/data/, and
+  // regenerate the wire-layout snapshot. The shared core exits the ingest loudly
+  // on validation failure without updating the snapshot.
   const { validationFailures } = writeNormalizedData({
     classIndex,
     classes,
