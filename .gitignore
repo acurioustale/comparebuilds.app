@@ -33,6 +33,7 @@ pnpm-debug.log*
 # ─── Environment / secrets ─────────────────────────────────────────────────────
 .env
 .env.*
+!.env.example
 # The share API's DB credentials + SHARE_IP_SALT live one level above the web
 # root in production; a local copy must never be committed (the template
 # api/config.php.example is tracked).

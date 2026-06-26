@@ -1,13 +1,19 @@
 /**
  * compareSources.js
  * -----------------
- * Cross-validates the Wowhead source against the committed dataset (Icy Veins'
- * current output in src/data/). This is the "prove the two sources agree" and
- * "fallback-readiness" check: if Wowhead can reproduce the same talent trees,
- * we can switch to it when Icy Veins is behind or down.
+ * Cross-validates an alternate talent-data source against the committed dataset
+ * (src/data/, whatever the current primary writes). This is the "prove the
+ * sources agree" / "fallback-readiness" check: if the alternate can reproduce the
+ * same talent trees, we can switch to it when the primary is behind or down.
  *
- * It normalises Wowhead in memory (reusing ingestWowhead's mapper) and diffs it
- * node-by-node against src/data/, separating:
+ * Two sources can be cross-checked (`--source=`):
+ *   - wowhead (default) — the calculator feed, normalised in memory.
+ *   - blizzard          — the official Game Data API + client DB2 (the deepest,
+ *                         truest oracle, since it's the data the others copy from).
+ *                         Needs API credentials (see .env.example).
+ *
+ * It normalises the chosen source in memory and diffs it node-by-node against
+ * src/data/, separating:
  *   - HARD divergences — build-string / correctness fields that MUST agree:
  *     the per-class wire-layout fingerprint, and for nodes present in both: their
  *     maxRanks, choice arity, gate threshold (spentRequired), and prerequisite
@@ -19,12 +25,13 @@
  *     names, descriptions, budgets, checkpoints. Reported, never fail the run.
  *
  * Run:
- *   node scripts/compareSources.js                  # all classes, no descriptions
- *   node scripts/compareSources.js --class=warrior  # one class
- *   node scripts/compareSources.js --descriptions   # also diff description text (soft)
+ *   node scripts/compareSources.js                    # wowhead vs committed
+ *   node scripts/compareSources.js --source=blizzard  # blizzard (API+DB2) vs committed
+ *   node scripts/compareSources.js --class=warrior    # one class
+ *   node scripts/compareSources.js --descriptions     # also diff description text (soft)
  *
- * Network-dependent (fetches Wowhead live), so this is intentionally NOT part of
- * the validate gate — see .github/workflows/sources.yml.
+ * Network-dependent (fetches the live source), so this is intentionally NOT part
+ * of the validate gate — see .github/workflows/sources.yml.
  */
 
 import { readFileSync } from "fs";
@@ -32,18 +39,31 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { wireLayout } from "../src/lib/wireLayout.js";
 import { loadClassIndex, buildWowheadClasses } from "./ingestWowhead.js";
+import { buildBlizzardClasses } from "./ingestBlizzard.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "src", "data");
 
+// Each comparable source: its in-memory builder and a label for the report.
+const SOURCES = {
+  wowhead: { label: "Wowhead", build: buildWowheadClasses },
+  blizzard: { label: "Blizzard (API+DB2)", build: buildBlizzardClasses },
+};
+
 function parseArgs(argv) {
-  const args = { classSlug: null, descriptions: false };
+  const args = { classSlug: null, descriptions: false, source: "wowhead" };
   for (const a of argv) {
     if (a === "--descriptions") args.descriptions = true;
     else if (a.startsWith("--class="))
       args.classSlug = a.slice("--class=".length);
+    else if (a.startsWith("--source="))
+      args.source = a.slice("--source=".length);
     else throw new Error(`unknown argument: ${a}`);
   }
+  if (!SOURCES[args.source])
+    throw new Error(
+      `unknown source "${args.source}" (expected: ${Object.keys(SOURCES).join(", ")})`,
+    );
   return args;
 }
 
@@ -140,23 +160,25 @@ function diffClass(slug, wh, iv, opts) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const src = SOURCES[args.source];
   const classIndex = loadClassIndex();
   let implemented = classIndex.filter((c) => c.implemented);
   if (args.classSlug)
     implemented = implemented.filter((c) => c.name === args.classSlug);
 
-  const whClasses = await buildWowheadClasses({
+  const altClasses = await src.build({
     implemented,
     descriptions: args.descriptions,
+    icons: false, // compare never diffs icons; skip the per-spell media fetch
   });
 
-  console.log("\n── Wowhead vs committed (Icy Veins) ──");
+  console.log(`\n── ${src.label} vs committed ──`);
   let hardTotal = 0;
   let softTotal = 0;
   for (const cls of implemented) {
-    const wh = whClasses[cls.name];
+    const wh = altClasses[cls.name];
     if (!wh) {
-      console.log(`  ✗ ${cls.name}: not produced by Wowhead`);
+      console.log(`  ✗ ${cls.name}: not produced by ${src.label}`);
       hardTotal++;
       continue;
     }
