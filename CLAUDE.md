@@ -19,7 +19,9 @@ npm run coverage     # run with coverage; FAILS below the thresholds in vite.con
 ./validate.sh        # run the FULL gate locally: shell, php, lint, format, css/md/svg, tests, build
 npx vitest run src/lib/buildString.test.js   # run a single test file
 npx vitest run -t "round-trip"               # run tests matching a name
-node scripts/ingestIcyVeins.js               # regenerate src/data/ from the Icy Veins source
+node scripts/ingestIcyVeins.js               # regenerate src/data/ from the Icy Veins source (primary)
+node scripts/ingestWowhead.js                # verify the Wowhead source against the snapshot (writes nothing); --promote to switch live source; --no-descriptions to skip the tooltip fetch
+node scripts/compareSources.js               # diff Wowhead vs committed data (hard = build-string fields, soft = presentational)
 node scripts/fetchIcons.js                   # download referenced icons into public/talent-icons/ (incremental; commit the result)
 UPDATE_SNAPSHOTS=1 npm test                  # deliberately rewrite wireLayout snapshots (see below)
 ```
@@ -29,6 +31,8 @@ CI is the `validate` job in `.github/workflows/deploy.yml`, run on every push/PR
 ## Architecture
 
 **Data is the contract.** The app reads ONLY the normalised JSON in `src/data/*.json` (one file per class, plus `classes.json` as the index). It never talks to any external source at runtime. How that JSON is produced — the Icy Veins ingest script, a hand edit, or a different source — is an implementation detail behind the schema enforced by `src/lib/validateClassData.js`. When swapping or repopulating data, the only requirement is that the output matches that schema; the validator and round-trip tests will tell you when it's right.
+
+**Multiple sources, one contract.** There are two ingests: `scripts/ingestIcyVeins.js` (the **primary**, snapshot-owning source) and `scripts/ingestWowhead.js` (a prepared **fallback**, used if Icy Veins is behind or down). Both map their upstream to the schema and hand off to the shared, source-agnostic pipeline `scripts/lib/ingestCore.js` (validate → write `src/data/` → regenerate the snapshot). Cross-source agreement is provable because every source uses Blizzard's own trait-node IDs, so the wire-layout snapshot (see below) is the oracle: a source whose per-class fingerprints match the committed snapshot is build-string-compatible. `scripts/compareSources.js` checks this — it normalises Wowhead in memory and diffs it against the committed data, separating **hard** divergences (wire layout, ranks, choice arity, gates, prereqs — must agree) from **soft** ones (positions, names, descriptions, per-spec membership — sources legitimately differ; e.g. one shows a node another treats as an unused placeholder). It runs in the non-gating `sources.yml` workflow (network-dependent, kept out of the validate gate like `links.yml`). To switch the live source, run `node scripts/ingestWowhead.js --promote` (writes `src/data/`; add `--update-snapshot` only to deliberately redefine the build-string oracle). The Wowhead ingest is byte-faithful for everything that affects build strings and the gate. Descriptions are fetched per-spell from Wowhead's tooltip API (`scripts/lib/wowheadTooltips.js`, cached on disk) and sanitised; because one tooltip packs several spec-specific variants, the extractor selects the variant for the spec being ingested. These reflect _current_ game data, so they legitimately differ from Icy Veins' (often older) text — descriptions are soft, so that difference never affects sharing or correctness.
 
 **The three layers:**
 

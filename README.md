@@ -265,12 +265,40 @@ change, run `npm test`:
   UPDATE_SNAPSHOTS=1 npm test
   ```
 
-`scripts/ingestIcyVeins.js` (the current Icy Veins importer) runs the same
+`scripts/ingestIcyVeins.js` (the primary Icy Veins importer) runs the same
 validation on every class and refreshes the snapshot automatically; it aborts
-without updating the snapshot if any class fails validation. To target a
-different source, add a sibling importer (e.g. `ingestWowhead.js`) that emits the
-same schema — the validator and round-trip tests will tell you when the output
-is correct.
+without updating the snapshot if any class fails validation.
+
+### A second source: Wowhead (fallback)
+
+`scripts/ingestWowhead.js` is a prepared alternate importer, so the data isn't
+hostage to a single upstream being offline or slow to update for a new patch.
+Both importers map their source to the same schema and hand off to the shared
+pipeline in `scripts/lib/ingestCore.js`. Because every source uses Blizzard's own
+trait-node IDs, build strings stay interchangeable across them, and the
+wire-layout snapshot is the proof: a source whose fingerprints match the
+committed snapshot is build-string-compatible.
+
+```bash
+node scripts/ingestWowhead.js                 # verify against the snapshot + schema (writes nothing)
+node scripts/compareSources.js                # diff Wowhead vs the committed (Icy Veins) data
+node scripts/ingestWowhead.js --promote       # make Wowhead the live source (writes src/data/)
+```
+
+`compareSources.js` separates **hard** divergences — the build-string wire
+layout, ranks, choice arity, gates, and prerequisites, which must agree — from
+**soft** ones (positions, names, descriptions, and the occasional per-spec
+membership difference where the two sites disagree about display). It runs in the
+non-gating `sources.yml` workflow, kept out of the release gate because it
+fetches a third party live. Descriptions are fetched per-spell from Wowhead's
+tooltip API, cached on disk, and sanitised; the extractor picks the right
+per-spec variant out of each tooltip, so they read cleanly and reflect current
+game data (which is often fresher than Icy Veins'). Description text doesn't
+affect build strings or any gate.
+
+To add yet another source, write a sibling importer that emits the same schema
+and reuses `ingestCore.js`; the validator, snapshot, and `compareSources.js` will
+tell you when the output is correct.
 
 ## License
 
