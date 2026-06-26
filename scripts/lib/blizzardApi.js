@@ -2,8 +2,8 @@
  * scripts/lib/blizzardApi.js
  * --------------------------
  * Thin client for Blizzard's World of Warcraft Game Data API — the authoritative
- * upstream that both Icy Veins and Wowhead copy from. Used only by the build-time
- * ingest (scripts/ingestBlizzard.js); never imported by the browser app.
+ * upstream for talent data. Used only by the build-time ingest
+ * (scripts/ingestBlizzard.js); never imported by the browser app.
  *
  * Auth is OAuth2 client-credentials: POST the client id/secret to the OAuth
  * endpoint for a bearer token (valid ~24h), then send it on every Game Data
@@ -29,6 +29,7 @@ import {
   mkdirSync,
   writeFileSync,
   readdirSync,
+  rmSync,
 } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
@@ -37,6 +38,14 @@ import { createHash } from "node:crypto";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const CACHE_DIR = join(__dirname, "..", ".cache", "blizzard");
+
+/** Remove every entry under `parent` except `keep` — drops stale per-build caches. */
+export function pruneSiblingDirs(parent, keep) {
+  if (!existsSync(parent)) return;
+  for (const name of readdirSync(parent))
+    if (name !== keep)
+      rmSync(join(parent, name), { recursive: true, force: true });
+}
 
 // ---------------------------------------------------------------------------
 // Credential loading
@@ -207,15 +216,23 @@ export class BlizzardApi {
   async resolvedBuild() {
     if (this._build) return this._build;
     const idx = await this._fetchJson(this._url("/data/wow/talent-tree/index"));
-    const href = idx?._links?.self?.href ?? "";
-    const m = href.match(new RegExp(`static-(.+?)-${this.region}\\b`));
-    this._build = m ? m[1].replace("_", ".") : null;
+    this._build = buildFromNamespaceHref(idx?._links?.self?.href, this.region);
     if (this.useCache && this._build) {
       this.cacheDir = join(CACHE_DIR, this._build);
+      pruneSiblingDirs(CACHE_DIR, this._build);
       mkdirSync(this.cacheDir, { recursive: true });
     }
     return this._build;
   }
+}
+
+/**
+ * Extract the wago.tools build (e.g. "12.0.7.67808") from a version-pinned
+ * namespace href like ".../?namespace=static-12.0.7_67808-us". Pure.
+ */
+export function buildFromNamespaceHref(href, region) {
+  const m = (href ?? "").match(new RegExp(`static-(.+?)-${region}\\b`));
+  return m ? m[1].replace("_", ".") : null;
 }
 
 /** Convenience: a spell's icon NAME (basename, no extension) via the Media API. */

@@ -228,7 +228,7 @@ async function normaliseNode(
  * spentRequired) pairs keeps it consistent with the per-node gates by
  * construction (see dataIntegrity's gate-checkpoint test).
  */
-function checkpointsFromNodes(nodes) {
+export function checkpointsFromNodes(nodes) {
   const section = (treeType) => {
     const firstRow = new Map(); // points → min posY
     for (const n of nodes) {
@@ -293,7 +293,7 @@ async function buildApexNode(raw, chain, iconOf, spellDescOf, gateOf) {
  * @param {object} fns        { iconOf, descOf, spellDescOf }
  * @returns {object} the normalised spec
  */
-async function normaliseSpec(specInfo, tree, db2, fns) {
+export async function normaliseSpec(specInfo, tree, db2, fns) {
   const { iconOf, descOf, spellDescOf } = fns;
   // The per-spec endpoint returns ALL of the class's hero trees; keep only the
   // two that actually apply to this spec (its playable_specializations include it).

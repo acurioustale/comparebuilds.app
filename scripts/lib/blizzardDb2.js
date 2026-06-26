@@ -34,6 +34,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { pruneSiblingDirs } from "./blizzardApi.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CACHE_ROOT = join(__dirname, "..", ".cache", "blizzard-db2");
@@ -101,7 +102,10 @@ export class BlizzardDb2 {
     this.build = build;
     this.useCache = cache;
     this.cacheDir = join(CACHE_ROOT, build);
-    if (cache) mkdirSync(this.cacheDir, { recursive: true });
+    if (cache) {
+      pruneSiblingDirs(CACHE_ROOT, build); // drop stale per-build caches
+      mkdirSync(this.cacheDir, { recursive: true });
+    }
     this._loaded = false;
   }
 
