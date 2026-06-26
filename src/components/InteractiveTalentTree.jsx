@@ -69,7 +69,11 @@ function ExportButton({ onClick, state, invalidCount, hasSelection }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function InteractiveTalentTree({ treeData, classNodes }) {
+export default function InteractiveTalentTree({
+  treeData,
+  classNodes,
+  searchSlot = null,
+}) {
   const {
     specId,
     interactiveNodes: selected,
@@ -329,6 +333,9 @@ export default function InteractiveTalentTree({ treeData, classNodes }) {
         sectionSpent={{ class: classSpent, spec: specSpent, hero: heroSpent }}
         onClearSection={handleClearSection}
       />
+
+      {/* ── Search (sits just above the action bar) ──────────────────────────── */}
+      {searchSlot && <div className="mt-5">{searchSlot}</div>}
 
       {/* ── Action bar (below the trees) ─────────────────────────────────────── */}
       {/* Per-section counters live in each panel header and clears in each panel

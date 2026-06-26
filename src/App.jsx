@@ -151,6 +151,16 @@ function ChangesFilterToggle({ value, onChange }) {
   );
 }
 
+// Search footer, divided from the tree by a hairline, rendered at the bottom
+// inside a tree panel (WoW-style — the search lives in the talent frame, not above it).
+function PanelFooter({ children }) {
+  return (
+    <div className="mt-3 pt-3" style={{ borderTop: "1px solid #3a2e1a" }}>
+      {children}
+    </div>
+  );
+}
+
 // Wraps a tree/comparison panel so it scales to fit the viewport width, centered.
 // FitToWidth is the full-width measurer; the inner card hugs its content (w-max).
 function TreeCard({ children }) {
@@ -165,7 +175,7 @@ function TreeCard({ children }) {
 
 // Computes invalidity for a single imported build and wraps TalentTree. `widths`
 // (single-tree geometry) drives the FitToWidth coordinator's layout + zoom.
-function SingleBuildView({ treeData, parsedBuild, widths }) {
+function SingleBuildView({ treeData, parsedBuild, widths, footer = null }) {
   const nodeById = useMemo(() => byId(treeData.nodes), [treeData]);
 
   // Include alreadyGranted nodes so prerequisite checks evaluate correctly
@@ -190,6 +200,7 @@ function SingleBuildView({ treeData, parsedBuild, widths }) {
               invalidNodeIds={invalidNodeIds}
               layout={layout}
             />
+            {footer && <PanelFooter>{footer}</PanelFooter>}
           </div>
         )}
       </FitToWidth>
@@ -246,23 +257,30 @@ function MainView() {
 
   if (!treeData) return null;
 
-  // Wraps a view with the search box + provider so all four view types share it.
+  // The search field lives at the bottom of the active tree panel (WoW-style),
+  // passed in as a footer rather than floating above the box.
+  const searchFooter = (
+    <TalentSearch
+      value={query}
+      onChange={setQuery}
+      matchCount={matchIds.size}
+    />
+  );
+
+  // Wraps a view in the search provider so every tree node sees the query.
   const withSearch = (content) => (
-    <SearchContext.Provider value={search}>
-      <TalentSearch
-        value={query}
-        onChange={setQuery}
-        matchCount={matchIds.size}
-      />
-      {content}
-    </SearchContext.Provider>
+    <SearchContext.Provider value={search}>{content}</SearchContext.Provider>
   );
 
   // No builds yet: pure interactive mode
   if (buildStrings.length === 0) {
     return withSearch(
       <TreeCard>
-        <InteractiveTalentTree treeData={treeData} classNodes={classNodes} />
+        <InteractiveTalentTree
+          treeData={treeData}
+          classNodes={classNodes}
+          searchSlot={searchFooter}
+        />
       </TreeCard>,
     );
   }
@@ -274,6 +292,11 @@ function MainView() {
       label: buildNames[i]?.trim() || `Build ${i + 1}`,
     }))
     .filter(({ parsed }) => parsed);
+
+  // The search footer belongs to whichever tree box is active. While adding a
+  // build it goes in the interactive panel (below); otherwise it sits in the
+  // comparison/single panel. Either way there is exactly one search field.
+  const comparisonFooter = addingBuild ? null : searchFooter;
 
   let comparisonEl = null;
   if (valid.length >= 3) {
@@ -288,6 +311,9 @@ function MainView() {
                 labels={valid.map((v) => v.label)}
                 layout={layout}
               />
+              {comparisonFooter && (
+                <PanelFooter>{comparisonFooter}</PanelFooter>
+              )}
             </div>
           )}
         </FitToWidth>
@@ -307,6 +333,9 @@ function MainView() {
                 labelB={valid[1].label}
                 layout={layout}
               />
+              {comparisonFooter && (
+                <PanelFooter>{comparisonFooter}</PanelFooter>
+              )}
             </div>
           )}
         </FitToWidth>
@@ -318,6 +347,7 @@ function MainView() {
         treeData={treeData}
         parsedBuild={valid[0].parsed}
         widths={treeWidths}
+        footer={comparisonFooter}
       />
     );
   }
@@ -329,7 +359,11 @@ function MainView() {
       {/* Interactive tree shown while building another */}
       {addingBuild && (
         <TreeCard>
-          <InteractiveTalentTree treeData={treeData} classNodes={classNodes} />
+          <InteractiveTalentTree
+            treeData={treeData}
+            classNodes={classNodes}
+            searchSlot={searchFooter}
+          />
         </TreeCard>
       )}
 
