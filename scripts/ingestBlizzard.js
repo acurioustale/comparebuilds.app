@@ -425,7 +425,6 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
 }
 
 async function normaliseClass(cls, treeMap, api, db2, fns) {
-  const treeId = treeMap.get(cls.specs[0]?.id);
   const specs = {};
   for (const specInfo of cls.specs) {
     if (!treeMap.get(specInfo.id)) {
@@ -443,12 +442,19 @@ async function normaliseClass(cls, treeMap, api, db2, fns) {
   // Reserved/unused placeholder ids: spell-less, non-CHOICE nodes in the base
   // tree's full node list (the gates are the CHOICE ones, captured per-spec).
   // The base endpoint is the complete set — some of these never appear in any
-  // per-spec response (e.g. DH node 90912).
-  const base = await api.get(`/data/wow/talent-tree/${treeId}`);
-  const unusedNodeIds = (base.talent_nodes ?? [])
-    .filter((n) => isEmptyNode(n) && n.node_type?.type !== "CHOICE")
-    .map((n) => n.id)
-    .sort((a, b) => a - b);
+  // per-spec response (e.g. DH node 90912). Use the first spec that actually
+  // mapped to a tree id: taking specs[0] unconditionally would fetch
+  // talent-tree/undefined and crash the whole class if that one spec happens to
+  // be unmapped while its siblings resolve.
+  const treeId = cls.specs.map((s) => treeMap.get(s.id)).find(Boolean);
+  let unusedNodeIds = [];
+  if (treeId) {
+    const base = await api.get(`/data/wow/talent-tree/${treeId}`);
+    unusedNodeIds = (base.talent_nodes ?? [])
+      .filter((n) => isEmptyNode(n) && n.node_type?.type !== "CHOICE")
+      .map((n) => n.id)
+      .sort((a, b) => a - b);
+  }
 
   return {
     classId: cls.id,
@@ -495,7 +501,17 @@ export async function buildBlizzardClasses({
     ? async (spellId) => {
         if (spellId == null) return null;
         if (iconCache.has(spellId)) return iconCache.get(spellId);
-        const name = await fetchIconName(api, spellId).catch(() => null);
+        let name;
+        try {
+          name = await fetchIconName(api, spellId);
+        } catch {
+          // Transient fetch failure — return null but DON'T memoize it. A
+          // legitimate "no icon" result (fetchIconName returns null) is still
+          // cached below; only a thrown error is left uncached so a later node
+          // sharing this spellId, and the next run, can retry instead of
+          // committing String(spellId) as the icon on --promote.
+          return null;
+        }
         iconCache.set(spellId, name);
         return name;
       }

@@ -555,12 +555,12 @@ export default function BuildManager() {
                   summary={pointSummary(parsedBuilds[i], treeData)}
                   value={buildStrings[i]}
                   parsed={parsedBuilds[i]}
-                  // Show "loading" on the last filled slot while tree data is fetched
-                  loading={
-                    isLoading &&
-                    i === filledCount - 1 &&
-                    parsedBuilds[i] === null
-                  }
+                  // While tree data is fetched, every not-yet-parsed slot is
+                  // pending, not failed — show "loading" for all of them (a
+                  // multi-build share rehydration adds several slots at once, so
+                  // gating this to the last slot flashes a false "Failed to
+                  // parse" ✕ on the earlier pending ones).
+                  loading={isLoading && parsedBuilds[i] === null}
                   onRemove={() => removeBuild(i)}
                   onRename={(v) => setBuildName(i, v)}
                 />

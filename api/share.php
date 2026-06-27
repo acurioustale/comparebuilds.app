@@ -342,7 +342,16 @@ if ($method === 'POST') {
     try {
         $lk = $pdo->prepare('SELECT GET_LOCK(?, 5)');
         $lk->execute([$lockName]);
-        $lk->fetchColumn();
+        // GET_LOCK returns 1 on acquire, 0 on timeout, NULL on error. If we did
+        // not get the lock, fail closed rather than proceeding unlocked: a
+        // timeout means a concurrent burst from this same IP is already holding
+        // it, which is exactly the contention the lock exists to serialize, so
+        // running the rate-limit check + insert without it would reopen the
+        // TOCTOU race and let the per-IP cap be exceeded.
+        if ((int) $lk->fetchColumn() !== 1) {
+            header('Retry-After: 5');
+            fail(503, 'Server busy — please try again');
+        }
 
         // ── Per-IP rate limit ────────────────────────────────────────────────
         // Bound the window against the DB's own clock (NOW()) rather than a
