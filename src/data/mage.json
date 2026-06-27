@@ -4171,7 +4171,6 @@
           "posX": 46,
           "posY": 2,
           "connections": [
-            94636,
             109956
           ],
           "spentRequired": 0,
@@ -4235,22 +4234,6 @@
           "name": "Isothermic Core",
           "icon": "inv12_ability_mage_isothermiccore",
           "description": "Meteor now also calls down a Comet Storm, dealing 2,625 Frost damage to nearby enemies.\r\n\r\nComet Storm now also calls down a Meteor, dealing 3,596 Fire damage to nearby enemies.",
-          "choices": null
-        },
-        {
-          "id": 94636,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 44,
-          "posY": 1,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Frostfire",
-          "maxRanks": 1,
-          "name": "Frostfire Bolt",
-          "icon": "inv_ability_frostfiremage_frostfirebolt",
-          "description": "Launches a bolt of frostfire at the enemy, causing 1,035 Frostfire damage, slowing movement speed by 50%, and causing an additional 96 Frostfire damage over 8 sec.",
           "choices": null
         },
         {
@@ -4347,7 +4330,6 @@
           "posX": 44,
           "posY": 2,
           "connections": [
-            94636,
             109956
           ],
           "spentRequired": 0,
@@ -4366,7 +4348,6 @@
           "posX": 42,
           "posY": 2,
           "connections": [
-            94636,
             109956
           ],
           "spentRequired": 0,
@@ -4436,8 +4417,7 @@
           "posX": 48,
           "posY": 2,
           "connections": [
-            109956,
-            94636
+            109956
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6458,8 +6438,7 @@
           "posX": 46,
           "posY": 2,
           "connections": [
-            94636,
-            109956
+            94636
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6634,8 +6613,7 @@
           "posX": 44,
           "posY": 2,
           "connections": [
-            94636,
-            109956
+            94636
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6653,8 +6631,7 @@
           "posX": 42,
           "posY": 2,
           "connections": [
-            94636,
-            109956
+            94636
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6723,7 +6700,6 @@
           "posX": 48,
           "posY": 2,
           "connections": [
-            109956,
             94636
           ],
           "spentRequired": 0,
@@ -6733,22 +6709,6 @@
           "name": "Duality",
           "icon": "ability_mage_frostfirebolt",
           "description": "Casting Glacial Spike also casts a Pyroblast, dealing 3,529 Fire damage.",
-          "choices": null
-        },
-        {
-          "id": 109956,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 44,
-          "posY": 1,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Frostfire",
-          "maxRanks": 1,
-          "name": "Frostfire Bolt",
-          "icon": "inv_ability_frostfiremage_frostfirebolt",
-          "description": "Launches a bolt of frostfire at the enemy, causing 1,041 Frostfire damage, slowing movement speed by 50%, and causing an additional 96 Frostfire damage over 8 sec.",
           "choices": null
         }
       ]

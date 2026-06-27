@@ -2052,7 +2052,6 @@
           "posX": 20,
           "posY": 8,
           "connections": [
-            95234,
             110257
           ],
           "spentRequired": 0,
@@ -2176,7 +2175,6 @@
           "posX": 18,
           "posY": 8,
           "connections": [
-            95234,
             110257
           ],
           "spentRequired": 0,
@@ -2204,29 +2202,12 @@
           ]
         },
         {
-          "id": 95234,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 22,
-          "posY": 7,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Lightsmith",
-          "maxRanks": 1,
-          "name": "Holy Bulwark",
-          "icon": "inv_ability_lightsmithpaladin_holybulwark",
-          "description": "Will the Light to coalesce and become manifest as a Holy Armament, wielded by your friendly target.\r\n\r\n Holy Bulwark:\r\n\r\nWhile wielding a Holy Bulwark, gain an absorb shield for 15.0% of your max health and an additional 2.0% every 2 sec. Lasts 20 sec.\r\n\r\nBecomes Sacred Weapon after use.\r\n\r\nGenerates 3 Holy Power.",
-          "choices": null
-        },
-        {
           "id": 95235,
           "type": "choice",
           "treeType": "hero",
           "posX": 22,
           "posY": 8,
           "connections": [
-            95234,
             110257
           ],
           "spentRequired": 0,
@@ -2314,7 +2295,6 @@
           "posX": 24,
           "posY": 8,
           "connections": [
-            95234,
             110257
           ],
           "spentRequired": 0,
@@ -4931,8 +4911,7 @@
           "posX": 20,
           "posY": 8,
           "connections": [
-            95234,
-            110257
+            95234
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -5055,8 +5034,7 @@
           "posX": 18,
           "posY": 8,
           "connections": [
-            95234,
-            110257
+            95234
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -5105,8 +5083,7 @@
           "posX": 22,
           "posY": 8,
           "connections": [
-            95234,
-            110257
+            95234
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -5193,8 +5170,7 @@
           "posX": 24,
           "posY": 8,
           "connections": [
-            95234,
-            110257
+            95234
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -5239,22 +5215,6 @@
           "name": "Resounding Strike",
           "icon": "inv_11_0_arathordungeon_bell_color1",
           "description": "Holy Armaments activate Hammer and Anvil at 100% effectiveness.",
-          "choices": null
-        },
-        {
-          "id": 110257,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 22,
-          "posY": 7,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Lightsmith",
-          "maxRanks": 1,
-          "name": "Holy Armaments",
-          "icon": "inv_ability_lightsmithpaladin_holybulwark",
-          "description": "Will the Light to coalesce and become manifest as a Holy Armament, wielded by your friendly target.\r\n\r\n Holy Bulwark:\r\n\r\nWhile wielding a Holy Bulwark, gain an absorb shield for 15.0% of your max health and an additional 2.0% every 2 sec. Lasts 20 sec.\r\n\r\nBecomes Sacred Weapon after use.\r\n\r\nGenerates 3 Holy Power.",
           "choices": null
         }
       ]

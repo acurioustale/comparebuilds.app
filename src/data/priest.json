@@ -1798,7 +1798,6 @@
           "posX": 24,
           "posY": 8,
           "connections": [
-            94684,
             110008
           ],
           "spentRequired": 0,
@@ -1808,22 +1807,6 @@
           "name": "Inner Quietus",
           "icon": "inv_cosmicvoid_buff",
           "description": "Power Word: Shield absorbs 20% additional damage.",
-          "choices": null
-        },
-        {
-          "id": 94684,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 24,
-          "posY": 7,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Voidweaver",
-          "maxRanks": 1,
-          "name": "Void Torrent",
-          "icon": "spell_priest_voidsear",
-          "description": "Channel a torrent of void energy into the target, dealing 3,944 Shadow damage over 3 sec and tearing open an Entropic Rift.\r\n\r\n Entropic Rift\r\nMind Blast tears open an Entropic Rift that follows the enemy for 8 sec. Enemies caught in its path suffer 227 Shadow damage every 0.9 sec while within its reach.\r\n\r\nGenerates 24 Insanity over the duration.",
           "choices": null
         },
         {
@@ -1851,7 +1834,6 @@
           "posX": 20,
           "posY": 8,
           "connections": [
-            94684,
             110008
           ],
           "spentRequired": 0,
@@ -1972,7 +1954,6 @@
           "posX": 22,
           "posY": 8,
           "connections": [
-            94684,
             110008
           ],
           "spentRequired": 0,
@@ -2045,8 +2026,7 @@
           "posX": 26,
           "posY": 8,
           "connections": [
-            110008,
-            94684
+            110008
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4173,7 +4153,6 @@
           "posX": 44,
           "posY": 3,
           "connections": [
-            94697,
             108724
           ],
           "spentRequired": 0,
@@ -4243,7 +4222,6 @@
           "posX": 46,
           "posY": 3,
           "connections": [
-            94697,
             108724
           ],
           "spentRequired": 0,
@@ -4325,29 +4303,12 @@
           "choices": null
         },
         {
-          "id": 94697,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 46,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Archon",
-          "maxRanks": 1,
-          "name": "Halo",
-          "icon": "ability_priest_halo_shadow",
-          "description": "Creates a ring of Shadow energy around you that quickly expands to a 40 yd radius, healing allies for 604 and dealing 555 Shadow damage to enemies. Healing reduced beyond 6 targets.",
-          "choices": null
-        },
-        {
           "id": 94699,
           "type": "round",
           "treeType": "hero",
           "posX": 48,
           "posY": 3,
           "connections": [
-            94697,
             108724
           ],
           "spentRequired": 0,
@@ -4469,8 +4430,7 @@
           "posX": 50,
           "posY": 3,
           "connections": [
-            108724,
-            94697
+            108724
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6630,8 +6590,7 @@
           "posX": 24,
           "posY": 8,
           "connections": [
-            94684,
-            110008
+            94684
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6683,8 +6642,7 @@
           "posX": 20,
           "posY": 8,
           "connections": [
-            94684,
-            110008
+            94684
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6804,8 +6762,7 @@
           "posX": 22,
           "posY": 8,
           "connections": [
-            94684,
-            110008
+            94684
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -6877,7 +6834,6 @@
           "posX": 26,
           "posY": 8,
           "connections": [
-            110008,
             94684
           ],
           "spentRequired": 0,
@@ -6887,22 +6843,6 @@
           "name": "Voidheart",
           "icon": "inv_cosmicvoid_orb",
           "description": "While Entropic Rift is active, your Atonement healing is increased by 20%.",
-          "choices": null
-        },
-        {
-          "id": 110008,
-          "type": "round",
-          "treeType": "hero",
-          "posX": 24,
-          "posY": 7,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Voidweaver",
-          "maxRanks": 1,
-          "name": "Entropic Rift",
-          "icon": "inv_ability_voidweaverpriest_entropicrift",
-          "description": "Mind Blast tears open an Entropic Rift that follows the enemy for 8 sec. Enemies caught in its path suffer 230 Shadow damage every 0.9 sec while within its reach.",
           "choices": null
         },
         {
@@ -6930,8 +6870,7 @@
           "posX": 44,
           "posY": 3,
           "connections": [
-            94697,
-            108724
+            94697
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -7000,8 +6939,7 @@
           "posX": 46,
           "posY": 3,
           "connections": [
-            94697,
-            108724
+            94697
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -7104,8 +7042,7 @@
           "posX": 48,
           "posY": 3,
           "connections": [
-            94697,
-            108724
+            94697
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -7135,22 +7072,6 @@
           "name": "Divine Halo",
           "icon": "spell_bastion_priest_shadow",
           "description": "Halo now centers around you and returns to you after it reaches its maximum distance, healing allies and damaging enemies each time it passes through them.",
-          "choices": null
-        },
-        {
-          "id": 108724,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 46,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Archon",
-          "maxRanks": 1,
-          "name": "Halo",
-          "icon": "ability_priest_halo",
-          "description": "Creates a ring of Holy energy around you that quickly expands to a 40 yd radius, healing allies for 610 and dealing 544 Holy damage to enemies.\r\n\r\nHealing reduced beyond 6 targets.",
           "choices": null
         },
         {
@@ -7226,7 +7147,6 @@
           "posX": 50,
           "posY": 3,
           "connections": [
-            108724,
             94697
           ],
           "spentRequired": 0,

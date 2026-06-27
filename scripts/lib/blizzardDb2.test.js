@@ -185,3 +185,52 @@ describe("BlizzardDb2.subtree", () => {
     expect(fixture().subtree("0")).toBeNull();
   });
 });
+
+describe("BlizzardDb2.appliesToSpec", () => {
+  // node 10: spec-bound to set 25 at the node level; node 20: spec-bound to set
+  // 26 via a group; node 30: a CondType-1 condition with NO SpecSetID (a prereq
+  // flag, not a spec gate) → unrestricted.
+  function specFixture() {
+    const db2 = new BlizzardDb2({ build: "test", cache: false });
+    db2.index({
+      nx: [],
+      entry: [],
+      def: [],
+      subtree: [],
+      cond: [
+        { ID: "s25", CondType: "1", SpecSetID: "25" },
+        { ID: "s26", CondType: "1", SpecSetID: "26" },
+        { ID: "flag", CondType: "1" }, // no SpecSetID
+      ],
+      ncond: [
+        { TraitNodeID: "10", TraitCondID: "s25" },
+        { TraitNodeID: "30", TraitCondID: "flag" },
+      ],
+      gxn: [{ TraitNodeGroupID: "g", TraitNodeID: "20" }],
+      gxc: [{ TraitNodeGroupID: "g", TraitCondID: "s26" }],
+      specSetMember: [
+        { SpecSet: "25", ChrSpecializationID: "270" }, // Mistweaver
+        { SpecSet: "26", ChrSpecializationID: "269" }, // Windwalker
+      ],
+    });
+    return db2;
+  }
+
+  it("binds a node to its spec set via a node-level condition", () => {
+    const db2 = specFixture();
+    expect(db2.appliesToSpec("10", "270")).toBe(true);
+    expect(db2.appliesToSpec("10", "269")).toBe(false);
+  });
+
+  it("resolves a spec condition hung off the node's group", () => {
+    const db2 = specFixture();
+    expect(db2.appliesToSpec("20", "269")).toBe(true);
+    expect(db2.appliesToSpec("20", "270")).toBe(false);
+  });
+
+  it("treats a node with no spec-set condition as unrestricted", () => {
+    const db2 = specFixture();
+    expect(db2.appliesToSpec("30", "999")).toBe(true); // CondType-1 but no SpecSetID
+    expect(db2.appliesToSpec("99", "999")).toBe(true); // node never mentioned
+  });
+});
