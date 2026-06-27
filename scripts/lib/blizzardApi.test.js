@@ -75,7 +75,9 @@ describe("BlizzardApi token refresh on 401", () => {
         return jsonRes(200, { access_token: `t${oauthCalls}` });
       }
       dataCalls++;
-      return dataCalls === 1 ? jsonRes(401, {}) : jsonRes(200, { n: dataCalls });
+      return dataCalls === 1
+        ? jsonRes(401, {})
+        : jsonRes(200, { n: dataCalls });
     });
 
     const api = new BlizzardApi({ cache: false });

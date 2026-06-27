@@ -36,6 +36,10 @@ describe("wireLayout fingerprint", () => {
     const a = wireLayout(data(1));
     const b = wireLayout(data(2));
     assert.strictEqual(a.count, b.count, "node count unchanged");
-    assert.notStrictEqual(a.hash, b.hash, "hash must reflect the option maxRanks");
+    assert.notStrictEqual(
+      a.hash,
+      b.hash,
+      "hash must reflect the option maxRanks",
+    );
   });
 });

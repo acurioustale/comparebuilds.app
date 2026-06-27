@@ -217,7 +217,9 @@ describe("error handling", () => {
     // entryChosen must resolve maxRanks via the written index (0), so the partial
     // flag agrees with decode and pointsInvested is preserved rather than snapping
     // to the option's full rank.
-    const nodes = [{ id: 1, maxRanks: 1, choices: [{ maxRanks: 3 }, { maxRanks: 3 }] }];
+    const nodes = [
+      { id: 1, maxRanks: 1, choices: [{ maxRanks: 3 }, { maxRanks: 3 }] },
+    ];
     const str = generateBuildString(
       { 1: { pointsInvested: 2, entryChosen: null } },
       250,

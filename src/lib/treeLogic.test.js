@@ -340,11 +340,7 @@ test("gate ignores a co-located duplicate's double-counted point", () => {
   // co-located duplicate, so the legal section total is 2 (A+G): G fails its
   // gate and is flagged alongside the duplicate B.
   assertInvalid(
-    computeInvalidNodeIds(
-      nodes,
-      { 1: sel(), 2: sel(), 3: sel() },
-      byId(nodes),
-    ),
+    computeInvalidNodeIds(nodes, { 1: sel(), 2: sel(), 3: sel() }, byId(nodes)),
     2,
     3,
   );

@@ -126,9 +126,9 @@ export function buildGrantedSeed(treeData) {
  * evaluated before its children. A single pass is sufficient — no fixpoint
  * iteration needed — and deep cascades are always complete.
  *
- * Gate check uses the raw selected totals (invalid nodes' points still count
- * toward the sum — gate violations stem from actual point removals, not from
- * cascaded invalidity).
+ * Gate check counts the selected section total (one node per co-located cell;
+ * see gatedPoints). Prereq-invalid nodes' points still count toward the sum —
+ * gate violations stem from actual point removals, not from cascaded invalidity.
  *
  * alreadyGranted nodes are never flagged; they are permanently valid.
  *
@@ -177,7 +177,10 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
     }
 
     // Gate: raw selected point total — does not exclude already-invalid nodes
-    if (!shouldFlag && gatedPoints(node, allNodes, selected) < node.spentRequired) {
+    if (
+      !shouldFlag &&
+      gatedPoints(node, allNodes, selected) < node.spentRequired
+    ) {
       shouldFlag = true;
     }
 
