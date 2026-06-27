@@ -56,13 +56,24 @@ export function decodeBuildsHash(token) {
   try {
     const obj = JSON.parse(b64urlDecode(token));
     if (!obj || !Array.isArray(obj.b)) return null;
-    const builds = obj.b
-      .filter((s) => typeof s === "string")
-      .slice(0, SANITY_MAX_ENTRIES);
+    // Walk b and n in lockstep so each name stays keyed to its build's ORIGINAL
+    // index — filtering b first and then indexing n by the post-filter position
+    // would shift every later name onto the wrong build the moment b contains a
+    // non-string entry.
+    const builds = [];
+    const names = [];
+    for (
+      let i = 0;
+      i < obj.b.length && builds.length < SANITY_MAX_ENTRIES;
+      i++
+    ) {
+      if (typeof obj.b[i] !== "string") continue;
+      builds.push(obj.b[i]);
+      names.push(
+        Array.isArray(obj.n) && typeof obj.n[i] === "string" ? obj.n[i] : "",
+      );
+    }
     if (builds.length === 0) return null;
-    const names = builds.map((_, i) =>
-      Array.isArray(obj.n) && typeof obj.n[i] === "string" ? obj.n[i] : "",
-    );
     return { builds, names };
   } catch {
     return null;
