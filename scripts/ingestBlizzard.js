@@ -559,6 +559,11 @@ export async function buildBlizzardClasses({
   // tree descriptions are inlined already (just sanitised); apex extra-rank
   // descriptions need a per-spell fetch.
   const iconCache = new Map();
+  // spellIds whose icon-name fetch threw (transient) and never succeeded on a
+  // later retry. Surfaced loudly after the run so the operator knows the
+  // committed String(spellId) placeholder is a fetch failure, not a real "no
+  // icon" — and that a re-run should fill it.
+  const iconFailures = new Set();
   const iconOf = icons
     ? async (spellId) => {
         if (spellId == null) return null;
@@ -572,9 +577,11 @@ export async function buildBlizzardClasses({
           // cached below; only a thrown error is left uncached so a later node
           // sharing this spellId, and the next run, can retry instead of
           // committing String(spellId) as the icon on --promote.
+          iconFailures.add(spellId);
           return null;
         }
         iconCache.set(spellId, name);
+        iconFailures.delete(spellId); // a retry succeeded — no longer a failure
         return name;
       }
     : async () => null;
@@ -604,6 +611,16 @@ export async function buildBlizzardClasses({
     const fns = { iconOf, descOf, spellDescOf, renderClientDesc };
     classes[cls.name] = await normaliseClass(cls, treeMap, api, db2, fns);
     log(`  normalised ${cls.displayName}`);
+  }
+
+  if (iconFailures.size > 0) {
+    // Don't fail the run (icons are soft), but make the placeholder writes loud
+    // so they aren't mistaken for real "no icon" data on --promote.
+    console.warn(
+      `  ⚠  ${iconFailures.size} icon name(s) failed to fetch (transient) and ` +
+        `were written as numeric placeholders: ${[...iconFailures].join(", ")}. ` +
+        `Re-run to fill them.`,
+    );
   }
 
   return classes;
