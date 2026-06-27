@@ -444,13 +444,20 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
   // two-to-a-cell; a build can only ever take one of each pair, so dedup by
   // (posX,posY) — otherwise the count over-reports (15 vs the real 13 a full
   // hero tree spends; see the in-game fixtures in buildFixtures.test.js).
-  const heroNodeCount = left
-    ? new Set(
-        nodes
-          .filter((n) => n.heroSubtree === left.name && !n.alreadyGranted)
-          .map((n) => `${n.posX},${n.posY}`),
-      ).size
-    : 0;
+  //
+  // The single budget caps BOTH subtrees, so take the larger of the two: every
+  // shipped spec has equal-size subtrees today, but counting only one would
+  // silently under-cap (and so block the last legitimate point in) the bigger
+  // subtree if a future patch ever made them asymmetric.
+  const heroCellCount = (sub) =>
+    sub
+      ? new Set(
+          nodes
+            .filter((n) => n.heroSubtree === sub.name && !n.alreadyGranted)
+            .map((n) => `${n.posX},${n.posY}`),
+        ).size
+      : 0;
+  const heroNodeCount = Math.max(heroCellCount(left), heroCellCount(right));
   const apex = nodes.find((n) => n.type === "apex");
 
   // icon stays the subtree name (the renderer shows subtree headers as text, not
