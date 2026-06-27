@@ -21,11 +21,16 @@ const SHARE_ID_RE = /^[A-Za-z0-9]{6}$/;
 const toSegment = (slug) => slug.replaceAll("_", "-");
 
 // "<class>/<spec>" segment pair → specId, built once from the class index.
+// Keys are lowercased to match specIdForPath's lowercased lookup, so a class or
+// spec name with any uppercase letter still resolves instead of silently missing.
 const SPEC_BY_PATH = new Map();
 for (const cls of classesIndex) {
   if (!cls.implemented) continue;
   for (const spec of cls.specs) {
-    SPEC_BY_PATH.set(`${toSegment(cls.name)}/${toSegment(spec.name)}`, spec.id);
+    SPEC_BY_PATH.set(
+      `${toSegment(cls.name)}/${toSegment(spec.name)}`.toLowerCase(),
+      spec.id,
+    );
   }
 }
 

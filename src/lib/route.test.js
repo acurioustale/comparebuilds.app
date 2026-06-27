@@ -79,4 +79,8 @@ describe("specIdForPath", () => {
     assert.strictEqual(specIdForPath("/nope/nope"), null);
     assert.strictEqual(specIdForPath(""), null);
   });
+  test("is case-insensitive on the pathname", () => {
+    assert.strictEqual(specIdForPath("/Death-Knight/Blood"), 250);
+    assert.strictEqual(specIdForPath("/DEATH-KNIGHT/BLOOD/"), 250);
+  });
 });
