@@ -55,6 +55,9 @@ describe("BlizzardApi token refresh on 401", () => {
     status,
     json: async () => body,
   });
+  // Classify a request by exact host (not a substring match) so the mock can't
+  // be fooled by a host like oauth.battle.net.example.com.
+  const isOauth = (url) => new URL(url).hostname === "oauth.battle.net";
 
   beforeEach(() => {
     process.env.BLIZZARD_CLIENT_ID = "id";
@@ -70,7 +73,7 @@ describe("BlizzardApi token refresh on 401", () => {
     let oauthCalls = 0;
     let dataCalls = 0;
     global.fetch = vi.fn(async (url) => {
-      if (String(url).includes("oauth.battle.net")) {
+      if (isOauth(url)) {
         oauthCalls++;
         return jsonRes(200, { access_token: `t${oauthCalls}` });
       }
@@ -90,8 +93,7 @@ describe("BlizzardApi token refresh on 401", () => {
   it("throws and does not loop on a persistent 401", async () => {
     let dataCalls = 0;
     global.fetch = vi.fn(async (url) => {
-      if (String(url).includes("oauth.battle.net"))
-        return jsonRes(200, { access_token: "t" });
+      if (isOauth(url)) return jsonRes(200, { access_token: "t" });
       dataCalls++;
       return jsonRes(401, {});
     });
