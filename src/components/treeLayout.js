@@ -64,6 +64,11 @@ export function splitSections(treeData) {
  * @returns {{ minX: number, minY: number, W: number, H: number }}
  */
 export function panelBounds(nodes) {
+  // An empty panel has no grid: Math.min/max over [] would yield ±Infinity and
+  // propagate NaN into the FitToWidth scale math. Return just the padding box.
+  if (nodes.length === 0) {
+    return { minX: 0, minY: 0, W: PAD * 2, H: PAD * 2 };
+  }
   const xs = nodes.map((n) => n.posX);
   const ys = nodes.map((n) => n.posY);
   const minX = Math.min(...xs);
