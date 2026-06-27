@@ -330,6 +330,26 @@ test("hero-subtree exclusivity flags picks outside the committed subtree", () =>
   assertInvalid(computeInvalidNodeIds(nodes, { 50: sel() }, byId(nodes)));
 });
 
+test("gate ignores a co-located duplicate's double-counted point", () => {
+  // A and B share one cell (1 pt each). G sits below, gated at 3 section points.
+  const a = { ...node(1, 0), posX: 5 };
+  const b = { ...node(2, 0), posX: 5 };
+  const g = node(3, 1, { spentRequired: 3, connections: [1] });
+  const nodes = [a, b, g];
+  // Raw total would be 3 (A+B+G) and pass the gate, but B is an illegal
+  // co-located duplicate, so the legal section total is 2 (A+G): G fails its
+  // gate and is flagged alongside the duplicate B.
+  assertInvalid(
+    computeInvalidNodeIds(
+      nodes,
+      { 1: sel(), 2: sel(), 3: sel() },
+      byId(nodes),
+    ),
+    2,
+    3,
+  );
+});
+
 test("co-located granted roots are exempt (never flagged)", () => {
   const a = { ...node(60, 0, { alreadyGranted: true }), posX: 5 };
   const b = { ...node(61, 0, { alreadyGranted: true }), posX: 5 };

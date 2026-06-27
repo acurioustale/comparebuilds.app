@@ -47,14 +47,28 @@ export function spentPoints(allNodes, selected, treeType, heroSubtree = null) {
  * Points spent in the same tree section as `node`, counting per-heroSubtree
  * for hero nodes. Excludes alreadyGranted nodes (they don't consume the budget).
  * Used for spentRequired gate checks.
+ *
+ * Counts at most one purchased node per co-located cell: a cell holds only one
+ * legal pick, so a crafted/corrupt build that selects both halves must not have
+ * the illegal second point inflate the section total and wrongly satisfy a
+ * downstream gate. (Prereq-invalid points still count toward the gate — those
+ * sit in their own cells, so only structural co-located duplicates collapse.)
  */
 export function gatedPoints(node, allNodes, selected) {
-  return spentPoints(
-    allNodes,
-    selected,
-    node.treeType,
-    node.treeType === "hero" ? node.heroSubtree : null,
-  );
+  const heroSubtree = node.treeType === "hero" ? node.heroSubtree : null;
+  let total = 0;
+  const countedCells = new Set();
+  for (const n of allNodes) {
+    if (n.alreadyGranted || n.treeType !== node.treeType) continue;
+    if (heroSubtree != null && n.heroSubtree !== heroSubtree) continue;
+    const pts = selected[n.id]?.pointsInvested ?? 0;
+    if (pts === 0) continue;
+    const cell = cellKey(n);
+    if (countedCells.has(cell)) continue; // co-located duplicate — count once
+    countedCells.add(cell);
+    total += pts;
+  }
+  return total;
 }
 
 /**
