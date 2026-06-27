@@ -57,6 +57,21 @@ export function gatedPoints(node, allNodes, selected) {
   );
 }
 
+/**
+ * A grid-cell key. Nodes that render on the same spot share it: the same panel
+ * (treeType, plus heroSubtree for hero nodes) and the same posX,posY.
+ *
+ * Some talents are reachable through two node ids that occupy one cell — a
+ * Blizzard tree quirk: druid's Starfire / Moonkin Form, paladin's Lightforged
+ * Blessing, monk Conduit's Stampede / Celestial Conduit. They are mutually
+ * exclusive variants of a single slot, so a build may purchase at most one
+ * non-granted node per cell. (Co-located *granted* roots — Halo-style pairs that
+ * are auto-granted together — are exempt; they are never purchased.)
+ */
+export function cellKey(node) {
+  return `${node.treeType}|${node.heroSubtree ?? ""}|${node.posX},${node.posY}`;
+}
+
 // ─── Exports used by both interactive and import contexts ─────────────────────
 
 /**
@@ -97,10 +112,22 @@ export function buildGrantedSeed(treeData) {
 export function computeInvalidNodeIds(allNodes, selected, nodeById) {
   const invalid = new Set();
 
-  // Topological order: posY ascending guarantees parents processed before children.
+  // Topological order: posY ascending guarantees parents processed before
+  // children. The id tiebreaker makes co-located ordering deterministic, so the
+  // same node of a shared cell is the one kept valid across runs.
   const sorted = allNodes
     .filter((n) => selected[n.id] && !n.alreadyGranted)
-    .sort((a, b) => (a.posY !== b.posY ? a.posY - b.posY : a.posX - b.posX));
+    .sort((a, b) =>
+      a.posY !== b.posY
+        ? a.posY - b.posY
+        : a.posX !== b.posX
+          ? a.posX - b.posX
+          : a.id - b.id,
+    );
+
+  // The first valid purchased node in a cell claims it; a later purchased node
+  // sharing that cell is an illegal co-located duplicate (see cellKey).
+  const claimedCells = new Set();
 
   for (const node of sorted) {
     let shouldFlag = false;
@@ -125,7 +152,12 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
       }
     }
 
+    // Co-located exclusivity: at most one non-granted node per cell.
+    const cell = cellKey(node);
+    if (!shouldFlag && claimedCells.has(cell)) shouldFlag = true;
+
     if (shouldFlag) invalid.add(node.id);
+    else claimedCells.add(cell);
   }
 
   return invalid;

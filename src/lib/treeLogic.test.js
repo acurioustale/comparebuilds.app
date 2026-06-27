@@ -9,9 +9,29 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { computeInvalidNodeIds } from "./treeLogic.js";
+import { computeInvalidNodeIds, cellKey } from "./treeLogic.js";
 
 const require = createRequire(import.meta.url);
+
+/**
+ * A legal maximal selection: every non-granted node at full rank, but at most
+ * one per co-located cell (lowest id wins, matching computeInvalidNodeIds'
+ * tiebreaker). Selecting *both* halves of a co-located cell is an illegal build,
+ * so the real-data cascade tests below build from this rather than raw "select
+ * everything".
+ */
+function selectAllLegal(allNodes) {
+  const selected = {};
+  const claimed = new Set();
+  for (const n of [...allNodes].sort((a, b) => a.id - b.id)) {
+    if (n.alreadyGranted) continue;
+    const cell = cellKey(n);
+    if (claimed.has(cell)) continue;
+    claimed.add(cell);
+    selected[n.id] = { pointsInvested: n.maxRanks, entryChosen: null };
+  }
+  return selected;
+}
 
 // ─── Minimal node / selection factories ───────────────────────────────────────
 
@@ -261,6 +281,50 @@ test("parent at full rank satisfies child prereq", () => {
   assertInvalid(computeInvalidNodeIds(nodes, selected, byId(nodes)));
 });
 
+// ─── Co-located node exclusivity ─────────────────────────────────────────────
+
+test("co-located cell: purchasing both variants flags the duplicate", () => {
+  // Two non-granted nodes occupying one grid cell (same treeType + posX,posY).
+  const a = node(40, 0);
+  const b = { ...node(41, 0), posX: a.posX };
+  const nodes = [a, b];
+
+  // Only one purchased → legal, nothing invalid.
+  assertInvalid(computeInvalidNodeIds(nodes, { 40: sel() }, byId(nodes)));
+  // Both purchased → the later (higher-id) one is the illegal duplicate.
+  assertInvalid(
+    computeInvalidNodeIds(nodes, { 40: sel(), 41: sel() }, byId(nodes)),
+    41,
+  );
+});
+
+test("co-located cell: hero variants are kept per-subtree", () => {
+  // Same posX,posY but different hero subtrees are different panels → not a cell.
+  const left = {
+    ...node(50, 0, { treeType: "hero" }),
+    heroSubtree: "L",
+    posX: 1,
+  };
+  const right = {
+    ...node(51, 0, { treeType: "hero" }),
+    heroSubtree: "R",
+    posX: 1,
+  };
+  const nodes = [left, right];
+  assertInvalid(
+    computeInvalidNodeIds(nodes, { 50: sel(), 51: sel() }, byId(nodes)),
+  );
+});
+
+test("co-located granted roots are exempt (never flagged)", () => {
+  const a = { ...node(60, 0, { alreadyGranted: true }), posX: 5 };
+  const b = { ...node(61, 0, { alreadyGranted: true }), posX: 5 };
+  const nodes = [a, b];
+  assertInvalid(
+    computeInvalidNodeIds(nodes, { 60: sel(), 61: sel() }, byId(nodes)),
+  );
+});
+
 // ─── Integration helper ───────────────────────────────────────────────────────
 
 /**
@@ -290,12 +354,7 @@ test("removing Tiger's Fury invalidates all connection-dependent spec nodes, not
   const TIGERS_FURY_ID = 82124;
 
   // Build a fully-selected map: every non-granted node at full rank
-  const fullySelected = {};
-  for (const n of allNodes) {
-    if (!n.alreadyGranted) {
-      fullySelected[n.id] = { pointsInvested: n.maxRanks, entryChosen: null };
-    }
-  }
+  const fullySelected = selectAllLegal(allNodes);
 
   const invalid = invalidAfterRemoving(allNodes, fullySelected, TIGERS_FURY_ID);
 
@@ -388,12 +447,7 @@ function runSpecRootCascadeTest(allNodes, rootId) {
   const nodeById = {};
   for (const n of allNodes) nodeById[n.id] = n;
 
-  const fullySelected = {};
-  for (const n of allNodes) {
-    if (!n.alreadyGranted) {
-      fullySelected[n.id] = { pointsInvested: n.maxRanks, entryChosen: null };
-    }
-  }
+  const fullySelected = selectAllLegal(allNodes);
 
   const invalid = invalidAfterRemoving(allNodes, fullySelected, rootId);
 

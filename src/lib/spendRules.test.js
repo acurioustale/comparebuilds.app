@@ -117,4 +117,16 @@ describe("canSpendPoint", () => {
   test("first hero node of either subtree is allowed", () => {
     assert.strictEqual(canSpendPoint(HERO_R, ALL, {}, byId, BUDGET), true);
   });
+
+  test("co-located node is blocked when its cell is already taken", () => {
+    // Two non-granted class nodes sharing one grid cell (same posX,posY).
+    const A = node(40, "class", 0, { posX: 5 });
+    const B = node(41, "class", 0, { posX: 5 });
+    const all = [A, B];
+    const ids = Object.fromEntries(all.map((n) => [n.id, n]));
+    // A already taken → B (same cell) is refused despite budget/prereq being fine.
+    assert.strictEqual(canSpendPoint(B, all, { 40: pt() }, ids, BUDGET), false);
+    // Empty cell → A is allowed.
+    assert.strictEqual(canSpendPoint(A, all, {}, ids, BUDGET), true);
+  });
 });

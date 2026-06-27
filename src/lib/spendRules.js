@@ -5,7 +5,12 @@
 // budgets, hero-subtree exclusivity, gates, and prerequisites — can be unit-tested
 // without a DOM.
 
-import { hasUpperPrereq, gatedPoints, spentPoints } from "./treeLogic.js";
+import {
+  hasUpperPrereq,
+  gatedPoints,
+  spentPoints,
+  cellKey,
+} from "./treeLogic.js";
 
 /**
  * Total points spent in a tree section (class/spec/hero), excluding granted nodes.
@@ -43,6 +48,19 @@ export function canSpendPoint(node, allNodes, selected, nodeById, budget) {
   if (node.treeType === "hero") {
     const activeSub = activeHeroSubtree(allNodes, selected);
     if (activeSub !== null && activeSub !== node.heroSubtree) return false;
+  }
+  // Co-located exclusivity: a cell holds at most one purchased node, so refuse
+  // this one if a different non-granted node sharing its cell is already taken.
+  const cell = cellKey(node);
+  for (const other of allNodes) {
+    if (
+      other.id !== node.id &&
+      !other.alreadyGranted &&
+      selected[other.id] &&
+      cellKey(other) === cell
+    ) {
+      return false;
+    }
   }
   if (sectionPoints(node.treeType, allNodes, selected) >= budget[node.treeType])
     return false;
