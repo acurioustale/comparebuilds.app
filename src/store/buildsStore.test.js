@@ -212,6 +212,24 @@ describe("preloadSpec", () => {
     await get().preloadSpec(999999);
     assert.strictEqual(get().treeData, null);
   });
+
+  test("re-selecting the current spec keeps an in-progress selection", async () => {
+    await get().preloadSpec(DK_BLOOD);
+    const classNode = get().treeData.nodes.find(
+      (n) => n.treeType === "class" && !n.alreadyGranted,
+    );
+    const sel = { ...get().interactiveNodes };
+    sel[classNode.id] = { pointsInvested: 1, entryChosen: null };
+    get().setInteractiveNodes(sel);
+    assert.ok(get().interactiveNodes[classNode.id], "node was selected");
+
+    // Re-selecting the same spec must not reseed and wipe the selection.
+    await get().preloadSpec(DK_BLOOD);
+    assert.ok(
+      get().interactiveNodes[classNode.id],
+      "selection survives re-selecting the same spec",
+    );
+  });
 });
 
 // ── Build names ───────────────────────────────────────────────────────────────

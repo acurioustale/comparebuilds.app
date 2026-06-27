@@ -439,6 +439,11 @@ const createStore = (set, get) => ({
   preloadSpec: async (specId) => {
     if (get().buildStrings.length > 0) return;
 
+    // Already on this spec with its tree loaded — re-selecting it (e.g. clicking
+    // the current spec in the dropdown) must not wipe an in-progress interactive
+    // selection by reseeding it back to the granted seed.
+    if (get().specId === specId && get().treeData) return;
+
     const match = findClassForSpec(specId);
     if (!match) return;
 
