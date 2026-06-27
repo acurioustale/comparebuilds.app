@@ -140,6 +140,26 @@ describe("addBuild guards", () => {
   });
 });
 
+describe("addBuild concurrency", () => {
+  test("two concurrent first-builds both land (no clobber)", async () => {
+    const [a, b] = genStrings("death_knight", "blood", 2);
+    // Dispatch both before the first resolves its tree-data load.
+    await Promise.all([get().addBuild(a), get().addBuild(b)]);
+    assert.strictEqual(get().buildStrings.length, 2);
+    assert.deepStrictEqual([...get().buildStrings].sort(), [a, b].sort());
+  });
+
+  test("concurrent first-builds of different specs don't corrupt specId", async () => {
+    const [dk] = genStrings("death_knight", "blood", 1);
+    const [mage] = genStrings("mage", "fire", 1);
+    await Promise.all([get().addBuild(dk), get().addBuild(mage)]);
+    // First commit wins the spec; the other is rejected as a mismatch.
+    assert.strictEqual(get().buildStrings.length, 1);
+    assert.strictEqual(get().specId, DK_BLOOD);
+    assert.deepStrictEqual(get().buildStrings, [dk]);
+  });
+});
+
 // ── Removal / reset ───────────────────────────────────────────────────────────
 
 describe("removeBuild and reset", () => {

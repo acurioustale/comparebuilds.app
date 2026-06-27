@@ -124,6 +124,13 @@ function parseAll(strings, classNodes) {
 // never applies stale data.
 let loadGen = 0;
 
+// Serialises addBuild() calls. addBuild reads buildStrings, then commits across
+// an await (the first build's dynamic import); two calls dispatched before the
+// first commits would both see an empty list, both take the isFirst branch, and
+// clobber each other's array write and specId. Chaining each call after the
+// previous one keeps that read-modify-write atomic.
+let addBuildQueue = Promise.resolve();
+
 async function loadTreeData(
   set,
   get,
@@ -255,9 +262,21 @@ const createStore = (set, get) => ({
    *   - The spec differs from currently loaded builds
    *   - The build limit (MAX_BUILDS = 5) would be exceeded
    *
+   * Serialised through addBuildQueue so concurrent calls can't race on the
+   * empty-list / isFirst path; returns a promise that resolves when this call
+   * (and only this call) has finished committing.
+   *
    * @param {string} buildString
    */
-  addBuild: async (buildString) => {
+  addBuild: (buildString) => {
+    const run = addBuildQueue.then(() => get().addBuildInternal(buildString));
+    // Keep the queue alive even if this call rejects, so later calls still run.
+    addBuildQueue = run.catch(() => {});
+    return run;
+  },
+
+  /** @internal The real addBuild body; always invoked via the serialised addBuild. */
+  addBuildInternal: async (buildString) => {
     // Clear stale error at the start of each attempt
     set({ error: null });
 
