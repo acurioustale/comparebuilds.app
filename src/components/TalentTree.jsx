@@ -709,11 +709,20 @@ export function TreePanel({
 
   const { minX, minY, W, H } = useMemo(() => panelBounds(nodes), [nodes]);
 
-  // A panel always holds a single section's nodes, so the shared accumulator
-  // (treeType taken from the section) yields the panel's spent total — reused so
-  // the gate-lock math can't drift from the budget/gate logic in treeLogic.
+  // A panel always holds a single section's nodes (and, for hero, a single
+  // subtree), so the shared accumulator yields the panel's spent total — reused
+  // so the gate-lock math can't drift from the budget/gate logic in treeLogic.
+  // Pass the panel's heroSubtree too (null for class/spec) so the count stays
+  // per-subtree, matching gatedPoints, even if a panel is ever handed mixed
+  // hero nodes.
   const spent = useMemo(
-    () => spentPoints(nodes, selectedNodes, nodes[0]?.treeType),
+    () =>
+      spentPoints(
+        nodes,
+        selectedNodes,
+        nodes[0]?.treeType,
+        nodes[0]?.heroSubtree ?? null,
+      ),
     [nodes, selectedNodes],
   );
 
