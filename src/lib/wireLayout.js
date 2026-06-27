@@ -28,10 +28,19 @@ import { collectClassNodes } from "./buildString.js";
  */
 export function wireLayout(classData) {
   const nodes = collectClassNodes(classData);
-  // id + maxRanks + choice arity fully determine each node's bit footprint and
-  // position. Joined in collectClassNodes' ascending-id order.
+  // id + maxRanks + choice arity + each choice option's maxRanks fully determine
+  // a node's bit footprint AND how its rank decodes: parseBuildString resolves a
+  // full-rank pick of a choice option via choices[entryChosen].maxRanks, so a
+  // change to an option's maxRanks silently alters decoded pointsInvested without
+  // shifting any bit position. Including the per-option maxRanks here makes the
+  // snapshot catch that drift too. Joined in collectClassNodes' ascending-id order.
   const signature = nodes
-    .map((n) => `${n.id}:${n.maxRanks}:${n.choices?.length ?? 0}`)
+    .map(
+      (n) =>
+        `${n.id}:${n.maxRanks}:${n.choices?.length ?? 0}:${
+          n.choices?.map((o) => o.maxRanks).join(",") ?? ""
+        }`,
+    )
     .join("|");
   return {
     count: nodes.length,
