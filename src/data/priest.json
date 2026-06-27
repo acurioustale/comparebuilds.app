@@ -46,13 +46,15 @@
           "name": "Voidweaver",
           "icon": "Voidweaver",
           "description": "Voidweavers have dedicated themselves to studying the origins of Void magic, and have discovered a way to tear open a tenuous connection to the Void. This power is incredibly dangerous and volatile, consuming anything in its path.",
-          "rootNodeId": 94684
+          "rootNodeId": 94684,
+          "budget": 13
         },
         "right": {
           "name": "Oracle",
           "icon": "Oracle",
           "description": "Oracles gain insight into the future and use it to protect and empower their allies. Their future sight grants Oracles the ability to bestow unique blessings and benefits upon their allies before they even know they are needed.",
-          "rootNodeId": 94683
+          "rootNodeId": 94683,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2398,13 +2400,15 @@
           "name": "Archon",
           "icon": "Archon",
           "description": "Archons are highly devout and deeply connected to the Light and Shadow. Archons can be blessed from higher beings to enter into an ascended state, becoming an ultimate version of themselves.",
-          "rootNodeId": 94697
+          "rootNodeId": 94697,
+          "budget": 13
         },
         "right": {
           "name": "Oracle",
           "icon": "Oracle",
           "description": "Oracles gain insight into the future and use it to protect and empower their allies. Their future sight grants Oracles the ability to bestow unique blessings and benefits upon their allies before they even know they are needed.",
-          "rootNodeId": 94683
+          "rootNodeId": 94683,
+          "budget": 13
         }
       },
       "nodes": [
@@ -4806,13 +4810,15 @@
           "name": "Voidweaver",
           "icon": "Voidweaver",
           "description": "Voidweavers have dedicated themselves to studying the origins of Void magic, and have discovered a way to tear open a tenuous connection to the Void. This power is incredibly dangerous and volatile, consuming anything in its path.",
-          "rootNodeId": 94684
+          "rootNodeId": 94684,
+          "budget": 13
         },
         "right": {
           "name": "Archon",
           "icon": "Archon",
           "description": "Archons are highly devout and deeply connected to the Light and Shadow. Archons can be blessed from higher beings to enter into an ascended state, becoming an ultimate version of themselves.",
-          "rootNodeId": 94697
+          "rootNodeId": 94697,
+          "budget": 13
         }
       },
       "nodes": [

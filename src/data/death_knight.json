@@ -46,13 +46,15 @@
           "name": "San'layn",
           "icon": "San'layn",
           "description": "San&#39;layn excel at using blood and shadow magic to weaken their enemies and empower their own capabilities.",
-          "rootNodeId": 95051
+          "rootNodeId": 95051,
+          "budget": 13
         },
         "right": {
           "name": "Deathbringer",
           "icon": "Deathbringer",
           "description": "Become the emissary of death. Aim for the soul of your enemies with attacks empowered by the Shadowlands, and remind them of the inevitable.",
-          "rootNodeId": 95062
+          "rootNodeId": 95062,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2260,13 +2262,15 @@
           "name": "Rider of the Apocalypse",
           "icon": "Rider of the Apocalypse",
           "description": "Riders of the Apoclypse call forth the power of the legendary Four Horsemen. They can call upon the Horsemen for aid and tap into the powers of death, famine and disease.",
-          "rootNodeId": 95066
+          "rootNodeId": 95066,
+          "budget": 13
         },
         "right": {
           "name": "Deathbringer",
           "icon": "Deathbringer",
           "description": "Become the emissary of death. Aim for the soul of your enemies with attacks empowered by the Shadowlands, and remind them of the inevitable.",
-          "rootNodeId": 95062
+          "rootNodeId": 95062,
+          "budget": 13
         }
       },
       "nodes": [
@@ -4414,13 +4418,15 @@
           "name": "San'layn",
           "icon": "San'layn",
           "description": "San&#39;layn excel at using blood and shadow magic to weaken their enemies and empower their own capabilities.",
-          "rootNodeId": 95051
+          "rootNodeId": 95051,
+          "budget": 13
         },
         "right": {
           "name": "Rider of the Apocalypse",
           "icon": "Rider of the Apocalypse",
           "description": "Riders of the Apoclypse call forth the power of the legendary Four Horsemen. They can call upon the Horsemen for aid and tap into the powers of death, famine and disease.",
-          "rootNodeId": 95066
+          "rootNodeId": 95066,
+          "budget": 13
         }
       },
       "nodes": [

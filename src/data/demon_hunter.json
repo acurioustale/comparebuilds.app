@@ -48,13 +48,15 @@
           "name": "Annihilator",
           "icon": "Annihilator",
           "description": "An Annihilator draws upon the most fundamental forces of reality to erase from existence any enemies who would threaten the same. While their methods are often questioned, they are always needed when the fight arrives.",
-          "rootNodeId": 109449
+          "rootNodeId": 109449,
+          "budget": 13
         },
         "right": {
           "name": "Void-Scarred",
           "icon": "Void-Scarred",
           "description": "The Void-Scarred embrace their inner demon and amplify the explosive power of the void energy they wield.",
-          "rootNodeId": 110112
+          "rootNodeId": 110112,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2467,13 +2469,15 @@
           "name": "Fel-Scarred",
           "icon": "Fel-Scarred",
           "description": "The Fel-Scarred embrace their inner demon and amplify the explosive power of the fel fire they wield.",
-          "rootNodeId": 94917
+          "rootNodeId": 94917,
+          "budget": 13
         },
         "right": {
           "name": "Aldrachi Reaver",
           "icon": "Aldrachi Reaver",
           "description": "The Aldrachi warriors were the ultimate glaivemasters and wielded their blades with deadly grace, consuming souls and imbuing their weapons with greater power.",
-          "rootNodeId": 94915
+          "rootNodeId": 94915,
+          "budget": 13
         }
       },
       "nodes": [
@@ -5229,13 +5233,15 @@
           "name": "Aldrachi Reaver",
           "icon": "Aldrachi Reaver",
           "description": "The Aldrachi warriors were the ultimate glaivemasters and wielded their blades with deadly grace, consuming souls and imbuing their weapons with greater power.",
-          "rootNodeId": 94915
+          "rootNodeId": 94915,
+          "budget": 13
         },
         "right": {
           "name": "Annihilator",
           "icon": "Annihilator",
           "description": "An Annihilator draws upon the most fundamental forces of reality to erase from existence any enemies who would threaten the same. While their methods are often questioned, they are always needed when the fight arrives.",
-          "rootNodeId": 109449
+          "rootNodeId": 109449,
+          "budget": 13
         }
       },
       "nodes": [

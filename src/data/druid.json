@@ -46,13 +46,15 @@
           "name": "Keeper of the Grove",
           "icon": "Keeper of the Grove",
           "description": "Keepers of the Grove take inspiration from Cenarius&#39; mighty children to protect the balance of nature and safeguard the Dream. They channel the power of the Dream to strengthen their spells and summon empowered treants to protect their allies and crush their enemies.",
-          "rootNodeId": 94600
+          "rootNodeId": 94600,
+          "budget": 13
         },
         "right": {
           "name": "Elune's Chosen",
           "icon": "Elune's Chosen",
           "description": "Elune&#39;s Chosen dedicate themselves to the Moon Goddess and are granted her connection to the moon and stars. Their abilities are infused with astral might and they can call down potent lunar magics.",
-          "rootNodeId": 94608
+          "rootNodeId": 94608,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2524,13 +2526,15 @@
           "name": "Druid of the Claw",
           "icon": "Druid of the Claw",
           "description": "Druids of the Claw are masters of their mighty animal forms. When they transform into cats or bears, they become ferocious combatants and protectors of the wild.",
-          "rootNodeId": 94609
+          "rootNodeId": 94609,
+          "budget": 13
         },
         "right": {
           "name": "Wildstalker",
           "icon": "Wildstalker",
           "description": "Wildstalkers live amongst the remote wilds, hunting to perpetuate the cycle of life and death and destroy those who would despoil nature and using their healing powers to restore life to barren spaces.",
-          "rootNodeId": 94626
+          "rootNodeId": 94626,
+          "budget": 13
         }
       },
       "nodes": [
@@ -5005,13 +5009,15 @@
           "name": "Druid of the Claw",
           "icon": "Druid of the Claw",
           "description": "Druids of the Claw are masters of their mighty animal forms. When they transform into cats or bears, they become ferocious combatants and protectors of the wild.",
-          "rootNodeId": 94609
+          "rootNodeId": 94609,
+          "budget": 13
         },
         "right": {
           "name": "Elune's Chosen",
           "icon": "Elune's Chosen",
           "description": "Elune&#39;s Chosen dedicate themselves to the Moon Goddess and are granted her connection to the moon and stars. Their abilities are infused with astral might and they can call down potent lunar magics.",
-          "rootNodeId": 94608
+          "rootNodeId": 94608,
+          "budget": 13
         }
       },
       "nodes": [
@@ -7537,13 +7543,15 @@
           "name": "Wildstalker",
           "icon": "Wildstalker",
           "description": "Wildstalkers live amongst the remote wilds, hunting to perpetuate the cycle of life and death and destroy those who would despoil nature and using their healing powers to restore life to barren spaces.",
-          "rootNodeId": 94626
+          "rootNodeId": 94626,
+          "budget": 13
         },
         "right": {
           "name": "Keeper of the Grove",
           "icon": "Keeper of the Grove",
           "description": "Keepers of the Grove take inspiration from Cenarius&#39; mighty children to protect the balance of nature and safeguard the Dream. They channel the power of the Dream to strengthen their spells and summon empowered treants to protect their allies and crush their enemies.",
-          "rootNodeId": 94600
+          "rootNodeId": 94600,
+          "budget": 13
         }
       },
       "nodes": [

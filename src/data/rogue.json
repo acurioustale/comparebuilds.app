@@ -46,13 +46,15 @@
           "name": "Fatebound",
           "icon": "Fatebound",
           "description": "The Fatebound eagerly act as the Hand of Fate, sowing chaos into well-laid plans. Guided by the whims of a flipped Fatebound Coin, they deliver the ending their enemies are destined for; the ending they deserve.",
-          "rootNodeId": 95125
+          "rootNodeId": 95125,
+          "budget": 13
         },
         "right": {
           "name": "Deathstalker",
           "icon": "Deathstalker",
           "description": "The harbingers of death, Deathstalkers strike from the shadows to bring a swift end to their targets.",
-          "rootNodeId": 95136
+          "rootNodeId": 95136,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2322,13 +2324,15 @@
           "name": "Trickster",
           "icon": "Trickster",
           "description": "Dirty tricks and flashing blades are on display when a Trickster enters a fight. Tricksters distract opponents with misdirection or a sword&#39;s flourish, then slash them with a blade they never saw coming.",
-          "rootNodeId": 95140
+          "rootNodeId": 95140,
+          "budget": 13
         },
         "right": {
           "name": "Fatebound",
           "icon": "Fatebound",
           "description": "The Fatebound eagerly act as the Hand of Fate, sowing chaos into well-laid plans. Guided by the whims of a flipped Fatebound Coin, they deliver the ending their enemies are destined for; the ending they deserve.",
-          "rootNodeId": 95125
+          "rootNodeId": 95125,
+          "budget": 13
         }
       },
       "nodes": [
@@ -4582,13 +4586,15 @@
           "name": "Trickster",
           "icon": "Trickster",
           "description": "Dirty tricks and flashing blades are on display when a Trickster enters a fight. Tricksters distract opponents with misdirection or a sword&#39;s flourish, then slash them with a blade they never saw coming.",
-          "rootNodeId": 95140
+          "rootNodeId": 95140,
+          "budget": 13
         },
         "right": {
           "name": "Deathstalker",
           "icon": "Deathstalker",
           "description": "The harbingers of death, Deathstalkers strike from the shadows to bring a swift end to their targets.",
-          "rootNodeId": 95136
+          "rootNodeId": 95136,
+          "budget": 13
         }
       },
       "nodes": [

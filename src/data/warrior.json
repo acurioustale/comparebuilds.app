@@ -46,13 +46,15 @@
           "name": "Slayer",
           "icon": "Slayer",
           "description": "A vicious Warrior who sets their sights on a target and pursues it relentlessly, overwhelming their foes with an onslaught of steel and might.",
-          "rootNodeId": 94814
+          "rootNodeId": 94814,
+          "budget": 13
         },
         "right": {
           "name": "Colossus",
           "icon": "Colossus",
           "description": "A veteran of countless battles who can shrug off attacks that would fell others while using their expertise to deliver their most powerful strikes and destroy their enemies.",
-          "rootNodeId": 94818
+          "rootNodeId": 94818,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2211,13 +2213,15 @@
           "name": "Slayer",
           "icon": "Slayer",
           "description": "A vicious Warrior who sets their sights on a target and pursues it relentlessly, overwhelming their foes with an onslaught of steel and might.",
-          "rootNodeId": 94814
+          "rootNodeId": 94814,
+          "budget": 13
         },
         "right": {
           "name": "Mountain Thane",
           "icon": "Mountain Thane",
           "description": "Mountain Thanes are fierce fighters that live to challenge themselves against worthy opponents. Drawing strength from the earth and power from the storm, they strike with blows that hit like a thunder clap to overwhelm their enemies.",
-          "rootNodeId": 94803
+          "rootNodeId": 94803,
+          "budget": 13
         }
       },
       "nodes": [
@@ -4348,13 +4352,15 @@
           "name": "Mountain Thane",
           "icon": "Mountain Thane",
           "description": "Mountain Thanes are fierce fighters that live to challenge themselves against worthy opponents. Drawing strength from the earth and power from the storm, they strike with blows that hit like a thunder clap to overwhelm their enemies.",
-          "rootNodeId": 94803
+          "rootNodeId": 94803,
+          "budget": 13
         },
         "right": {
           "name": "Colossus",
           "icon": "Colossus",
           "description": "A veteran of countless battles who can shrug off attacks that would fell others while using their expertise to deliver their most powerful strikes and destroy their enemies.",
-          "rootNodeId": 94818
+          "rootNodeId": 94818,
+          "budget": 13
         }
       },
       "nodes": [

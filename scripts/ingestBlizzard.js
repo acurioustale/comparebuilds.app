@@ -384,12 +384,14 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
     if (n.treeType === "hero" && n.connections.length === 0)
       n.alreadyGranted = true;
 
-  // Hero budget = spendable (non-granted) nodes in a subtree.
-  const heroNodeCount = left
-    ? nodes.filter((n) => n.heroSubtree === left.name && !n.alreadyGranted)
-        .length
-    : 0;
-  const apex = nodes.find((n) => n.type === "apex");
+  // Per-subtree hero budget = that subtree's spendable (non-granted) node count.
+  // The two subtrees can differ in size (e.g. monk's Conduit of the Celestials
+  // has more nodes than its partner), so the budget lives on each subtree rather
+  // than as one section number.
+  const heroSpendable = (name) =>
+    name
+      ? nodes.filter((n) => n.heroSubtree === name && !n.alreadyGranted).length
+      : 0;
 
   // icon stays the subtree name (the renderer shows subtree headers as text, not
   // an icon file); description comes from DB2's TraitSubTree.
@@ -402,8 +404,19 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
             db2.subtree(ht.id)?.description ?? "",
           ),
           rootNodeId: heroRootId(ht.hero_talent_nodes ?? []),
+          budget: heroSpendable(ht.name),
         }
-      : { name: "Unknown", icon: "Unknown", description: "", rootNodeId: null };
+      : {
+          name: "Unknown",
+          icon: "Unknown",
+          description: "",
+          rootNodeId: null,
+          budget: 0,
+        };
+
+  const leftMeta = subtreeMeta(left);
+  const rightMeta = subtreeMeta(right);
+  const apex = nodes.find((n) => n.type === "apex");
 
   return {
     specId: specInfo.id,
@@ -415,11 +428,13 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
     pointBudget: {
       ...POINT_BUDGET,
       spec: POINT_BUDGET.spec + (apex ? apex.maxRanks : 0),
-      hero: heroNodeCount,
+      // Section-wide cap = the larger subtree; consumers refine to the selected
+      // subtree's own budget. Equal for every spec except the asymmetric ones.
+      hero: Math.max(leftMeta.budget, rightMeta.budget),
     },
     checkpoints: checkpointsFromNodes(nodes),
     heroGateNodeId,
-    heroSubtrees: { left: subtreeMeta(left), right: subtreeMeta(right) },
+    heroSubtrees: { left: leftMeta, right: rightMeta },
     nodes,
   };
 }

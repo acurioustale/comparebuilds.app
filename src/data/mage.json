@@ -46,13 +46,15 @@
           "name": "Sunfury",
           "icon": "Sunfury",
           "description": "By embracing arcane flames, Sunfury mages enhance their most devastating incantations, even calling on the aid of a spellfire phoenix.",
-          "rootNodeId": 94647
+          "rootNodeId": 94647,
+          "budget": 13
         },
         "right": {
           "name": "Spellslinger",
           "icon": "Spellslinger",
           "description": "Mastering the inherently unstable nature of magic allows Spellslingers to splinter their magic, creating powerful and volatile new effects.",
-          "rootNodeId": 94664
+          "rootNodeId": 94664,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2263,13 +2265,15 @@
           "name": "Sunfury",
           "icon": "Sunfury",
           "description": "By embracing arcane flames, Sunfury mages enhance their most devastating incantations, even calling on the aid of a spellfire phoenix.",
-          "rootNodeId": 94647
+          "rootNodeId": 94647,
+          "budget": 13
         },
         "right": {
           "name": "Frostfire",
           "icon": "Frostfire",
           "description": "Frostfire mages take the reins of seemingly incompatible elemental forces. By mastering the opposing forces, they enhance their elemental attacks and can even combine them for more power.",
-          "rootNodeId": 94636
+          "rootNodeId": 94636,
+          "budget": 13
         }
       },
       "nodes": [
@@ -4506,13 +4510,15 @@
           "name": "Spellslinger",
           "icon": "Spellslinger",
           "description": "Mastering the inherently unstable nature of magic allows Spellslingers to splinter their magic, creating powerful and volatile new effects.",
-          "rootNodeId": 94664
+          "rootNodeId": 94664,
+          "budget": 13
         },
         "right": {
           "name": "Frostfire",
           "icon": "Frostfire",
           "description": "Frostfire mages take the reins of seemingly incompatible elemental forces. By mastering the opposing forces, they enhance their elemental attacks and can even combine them for more power.",
-          "rootNodeId": 94636
+          "rootNodeId": 94636,
+          "budget": 13
         }
       },
       "nodes": [

@@ -46,13 +46,15 @@
           "name": "Lightsmith",
           "icon": "Lightsmith",
           "description": "Lightsmiths have developed such masterful control over the Light that they are able to wield it tangibly, employing constructs to empower their weapons and defenses and to protect their allies.",
-          "rootNodeId": 95234
+          "rootNodeId": 95234,
+          "budget": 13
         },
         "right": {
           "name": "Herald of the Sun",
           "icon": "Herald of the Sun",
           "description": "Heralds of the Sun develop a deep bond to the sun and solar energy, using it to burn enemies and cauterize their allies&#39; wounds. They can manifest potent solar rays while fully connected to the Light.",
-          "rootNodeId": 95099
+          "rootNodeId": 95099,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2718,13 +2720,15 @@
           "name": "Templar",
           "icon": "Templar",
           "description": "Templars stop at nothing to bring justice to the wicked. They call down hammers of Light and unleash devastating combinations of physical and holy attacks to vanquish their enemies.",
-          "rootNodeId": 95180
+          "rootNodeId": 95180,
+          "budget": 13
         },
         "right": {
           "name": "Lightsmith",
           "icon": "Lightsmith",
           "description": "Lightsmiths have developed such masterful control over the Light that they are able to wield it tangibly, employing constructs to empower their weapons and defenses and to protect their allies.",
-          "rootNodeId": 95234
+          "rootNodeId": 95234,
+          "budget": 13
         }
       },
       "nodes": [
@@ -5299,13 +5303,15 @@
           "name": "Templar",
           "icon": "Templar",
           "description": "Templars stop at nothing to bring justice to the wicked. They call down hammers of Light and unleash devastating combinations of physical and holy attacks to vanquish their enemies.",
-          "rootNodeId": 95180
+          "rootNodeId": 95180,
+          "budget": 13
         },
         "right": {
           "name": "Herald of the Sun",
           "icon": "Herald of the Sun",
           "description": "Heralds of the Sun develop a deep bond to the sun and solar energy, using it to burn enemies and cauterize their allies&#39; wounds. They can manifest potent solar rays while fully connected to the Light.",
-          "rootNodeId": 95099
+          "rootNodeId": 95099,
+          "budget": 13
         }
       },
       "nodes": [

@@ -46,13 +46,15 @@
           "name": "Shado-Pan",
           "icon": "Shado-Pan",
           "description": "Shado-Pan learn from their forebears and stand proud against their foes to defend friends and family. They bide their time to charge power before unleashing a flurry of blows to overwhelm opponents.",
-          "rootNodeId": 101248
+          "rootNodeId": 101248,
+          "budget": 13
         },
         "right": {
           "name": "Master of Harmony",
           "icon": "Master of Harmony",
           "description": "Masters of Harmony chase physical perfection and the refinement of the body into pure strength, allowing them to tap into the flow of chi and natural cycles of power.",
-          "rootNodeId": 101223
+          "rootNodeId": 101223,
+          "budget": 13
         }
       },
       "nodes": [
@@ -2697,13 +2699,15 @@
           "name": "Conduit of the Celestials",
           "icon": "Conduit of the Celestials",
           "description": "Conduits of the Celestials devote themselves to the teachings of the August Celestials to embody their wisdom and harness their strength. Master Conduits may briefly channel the power of all Celestials at once.",
-          "rootNodeId": 101243
+          "rootNodeId": 101243,
+          "budget": 15
         },
         "right": {
           "name": "Master of Harmony",
           "icon": "Master of Harmony",
           "description": "Masters of Harmony chase physical perfection and the refinement of the body into pure strength, allowing them to tap into the flow of chi and natural cycles of power.",
-          "rootNodeId": 101223
+          "rootNodeId": 101223,
+          "budget": 13
         }
       },
       "nodes": [
@@ -5419,13 +5423,15 @@
           "name": "Conduit of the Celestials",
           "icon": "Conduit of the Celestials",
           "description": "Conduits of the Celestials devote themselves to the teachings of the August Celestials to embody their wisdom and harness their strength. Master Conduits may briefly channel the power of all Celestials at once.",
-          "rootNodeId": 101243
+          "rootNodeId": 101243,
+          "budget": 15
         },
         "right": {
           "name": "Shado-Pan",
           "icon": "Shado-Pan",
           "description": "Shado-Pan learn from their forebears and stand proud against their foes to defend friends and family. They bide their time to charge power before unleashing a flurry of blows to overwhelm opponents.",
-          "rootNodeId": 101248
+          "rootNodeId": 101248,
+          "budget": 13
         }
       },
       "nodes": [
