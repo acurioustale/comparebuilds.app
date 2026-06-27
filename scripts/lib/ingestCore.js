@@ -99,8 +99,13 @@ export function verifyAgainstSnapshot(classes) {
 /**
  * Validates and writes the full normalised dataset to src/data/, and (only for a
  * source that owns the snapshot, and only when validation is clean) regenerates
- * the wire-layout snapshot. Data is written even on validation failure so it can
- * be inspected, but the snapshot is never updated over invalid data.
+ * the wire-layout snapshot.
+ *
+ * On any validation failure the committed src/data/ and the snapshot are left
+ * UNTOUCHED — broken output must never overwrite the last-good data, or a stray
+ * `git commit` after an ignored non-zero exit would ship it. The rejected output
+ * is written to an `.invalid/` inspection subdir (outside the app's
+ * `../data/*.json` glob) so it can still be diffed.
  *
  * Does not exit the process — returns the outcome so the caller decides. Logs a
  * concise per-class line to stdout/stderr.
@@ -119,28 +124,36 @@ export function writeNormalizedData({
   updateSnapshot = false,
   outDir = OUT_DIR,
 }) {
-  mkdirSync(outDir, { recursive: true });
-
-  writeJson(outDir, "classes.json", classIndex);
-  console.log(`  → ${join(outDir, "classes.json")}`);
-
   const { totalProblems, byClass } = validateClasses(classIndex, classes);
-  for (const [slug, data] of Object.entries(classes)) {
-    const problems = byClass[slug];
-    if (problems.length > 0) {
-      console.error(`✗ ${slug}: validation failed (${problems.length})`);
-      for (const p of problems) console.error(`      - ${p}`);
-    }
-    writeJson(outDir, `${slug}.json`, data);
-    console.log(`  → ${join(outDir, `${slug}.json`)}`);
-  }
 
   if (totalProblems > 0) {
+    // Don't clobber committed data: write the rejected attempt to an inspection
+    // subdir and leave src/data/ and the snapshot exactly as they were.
+    const inspectDir = join(outDir, ".invalid");
+    mkdirSync(inspectDir, { recursive: true });
+    writeJson(inspectDir, "classes.json", classIndex);
+    for (const [slug, data] of Object.entries(classes)) {
+      const problems = byClass[slug];
+      if (problems.length > 0) {
+        console.error(`✗ ${slug}: validation failed (${problems.length})`);
+        for (const p of problems) console.error(`      - ${p}`);
+      }
+      writeJson(inspectDir, `${slug}.json`, data);
+    }
     console.error(
-      `\n✗ ${totalProblems} validation problem(s) — data written for inspection, ` +
-        `but the wire-layout snapshot was NOT updated. Fix the source/normaliser and re-run.`,
+      `\n✗ ${totalProblems} validation problem(s) — committed src/data/ and the ` +
+        `wire-layout snapshot were left untouched. Rejected output written to ` +
+        `${inspectDir} for inspection. Fix the source/normaliser and re-run.`,
     );
     return { validationFailures: totalProblems, snapshotUpdated: false };
+  }
+
+  mkdirSync(outDir, { recursive: true });
+  writeJson(outDir, "classes.json", classIndex);
+  console.log(`  → ${join(outDir, "classes.json")}`);
+  for (const [slug, data] of Object.entries(classes)) {
+    writeJson(outDir, `${slug}.json`, data);
+    console.log(`  → ${join(outDir, `${slug}.json`)}`);
   }
 
   let snapshotUpdated = false;

@@ -12,6 +12,10 @@ dist-ssr/
 coverage/
 *.lcov
 
+# ─── Ingest ────────────────────────────────────────────────────────────────────
+# Rejected ingest output written for inspection on a validation failure.
+src/data/.invalid/
+
 # ─── Tool caches ───────────────────────────────────────────────────────────────
 .eslintcache
 .stylelintcache
