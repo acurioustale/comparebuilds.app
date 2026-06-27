@@ -1,7 +1,7 @@
 import { memo, useMemo, useId, useRef, useState } from "react";
 import Tooltip from "./Tooltip";
 import { iconUrl, onIconError } from "../lib/iconUrl";
-import { activeHeroSubtree } from "../lib/spendRules";
+import { activeHeroSubtree, heroSectionBudget } from "../lib/spendRules";
 import { spentPoints } from "../lib/treeLogic";
 import { prereqChain } from "../lib/prereqChain";
 import { useNodeEmphasis } from "./SearchContext";
@@ -1012,7 +1012,7 @@ export default function TalentTree({
               {sectionSpent?.hero != null && (
                 <SectionCounter
                   spent={sectionSpent.hero}
-                  max={budget?.hero ?? 0}
+                  max={heroSectionBudget(treeData, selectedNodes)}
                 />
               )}
               <div

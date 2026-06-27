@@ -30,8 +30,8 @@ function makeValid() {
         checkpoints: { class: [{ row: 2, points: 5 }], spec: [] },
         heroGateNodeId: 9,
         heroSubtrees: {
-          left: { name: "Left", icon: "left_icon" },
-          right: { name: "Right", icon: "right_icon" },
+          left: { name: "Left", icon: "left_icon", budget: 1 },
+          right: { name: "Right", icon: "right_icon", budget: 1 },
         },
         nodes: [
           {
@@ -275,6 +275,21 @@ describe("spec-level fields", () => {
         delete d.specs.only.heroSubtrees.right.icon;
       }),
       "heroSubtrees.right.icon must be a non-empty string",
+    ));
+  test("heroSubtree non-integer budget", () =>
+    assertHasError(
+      errorsFor((d) => {
+        d.specs.only.heroSubtrees.left.budget = "x";
+      }),
+      "heroSubtrees.left.budget must be a non-negative integer",
+    ));
+  test("pointBudget.hero must equal the larger subtree budget", () =>
+    assertHasError(
+      errorsFor((d) => {
+        // Left subtree allows 5 but pointBudget.hero still claims 1.
+        d.specs.only.heroSubtrees.left.budget = 5;
+      }),
+      "must equal max(heroSubtrees budgets)",
     ));
   test("empty nodes array", () =>
     assertHasError(

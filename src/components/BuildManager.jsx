@@ -9,7 +9,11 @@ import {
 import { encodeBuildsHash } from "../lib/shareLink";
 import classesIndex from "../data/classes.json";
 import { iconUrl, onIconError } from "../lib/iconUrl";
-import { activeHeroSubtree, sectionPoints } from "../lib/spendRules";
+import {
+  activeHeroSubtree,
+  sectionPoints,
+  heroSectionBudget,
+} from "../lib/spendRules";
 
 function ClassIcon({ name, size = 36 }) {
   // WoW class icons use the slug classicon_{name} with underscores removed.
@@ -153,7 +157,8 @@ function pointSummary(parsed, treeData) {
   const cls = sectionPoints("class", treeData.nodes, parsed.nodes);
   const spec = sectionPoints("spec", treeData.nodes, parsed.nodes);
   const hero = sectionPoints("hero", treeData.nodes, parsed.nodes);
-  return `Class: ${cls}/${budget.class} · Spec: ${spec}/${budget.spec} · Hero: ${hero}/${budget.hero}`;
+  const heroMax = heroSectionBudget(treeData, parsed.nodes);
+  return `Class: ${cls}/${budget.class} · Spec: ${spec}/${budget.spec} · Hero: ${hero}/${heroMax}`;
 }
 
 function FilledSlot({

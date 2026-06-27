@@ -131,7 +131,23 @@ export function validateClassData(data, indexEntry = null) {
           else subtreeNames.add(sub.name);
           if (!isStr(sub.icon))
             at(`heroSubtrees.${side}.icon must be a non-empty string`);
+          if (!isInt(sub.budget) || sub.budget < 0)
+            at(`heroSubtrees.${side}.budget must be a non-negative integer`);
         }
+      }
+      // pointBudget.hero is the section-wide cap; it must equal the larger of the
+      // two subtree budgets (the two can differ — see ingest), so the generic
+      // section check never under-caps the bigger subtree.
+      if (
+        isInt(hs.left?.budget) &&
+        isInt(hs.right?.budget) &&
+        isInt(pb?.hero)
+      ) {
+        const expected = Math.max(hs.left.budget, hs.right.budget);
+        if (pb.hero !== expected)
+          at(
+            `pointBudget.hero (${pb.hero}) must equal max(heroSubtrees budgets) (${expected})`,
+          );
       }
     }
 

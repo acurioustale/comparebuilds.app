@@ -119,27 +119,59 @@ export default function InteractiveTalentTree({
   // Spend the first point on an unselected node (gated by canSpendPoint).
   const spendFirstPoint = useCallback(
     (node, entryChosen) => {
-      if (!canSpendPoint(node, treeData.nodes, selected, nodeById, budget))
+      if (
+        !canSpendPoint(
+          node,
+          treeData.nodes,
+          selected,
+          nodeById,
+          budget,
+          treeData.heroSubtrees,
+        )
+      )
         return;
       setInteractiveNodes({
         ...selected,
         [node.id]: { pointsInvested: 1, entryChosen },
       });
     },
-    [selected, nodeById, treeData.nodes, budget, setInteractiveNodes],
+    [
+      selected,
+      nodeById,
+      treeData.nodes,
+      treeData.heroSubtrees,
+      budget,
+      setInteractiveNodes,
+    ],
   );
 
   // Add a rank to an already-selected node (gated by canSpendPoint).
   const incrementRank = useCallback(
     (node, sel) => {
-      if (!canSpendPoint(node, treeData.nodes, selected, nodeById, budget))
+      if (
+        !canSpendPoint(
+          node,
+          treeData.nodes,
+          selected,
+          nodeById,
+          budget,
+          treeData.heroSubtrees,
+        )
+      )
         return;
       setInteractiveNodes({
         ...selected,
         [node.id]: { ...sel, pointsInvested: sel.pointsInvested + 1 },
       });
     },
-    [selected, nodeById, treeData.nodes, budget, setInteractiveNodes],
+    [
+      selected,
+      nodeById,
+      treeData.nodes,
+      treeData.heroSubtrees,
+      budget,
+      setInteractiveNodes,
+    ],
   );
 
   // Remove a node from the selection entirely.

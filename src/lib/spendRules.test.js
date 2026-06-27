@@ -9,6 +9,7 @@ import {
   sectionPoints,
   activeHeroSubtree,
   canSpendPoint,
+  heroSectionBudget,
 } from "./spendRules.js";
 
 function node(id, treeType, posY, opts = {}) {
@@ -116,5 +117,48 @@ describe("canSpendPoint", () => {
 
   test("first hero node of either subtree is allowed", () => {
     assert.strictEqual(canSpendPoint(HERO_R, ALL, {}, byId, BUDGET), true);
+  });
+
+  test("a hero node is capped by its own subtree's budget, not the section max", () => {
+    // Two nodes in the "Left" subtree; Left's budget is 1 while the section max
+    // (budget.hero) is 3 — the asymmetric case (cf. monk's Conduit vs partner).
+    const L1 = node(20, "hero", 0, { heroSubtree: "Left" });
+    const L2 = node(21, "hero", 0, { heroSubtree: "Left" });
+    const all = [L1, L2];
+    const ids = Object.fromEntries(all.map((n) => [n.id, n]));
+    const budget = { class: 10, spec: 10, hero: 3 };
+    const heroSubtrees = {
+      left: { name: "Left", budget: 1 },
+      right: { name: "Right", budget: 3 },
+    };
+    // 1 point already spent in Left (its whole budget): a second Left node is
+    // blocked by the per-subtree budget even though the section max isn't hit.
+    assert.strictEqual(
+      canSpendPoint(L2, all, { 20: pt() }, ids, budget, heroSubtrees),
+      false,
+    );
+    // Without subtree budgets it falls back to budget.hero (3) and allows it —
+    // confirming the per-subtree resolution is what blocks it.
+    assert.strictEqual(canSpendPoint(L2, all, { 20: pt() }, ids, budget), true);
+  });
+});
+
+describe("heroSectionBudget", () => {
+  const treeData = {
+    nodes: ALL,
+    pointBudget: { class: 10, spec: 10, hero: 15 },
+    heroSubtrees: {
+      left: { name: "Left", budget: 15 },
+      right: { name: "Right", budget: 13 },
+    },
+  };
+
+  test("uses the committed subtree's own budget", () => {
+    // Right subtree active → its budget (13), not the section max (15).
+    assert.strictEqual(heroSectionBudget(treeData, { 11: pt() }), 13);
+  });
+
+  test("falls back to the section max before a subtree is chosen", () => {
+    assert.strictEqual(heroSectionBudget(treeData, {}), 15);
   });
 });
