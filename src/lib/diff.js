@@ -10,6 +10,10 @@
 export function selectionLabel(node, sel) {
   if (!sel) return null;
   if (node.type === "choice") {
+    // A selected choice node always carries an entryChosen; guard the unknown
+    // case (corrupt/partial data) by naming the node rather than faking
+    // "option 1" (null + 1), which would mislabel it as the first option.
+    if (sel.entryChosen == null) return node.name;
     const ch = node.choices[sel.entryChosen];
     return ch?.name ?? `option ${sel.entryChosen + 1}`;
   }

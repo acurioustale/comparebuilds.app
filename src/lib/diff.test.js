@@ -90,6 +90,16 @@ describe("selectionLabel", () => {
     assert.strictEqual(selectionLabel(byId[3], pt(1, 1)), "Y"));
   test("choice node with out-of-range index → fallback", () =>
     assert.strictEqual(selectionLabel(byId[3], pt(1, 5)), "option 6"));
+  test("choice node with unknown pick names the node, not a fake option 1", () => {
+    const named = {
+      type: "choice",
+      name: "Capstone",
+      choices: [{ name: "X" }, { name: "Y" }],
+    };
+    assert.strictEqual(selectionLabel(named, pt(1, null)), "Capstone");
+    // The fixture's unnamed choice node yields its (null) name, never "option 1".
+    assert.strictEqual(selectionLabel(byId[3], pt(1, null)), null);
+  });
 });
 
 describe("computeDiff", () => {
