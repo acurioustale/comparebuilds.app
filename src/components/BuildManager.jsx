@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
 import Tooltip from "./Tooltip";
 import {
@@ -168,12 +168,14 @@ function FilledSlot({
   onRename,
 }) {
   const [flash, setFlash] = useState(false);
+  const flashTimer = useRef(null);
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(value);
       setFlash(true);
-      setTimeout(() => setFlash(false), 1500);
+      flashTimer.current = setTimeout(() => setFlash(false), 1500);
     } catch {
       // clipboard unavailable — silently ignore
     }
@@ -368,6 +370,17 @@ export default function BuildManager() {
 
   const [copyState, setCopyState] = useState("idle"); // 'idle' | 'copying' | 'copied' | 'error'
   const [permalinkState, setPermalinkState] = useState("idle"); // 'idle' | 'copied' | 'error'
+  // Reset timers, cleared on unmount so they can't fire setState on a removed
+  // share-controls component (e.g. clearing all builds within the 2s window).
+  const permalinkTimer = useRef(null);
+  const copyTimer = useRef(null);
+  useEffect(
+    () => () => {
+      clearTimeout(permalinkTimer.current);
+      clearTimeout(copyTimer.current);
+    },
+    [],
+  );
 
   // Local class selection used before any builds are loaded
   const [localClassId, setLocalClassId] = useState(null);
@@ -407,7 +420,10 @@ export default function BuildManager() {
     } catch {
       setPermalinkState("error");
     } finally {
-      setTimeout(() => setPermalinkState("idle"), 2000);
+      permalinkTimer.current = setTimeout(
+        () => setPermalinkState("idle"),
+        2000,
+      );
     }
   }, [permalinkState, buildStrings, buildNames]);
 
@@ -444,7 +460,7 @@ export default function BuildManager() {
     } catch {
       setCopyState("error");
     } finally {
-      setTimeout(() => setCopyState("idle"), 2000);
+      copyTimer.current = setTimeout(() => setCopyState("idle"), 2000);
     }
   }, [
     copyState,
