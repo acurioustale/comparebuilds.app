@@ -48,6 +48,11 @@ const COND_TYPE_LEVEL_GRANT = "5";
 // SpentAmountRequired is a real tree gate; types 1/2 are prereq flags and
 // progressive auto-grants whose SpentAmountRequired is not a gate threshold).
 const COND_TYPE_SPENT_GATE = "0";
+// TraitCond.CondType for a spec restriction. When such a condition carries a
+// SpecSetID it binds the node to that set of specs — how a tree shared by two
+// specs gives each its own variant of a co-located talent. A node with no such
+// condition is unrestricted (applies to every spec of its class).
+const COND_TYPE_SPEC = "1";
 
 // ---------------------------------------------------------------------------
 // Minimal RFC 4180 CSV parser (handles quoted fields, embedded commas/newlines)
@@ -130,17 +135,29 @@ export class BlizzardDb2 {
   /** Fetch + index the trait tables. Idempotent. */
   async load() {
     if (this._loaded) return this;
-    const [nx, entry, def, cond, ncond, gxn, gxc, subtree] = await Promise.all([
-      this._table("TraitNodeXTraitNodeEntry"),
-      this._table("TraitNodeEntry"),
-      this._table("TraitDefinition"),
-      this._table("TraitCond"),
-      this._table("TraitNodeXTraitCond"),
-      this._table("TraitNodeGroupXTraitNode"),
-      this._table("TraitNodeGroupXTraitCond"),
-      this._table("TraitSubTree"),
-    ]);
-    this.index({ nx, entry, def, cond, ncond, gxn, gxc, subtree });
+    const [nx, entry, def, cond, ncond, gxn, gxc, subtree, specSetMember] =
+      await Promise.all([
+        this._table("TraitNodeXTraitNodeEntry"),
+        this._table("TraitNodeEntry"),
+        this._table("TraitDefinition"),
+        this._table("TraitCond"),
+        this._table("TraitNodeXTraitCond"),
+        this._table("TraitNodeGroupXTraitNode"),
+        this._table("TraitNodeGroupXTraitCond"),
+        this._table("TraitSubTree"),
+        this._table("SpecSetMember"),
+      ]);
+    this.index({
+      nx,
+      entry,
+      def,
+      cond,
+      ncond,
+      gxn,
+      gxc,
+      subtree,
+      specSetMember,
+    });
     return this;
   }
 
@@ -149,7 +166,7 @@ export class BlizzardDb2 {
    * so the join logic is unit-testable without the network. Each arg is an array
    * of row objects (as parseCsv returns).
    */
-  index({ nx, entry, def, cond, ncond, gxn, gxc, subtree }) {
+  index({ nx, entry, def, cond, ncond, gxn, gxc, subtree, specSetMember }) {
     this._entryById = new Map(entry.map((r) => [r.ID, r]));
     this._defById = new Map(def.map((r) => [r.ID, r]));
     this._condById = new Map(cond.map((r) => [r.ID, r]));
@@ -185,6 +202,32 @@ export class BlizzardDb2 {
       this._condsByGroup.set(r.TraitNodeGroupID, list);
     }
 
+    // node → Set of spec ids it is restricted to (empty = unrestricted). A spec
+    // condition (CondType 1 + SpecSetID) can hang off the node directly or off
+    // one of its groups; resolve both paths and expand each SpecSetID to its
+    // member ChrSpecializationIDs. This is how a tree shared by two specs binds
+    // each variant of a co-located talent to the spec that actually sees it.
+    const specsBySet = new Map();
+    for (const r of specSetMember ?? []) {
+      const set = specsBySet.get(r.SpecSet) ?? new Set();
+      set.add(r.ChrSpecializationID);
+      specsBySet.set(r.SpecSet, set);
+    }
+    this._nodeSpecs = new Map();
+    const addSpecCond = (nodeId, condId) => {
+      const c = this._condById.get(condId);
+      if (c?.CondType !== COND_TYPE_SPEC || !c.SpecSetID) return;
+      const set = this._nodeSpecs.get(nodeId) ?? new Set();
+      for (const s of specsBySet.get(c.SpecSetID) ?? []) set.add(s);
+      this._nodeSpecs.set(nodeId, set);
+    };
+    for (const [nodeId, condIds] of this._condsByNode)
+      for (const condId of condIds) addSpecCond(nodeId, condId);
+    for (const [nodeId, groups] of this._groupsByNode)
+      for (const g of groups)
+        for (const condId of this._condsByGroup.get(g) ?? [])
+          addSpecCond(nodeId, condId);
+
     this._loaded = true;
     return this;
   }
@@ -204,6 +247,20 @@ export class BlizzardDb2 {
         if (amt > req) req = amt;
       }
     return req;
+  }
+
+  /**
+   * Whether a talent node applies to a given spec. Nodes in a tree shared by
+   * several specs can be spec-bound by a CondType-1 spec-set condition — a
+   * variant talent only one spec sees (e.g. monk Conduit's Yu'lon's Knowledge
+   * for Mistweaver vs Xuen's Bond for Windwalker, both at the same grid cell).
+   * A node with no such condition is unrestricted.
+   * @param {number|string} nodeId
+   * @param {number|string} specId  ChrSpecialization id
+   */
+  appliesToSpec(nodeId, specId) {
+    const specs = this._nodeSpecs.get(String(nodeId));
+    return !specs || specs.size === 0 || specs.has(String(specId));
   }
 
   /** Ordered TraitNodeEntry rows for a node, or []. */

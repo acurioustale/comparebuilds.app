@@ -4720,8 +4720,7 @@
           "posX": 22,
           "posY": 4,
           "connections": [
-            101233,
-            110221
+            101233
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4759,7 +4758,6 @@
           "posY": 3,
           "connections": [
             110067,
-            101243,
             110067
           ],
           "spentRequired": 0,
@@ -4854,7 +4852,6 @@
             101238,
             109700,
             101238,
-            110220,
             101235
           ],
           "spentRequired": 0,
@@ -4892,8 +4889,7 @@
           "posY": 3,
           "connections": [
             110067,
-            110067,
-            101243
+            110067
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4902,22 +4898,6 @@
           "name": "Courage of the White Tiger",
           "icon": "ability_monk_summontigerstatue",
           "description": "Xuen claws your target for 118 Physical damage, healing a nearby ally for 100% of the damage done.\r\n\r\nInvoking a celestial guarantees your next cast activates this effect.",
-          "choices": null
-        },
-        {
-          "id": 101243,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 20,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Conduit of the Celestials",
-          "maxRanks": 1,
-          "name": "Invoke Xuen, the White Tiger",
-          "icon": "ability_monk_summontigerstatue",
-          "description": "Summons an effigy of Xuen, the White Tiger for 20 sec. Xuen attacks your primary target, and strikes 3 enemies within 10 yards every 0.9 sec with Tiger Lightning for 9 Nature damage.",
           "choices": null
         },
         {
@@ -4946,8 +4926,7 @@
           "posX": 24,
           "posY": 3,
           "connections": [
-            110067,
-            101243
+            110067
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -5012,57 +4991,6 @@
           "icon": "inv_celestialserpentmount_jade",
           "description": "Vivify and Sheilun&#39;s Gift have a chance to trigger Heart of the Jade Serpent for 4 sec at 100% effectiveness.",
           "choices": null
-        },
-        {
-          "id": 110220,
-          "type": "round",
-          "treeType": "hero",
-          "posX": 20,
-          "posY": 5,
-          "connections": [
-            110211
-          ],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "heroSubtree": "Conduit of the Celestials",
-          "maxRanks": 1,
-          "name": "Celestial Conduit",
-          "icon": "inv_ability_conduitofthecelestialsmonk_celestialconduit",
-          "description": "After Invoking Xuen, the White Tiger you may cast Celestial Conduit within 1 min.\r\n\r\n Celestial Conduit:\r\nThe August Celestials empower you, causing you to radiate 386 Nature damage onto enemies and 21,337 healing onto up to 5 injured allies within 15 yds over 3.6 sec, reduced beyond 5 targets.\r\n\r\nYou may move while channeling, but casting other healing or damaging spells cancels this effect.\r\n",
-          "choices": null
-        },
-        {
-          "id": 110221,
-          "type": "choice",
-          "treeType": "hero",
-          "posX": 22,
-          "posY": 3,
-          "connections": [
-            101243
-          ],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "heroSubtree": "Conduit of the Celestials",
-          "maxRanks": 1,
-          "name": null,
-          "icon": null,
-          "description": null,
-          "choices": [
-            {
-              "spellId": 442719,
-              "name": "Restore Balance",
-              "icon": "ability_monk_chiexplosion",
-              "description": "",
-              "maxRanks": 1
-            },
-            {
-              "spellId": 392986,
-              "name": "Xuen's Bond",
-              "icon": "ability_demonhunter_netherbond",
-              "description": "Invoke Xuen, the White Tiger&#39;s damage is increased by 30% and its cooldown is reduced by 30 sec.",
-              "maxRanks": 1
-            }
-          ]
         },
         {
           "id": 101220,
@@ -7384,46 +7312,12 @@
           ]
         },
         {
-          "id": 101233,
-          "type": "choice",
-          "treeType": "hero",
-          "posX": 22,
-          "posY": 3,
-          "connections": [
-            110067
-          ],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "heroSubtree": "Conduit of the Celestials",
-          "maxRanks": 1,
-          "name": null,
-          "icon": null,
-          "description": null,
-          "choices": [
-            {
-              "spellId": 442719,
-              "name": "Restore Balance",
-              "icon": "ability_monk_chiexplosion",
-              "description": "",
-              "maxRanks": 1
-            },
-            {
-              "spellId": 443625,
-              "name": "Yu'lon's Knowledge",
-              "icon": "inv_jewelcrafting_jadeserpent",
-              "description": "Rising Sun Kick damage increased by 15%.",
-              "maxRanks": 1
-            }
-          ]
-        },
-        {
           "id": 101234,
           "type": "round",
           "treeType": "hero",
           "posX": 22,
           "posY": 4,
           "connections": [
-            101233,
             110221
           ],
           "spentRequired": 0,
@@ -7461,9 +7355,7 @@
           "posX": 18,
           "posY": 3,
           "connections": [
-            110067,
-            101243,
-            110067
+            101243
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -7552,7 +7444,6 @@
           "connections": [
             109700,
             101235,
-            101240,
             101238,
             101238,
             109700,
@@ -7570,32 +7461,12 @@
           "choices": null
         },
         {
-          "id": 101240,
-          "type": "round",
-          "treeType": "hero",
-          "posX": 20,
-          "posY": 5,
-          "connections": [
-            110211
-          ],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "heroSubtree": "Conduit of the Celestials",
-          "maxRanks": 1,
-          "name": "Stampede of the Ancients",
-          "icon": "monk_ability_summonoxstatue",
-          "description": "Strength of the Black Ox&#39;s effect is 400% more effective on your primary target.",
-          "choices": null
-        },
-        {
           "id": 101242,
           "type": "round",
           "treeType": "hero",
           "posX": 20,
           "posY": 3,
           "connections": [
-            110067,
-            110067,
             101243
           ],
           "spentRequired": 0,
@@ -7649,7 +7520,6 @@
           "posX": 24,
           "posY": 3,
           "connections": [
-            110067,
             101243
           ],
           "spentRequired": 0,
@@ -7659,22 +7529,6 @@
           "name": "Heart of the Jade Serpent",
           "icon": "ability_monk_dragonkick",
           "description": " upon Yu&#39;lon to increase the cooldown recovery rate of  by 75% for .",
-          "choices": null
-        },
-        {
-          "id": 110067,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 20,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Conduit of the Celestials",
-          "maxRanks": 1,
-          "name": "Celestial Conduit",
-          "icon": "inv_ability_conduitofthecelestialsmonk_celestialconduit",
-          "description": "The August Celestials empower you, causing you to radiate 387 Nature damage onto enemies and 21,395 healing onto up to 5 injured allies within 15 yds over 3.6 sec, reduced beyond 5 targets.\r\n\r\nYou may move while channeling, but casting other healing or damaging spells cancels this effect.\r\n",
           "choices": null
         },
         {

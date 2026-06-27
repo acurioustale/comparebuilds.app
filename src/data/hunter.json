@@ -2085,7 +2085,6 @@
           "posX": 18,
           "posY": 3,
           "connections": [
-            94987,
             109961
           ],
           "spentRequired": 0,
@@ -2104,7 +2103,6 @@
           "posX": 20,
           "posY": 3,
           "connections": [
-            94987,
             109961
           ],
           "spentRequired": 0,
@@ -2123,7 +2121,6 @@
           "posX": 22,
           "posY": 3,
           "connections": [
-            94987,
             109961
           ],
           "spentRequired": 0,
@@ -2205,22 +2202,6 @@
           ]
         },
         {
-          "id": 94987,
-          "type": "round",
-          "treeType": "hero",
-          "posX": 20,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Dark Ranger",
-          "maxRanks": 1,
-          "name": "Black Arrow",
-          "icon": "inv_ability_darkrangerhunter_blackarrow",
-          "description": "Your Kill Shot is replaced with Black Arrow.\r\n\r\n Black Arrow\r\nYou attempt to finish off a wounded target, dealing 121 Shadow damage and 140 Shadow damage over 8 sec. Only usable on enemies above 80% health or below 20% health.",
-          "choices": null
-        },
-        {
           "id": 94993,
           "type": "round",
           "treeType": "hero",
@@ -2284,8 +2265,7 @@
           "posX": 24,
           "posY": 3,
           "connections": [
-            109961,
-            94987
+            109961
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4402,8 +4382,7 @@
           "posX": 18,
           "posY": 3,
           "connections": [
-            94987,
-            109961
+            94987
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4421,8 +4400,7 @@
           "posX": 20,
           "posY": 3,
           "connections": [
-            94987,
-            109961
+            94987
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4440,8 +4418,7 @@
           "posX": 22,
           "posY": 3,
           "connections": [
-            94987,
-            109961
+            94987
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4601,7 +4578,6 @@
           "posX": 24,
           "posY": 3,
           "connections": [
-            109961,
             94987
           ],
           "spentRequired": 0,
@@ -4611,22 +4587,6 @@
           "name": "Corpsecaller",
           "icon": "ability_fiegndead",
           "description": "When summoning a Dire Beast, you have a 10% chance to instead summon a Dark Hound that deals significantly increased damage.",
-          "choices": null
-        },
-        {
-          "id": 109961,
-          "type": "square",
-          "treeType": "hero",
-          "posX": 20,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Dark Ranger",
-          "maxRanks": 1,
-          "name": "Black Arrow",
-          "icon": "inv_ability_darkrangerhunter_blackarrow",
-          "description": "You attempt to finish off a wounded target, dealing 121 Shadow damage and 140 Shadow damage over 8 sec. Only usable on enemies above 80% health or below 20% health.",
           "choices": null
         }
       ]

@@ -188,6 +188,7 @@ async function normaliseNode(
   heroSubtree,
   iconOf,
   descOf,
+  spellDescOf,
   gateOf,
 ) {
   const type = TYPE_MAP[raw.node_type?.type] ?? "round";
@@ -195,6 +196,14 @@ async function normaliseNode(
 
   const base = wireBase(raw, type, treeType, gateOf);
   if (heroSubtree != null) base.heroSubtree = heroSubtree;
+
+  // The tree endpoint sometimes ships a node/option with no inline tooltip text
+  // (e.g. monk Conduit's "Restore Balance"), so fall back to the spell's own
+  // description from the Spell API when the inline one is empty.
+  const descFor = async (spellId, inlineHtml) => {
+    const inline = descOf(spellId, inlineHtml ?? "");
+    return inline || (spellId != null ? await spellDescOf(spellId) : inline);
+  };
 
   if (isChoice) {
     // choice_of_tooltips sits directly on the rank, not under `tooltip`.
@@ -207,7 +216,7 @@ async function normaliseNode(
         name:
           tt.talent?.name ?? tt.spell_tooltip?.spell?.name ?? String(spellId),
         icon: (await iconOf(spellId)) ?? String(spellId),
-        description: descOf(spellId, tt.spell_tooltip?.description ?? ""),
+        description: await descFor(spellId, tt.spell_tooltip?.description),
         maxRanks: 1,
       });
     }
@@ -230,7 +239,7 @@ async function normaliseNode(
     maxRanks: raw.ranks?.length ?? 1,
     name: tt?.talent?.name ?? tt?.spell_tooltip?.spell?.name ?? String(raw.id),
     icon: (await iconOf(spellId)) ?? String(spellId ?? raw.id),
-    description: descOf(spellId, tt?.spell_tooltip?.description ?? ""),
+    description: await descFor(spellId, tt?.spell_tooltip?.description),
     choices: null,
   };
 }
@@ -346,15 +355,23 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
   // overlap with a seen-set (a node is emitted once). Apex capstones (detected
   // from DB2) get their flattened rank chain rebuilt.
   const seen = new Set();
-  const nodes = [];
+  const built = [];
   const emit = async (n, treeType, sub) => {
     if (placeholderIds.has(n.id) || heroIds.has(n.id) || seen.has(n.id)) return;
     seen.add(n.id);
     const apexChain = db2.apexChain(n.id);
-    nodes.push(
+    built.push(
       apexChain
         ? await buildApexNode(n, apexChain, iconOf, spellDescOf, gateOf)
-        : await normaliseNode(n, treeType, sub, iconOf, descOf, gateOf),
+        : await normaliseNode(
+            n,
+            treeType,
+            sub,
+            iconOf,
+            descOf,
+            spellDescOf,
+            gateOf,
+          ),
     );
   };
 
@@ -364,11 +381,40 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
     for (const n of ht.hero_talent_nodes ?? []) {
       if (seen.has(n.id)) continue;
       seen.add(n.id);
-      nodes.push(
-        await normaliseNode(n, "hero", ht.name, iconOf, descOf, gateOf),
+      built.push(
+        await normaliseNode(
+          n,
+          "hero",
+          ht.name,
+          iconOf,
+          descOf,
+          spellDescOf,
+          gateOf,
+        ),
       );
     }
   }
+
+  // Spec-variant filter: some trees are shared by several specs and place, at one
+  // grid cell, a separate variant of a talent per spec (monk Conduit shows
+  // Yu'lon's Knowledge to Mistweaver and Xuen's Bond to Windwalker at the same
+  // cell). Keep only the variant this spec sees: drop a node ONLY when it does not
+  // apply here AND a co-located sibling does. A node that is merely shared across
+  // specs (evoker's Chronowarden carries a partial spec-set but has no per-spec
+  // alternate at its cell) has no such sibling, so it stays — the cell never
+  // empties. Dropped variants survive in their own spec's data, so the class-wide
+  // wire layout (the union collectClassNodes builds) is unchanged.
+  const cellKey = (n) =>
+    `${n.treeType}|${n.heroSubtree ?? ""}|${n.posX},${n.posY}`;
+  const cellHasNativeVariant = new Set();
+  for (const n of built)
+    if (db2.appliesToSpec(n.id, specInfo.id))
+      cellHasNativeVariant.add(cellKey(n));
+  const nodes = built.filter(
+    (n) =>
+      db2.appliesToSpec(n.id, specInfo.id) ||
+      !cellHasNativeVariant.has(cellKey(n)),
+  );
 
   // Drop connections to nodes not present in this spec (matches how the game
   // routes a shared talent's prerequisite through the active spec).

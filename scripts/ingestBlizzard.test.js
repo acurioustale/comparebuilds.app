@@ -49,6 +49,7 @@ const DB2_STUB = {
   apexChain: () => null,
   spentRequired: () => 0,
   subtree: (id) => ({ name: `sub${id}`, description: `desc-${id}` }),
+  appliesToSpec: () => true,
 };
 const FNS = {
   iconOf: async () => "icon",

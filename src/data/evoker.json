@@ -1886,7 +1886,6 @@
           "posX": 44,
           "posY": 3,
           "connections": [
-            94939,
             98931
           ],
           "spentRequired": 0,
@@ -1896,22 +1895,6 @@
           "name": "Bombardments",
           "icon": "inv_ability_scalecommanderevoker_bombardments",
           "description": "Mass Disintegrate marks your primary target for destruction for the next 6 sec.\r\n\r\nYou and your allies have a chance to trigger a Bombardment when attacking marked targets, dealing 1,805 Volcanic damage split amongst all nearby enemies.",
-          "choices": null
-        },
-        {
-          "id": 94939,
-          "type": "round",
-          "treeType": "hero",
-          "posX": 46,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Scalecommander",
-          "maxRanks": 1,
-          "name": "Mass Disintegrate",
-          "icon": "inv_1205_ability_evoker_massdisintegration",
-          "description": "Empower spells cause your next Disintegrate to strike up to 3 targets. When striking fewer than 3 targets, Disintegrate damage is increased by 10% for each missing target.",
           "choices": null
         },
         {
@@ -1976,7 +1959,6 @@
           "posX": 46,
           "posY": 3,
           "connections": [
-            94939,
             98931
           ],
           "spentRequired": 0,
@@ -1995,8 +1977,7 @@
           "posX": 42,
           "posY": 3,
           "connections": [
-            98931,
-            94939
+            98931
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -2086,8 +2067,7 @@
           "posX": 48,
           "posY": 3,
           "connections": [
-            98931,
-            94939
+            98931
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4093,8 +4073,7 @@
           "posX": 44,
           "posY": 3,
           "connections": [
-            94939,
-            98931
+            94939
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4183,8 +4162,7 @@
           "posX": 46,
           "posY": 3,
           "connections": [
-            94939,
-            98931
+            94939
           ],
           "spentRequired": 0,
           "alreadyGranted": false,
@@ -4202,7 +4180,6 @@
           "posX": 42,
           "posY": 3,
           "connections": [
-            98931,
             94939
           ],
           "spentRequired": 0,
@@ -4230,22 +4207,6 @@
           "name": "Wingleader",
           "icon": "ability_racial_soar",
           "description": "Bombardments reduce the cooldown of Deep Breath by 0.5 sec for each target struck, up to 1.5 sec.",
-          "choices": null
-        },
-        {
-          "id": 98931,
-          "type": "round",
-          "treeType": "hero",
-          "posX": 46,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": true,
-          "heroSubtree": "Scalecommander",
-          "maxRanks": 1,
-          "name": "Mass Eruption",
-          "icon": "ability_evoker_eruption",
-          "description": "Empower spells cause your next Eruption to strike up to 3 targets. When striking less than 3 targets, Eruption damage is increased by 10% for each missing target.",
           "choices": null
         },
         {
@@ -4293,7 +4254,6 @@
           "posX": 48,
           "posY": 3,
           "connections": [
-            98931,
             94939
           ],
           "spentRequired": 0,
