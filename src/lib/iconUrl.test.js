@@ -16,6 +16,12 @@ describe("iconUrl", () => {
     expect(iconUrl(undefined)).toBe(BLANK);
     expect(BLANK.startsWith("data:image/gif;base64,")).toBe(true);
   });
+
+  test("falls back (no throw) for a truthy non-string icon", () => {
+    // A bad data row carrying a number/object must not crash the render.
+    expect(iconUrl(12345)).toBe(BLANK);
+    expect(iconUrl({})).toBe(BLANK);
+  });
 });
 
 describe("onIconError", () => {

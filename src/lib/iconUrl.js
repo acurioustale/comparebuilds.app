@@ -10,7 +10,9 @@ const BLANK =
   "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
 export const iconUrl = (icon) =>
-  icon ? `/talent-icons/${icon.toLowerCase()}.jpg` : BLANK;
+  typeof icon === "string" && icon
+    ? `/talent-icons/${icon.toLowerCase()}.jpg`
+    : BLANK;
 
 // onError handler for icon <img>s: swap a failed load for the blank pixel so a
 // missing file (a handful of upstream slugs have no real art) degrades to a
