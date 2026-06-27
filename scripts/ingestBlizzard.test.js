@@ -144,4 +144,45 @@ describe("normaliseSpec", () => {
     expect(spec.heroSubtrees.right.name).toBe("Dark Ranger"); // id 43
     expect(spec.heroSubtrees.left.description).toBe("desc-42");
   });
+
+  // The hero budget caps both subtrees with one number; when the two differ in
+  // spendable size it must be the LARGER, or a build in the bigger subtree gets
+  // blocked from spending its last legitimate point.
+  it("sizes the hero budget from the larger subtree, not just the left one", async () => {
+    const tree = {
+      class_talent_nodes: [node(1, "PASSIVE", { row: 1, col: 1 })],
+      spec_talent_nodes: [],
+      hero_talent_trees: [
+        {
+          id: 42, // left — 1 spendable node (root + one child)
+          name: "Small",
+          playable_specializations: [{ id: 100 }],
+          hero_talent_nodes: [
+            node(10, "PASSIVE", { row: 1, col: 1 }), // root → granted
+            node(11, "PASSIVE", { row: 2, col: 1, locked_by: [10] }),
+          ],
+        },
+        {
+          id: 43, // right — 2 spendable nodes (root + two children)
+          name: "Big",
+          playable_specializations: [{ id: 100 }],
+          hero_talent_nodes: [
+            node(20, "PASSIVE", { row: 1, col: 1 }), // root → granted
+            node(21, "PASSIVE", { row: 2, col: 1, locked_by: [20] }),
+            node(22, "PASSIVE", { row: 3, col: 1, locked_by: [20] }),
+          ],
+        },
+      ],
+    };
+    const specInfo = {
+      id: 100,
+      name: "testspec",
+      displayName: "Test Spec",
+      color: "#fff",
+      icon: "i",
+      description: "d",
+    };
+    const spec = await normaliseSpec(specInfo, tree, DB2_STUB, FNS);
+    expect(spec.pointBudget.hero).toBe(2); // max(left 1, right 2), not the left's 1
+  });
 });
