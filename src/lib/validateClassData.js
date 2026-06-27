@@ -210,6 +210,10 @@ export function validateClassData(data, indexEntry = null) {
           }
         }
         if (!isArr(n.levels)) nAt("apex node must have a levels array");
+        // collectClassNodes reads `choices ?? null`, so a stray non-null choices
+        // would re-encode this apex as a multi-bit choice node and shift the wire
+        // layout — guard it exactly like the round/square branch below.
+        if (n.choices != null) nAt("apex node must have choices = null");
       } else {
         // round / square
         if (!isStr(n.name)) nAt("must have a name");

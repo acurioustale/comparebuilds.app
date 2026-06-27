@@ -439,6 +439,11 @@ describe("apex nodes", () => {
     assertHasError(withApex({ maxRanks: 5 }), "!= sum of rank maxRanks"));
   test("apex without levels", () =>
     assertHasError(withApex({ levels: null }), "must have a levels array"));
+  test("apex with non-null choices", () =>
+    assertHasError(
+      withApex({ choices: [{ maxRanks: 1 }, { maxRanks: 1 }] }),
+      "apex node must have choices = null",
+    ));
 });
 
 // ── Hero membership ───────────────────────────────────────────────────────────
