@@ -211,6 +211,22 @@ describe("error handling", () => {
     const str = generateBuildString({}, data.specs.blood.specId, nodes);
     assert.strictEqual(parseSpecId(str + "==").specId, data.specs.blood.specId);
   });
+
+  test("choice node with a null entryChosen round-trips its rank", () => {
+    // node.maxRanks (1) differs from the chosen option's maxRanks (3). A null
+    // entryChosen must resolve maxRanks via the written index (0), so the partial
+    // flag agrees with decode and pointsInvested is preserved rather than snapping
+    // to the option's full rank.
+    const nodes = [{ id: 1, maxRanks: 1, choices: [{ maxRanks: 3 }, { maxRanks: 3 }] }];
+    const str = generateBuildString(
+      { 1: { pointsInvested: 2, entryChosen: null } },
+      250,
+      nodes,
+    );
+    const parsed = parseBuildString(str, nodes);
+    assert.strictEqual(parsed.nodes[1].pointsInvested, 2);
+    assert.strictEqual(parsed.nodes[1].entryChosen, 0);
+  });
 });
 
 // ── Hardening against corrupt input ───────────────────────────────────────────

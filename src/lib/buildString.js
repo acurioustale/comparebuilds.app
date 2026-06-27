@@ -359,18 +359,21 @@ export function generateBuildString(
     writer.writeBit(1); // isPurchased
 
     const node = byId.get(id);
-    const maxRanks =
-      node?.choices && sel.entryChosen !== null
-        ? (node.choices[sel.entryChosen]?.maxRanks ?? node?.maxRanks ?? 1)
-        : (node?.maxRanks ?? 1);
+    const isChoice = node?.choices != null;
+    // Resolve maxRanks with the SAME entry index we write below (entryChosen ?? 0
+    // for a choice node), so the partial flag can't disagree with what decode
+    // computes from the written entryChosen when entryChosen is unexpectedly null.
+    const entryIdx = sel.entryChosen ?? 0;
+    const maxRanks = isChoice
+      ? (node.choices[entryIdx]?.maxRanks ?? node?.maxRanks ?? 1)
+      : (node?.maxRanks ?? 1);
 
     const partial = sel.pointsInvested < maxRanks;
     writer.writeBit(partial ? 1 : 0);
     if (partial) writer.writeBits(sel.pointsInvested, 6);
 
-    const isChoice = node?.choices != null ? 1 : 0;
-    writer.writeBit(isChoice);
-    if (isChoice) writer.writeBits(sel.entryChosen ?? 0, 2);
+    writer.writeBit(isChoice ? 1 : 0);
+    if (isChoice) writer.writeBits(entryIdx, 2);
   }
 
   return writer.toString();
