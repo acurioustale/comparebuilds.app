@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
 import Tooltip from "./Tooltip";
+import ExportMenu from "./ExportMenu";
 import {
   useBuildsStore,
   MAX_BUILDS,
@@ -617,17 +618,11 @@ export default function BuildManager() {
       {/* ── Action buttons ─────────────────────────── */}
       {allParsed && (
         <section className="flex justify-end items-center gap-2 pt-3 border-t border-wow-dim">
-          <ShareButton
-            state={copyState}
-            onClick={handleCopyLink}
-            idleLabel="Copy link"
-            tooltip="A short link that shows a preview when posted. Expires after 90 days."
-          />
-          <ShareButton
-            state={permalinkState}
-            onClick={handleCopyPermalink}
-            idleLabel="Copy permalink"
-            tooltip="A permanent link with the build encoded in it — never expires and works offline, but it's long and shows no preview."
+          <ExportMenu
+            onShareServer={handleCopyLink}
+            onShareClient={handleCopyPermalink}
+            serverStatus={copyState}
+            clientStatus={permalinkState}
           />
         </section>
       )}
@@ -642,46 +637,5 @@ function SectionLabel({ children }) {
     <p className="text-wow-gold-dark text-xs uppercase tracking-widest mb-1.5">
       {children}
     </p>
-  );
-}
-
-// A share-action button: a copy control whose label tracks its state machine
-// ('idle' | 'copying' | 'copied' | 'error') and whose colour flips on success or
-// failure. Shared by the short server link and the self-contained permalink, which
-// differ only in their idle/busy labels and tooltip copy. (The permalink never
-// enters 'copying', so its busyLabel is unused.)
-function ShareButton({
-  state,
-  onClick,
-  tooltip,
-  idleLabel,
-  busyLabel = "Saving…",
-}) {
-  const label =
-    state === "copying"
-      ? busyLabel
-      : state === "copied"
-        ? "Copied!"
-        : state === "error"
-          ? "Failed"
-          : idleLabel;
-
-  return (
-    <Tooltip content={tooltip} placement="top" delay={300}>
-      <button
-        onClick={onClick}
-        disabled={state !== "idle"}
-        className="wow-btn px-3 py-1.5 text-xs rounded select-none"
-        style={
-          state === "copied"
-            ? { color: "#4ade80", borderColor: "#166534" }
-            : state === "error"
-              ? { color: "#f87171", borderColor: "#7f1d1d" }
-              : undefined
-        }
-      >
-        {label}
-      </button>
-    </Tooltip>
   );
 }

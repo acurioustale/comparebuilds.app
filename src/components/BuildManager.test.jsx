@@ -109,4 +109,29 @@ describe("BuildManager import flow", () => {
     fireEvent.click(pencil);
     expect(useBuildsStore.getState().editingIndex).toBe(0);
   });
+
+  test("export menu opens and displays share actions", async () => {
+    render(<BuildManager />);
+    const [a, b] = genStrings("death_knight", "blood", 2);
+    paste(screen.getAllByPlaceholderText("Paste build string…")[0], a);
+    await screen.findByPlaceholderText(/Build 1 — Blood Death Knight/);
+    paste(screen.getByPlaceholderText("Paste build string…"), b);
+    await screen.findByPlaceholderText(/Build 2 — Blood Death Knight/);
+
+    const exportBtn = await screen.findByRole("button", {
+      name: /Export \/ Share/i,
+    });
+    expect(exportBtn).toBeInTheDocument();
+    fireEvent.click(exportBtn);
+
+    const shortLinkBtn = await screen.findByText(/Copy short link/i);
+    const instantLinkBtn = await screen.findByText(/Copy instant link/i);
+    expect(shortLinkBtn).toBeInTheDocument();
+    expect(instantLinkBtn).toBeInTheDocument();
+
+    fireEvent.click(instantLinkBtn);
+    await waitFor(() => {
+      expect(screen.getByText(/Export \/ Share/i)).toBeInTheDocument();
+    });
+  });
 });
