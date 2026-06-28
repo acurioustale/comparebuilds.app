@@ -36,6 +36,12 @@ export function sectionPoints(treeType, allNodes, selected) {
  * non-canonical string. Active-subtree and class/spec grants stay — the encoder
  * writes those as granted via `grantedIds`. With no subtree active (activeSubtree
  * null) every granted hero root is pruned, matching the game's export.
+ *
+ * Also collapses co-located duplicates: a cell is one talent slot but a selection
+ * imported from a tool (or seeded from one to edit) can carry several node ids for
+ * it. Keep only the lowest-id purchased node per cell and drop the rest, so the
+ * encoded string is the game's canonical single-id form (see cellKey) instead of
+ * an over-budget both-ids string.
  */
 export function prunedExportSelection(allNodes, selected, activeSubtree) {
   const pruned = { ...selected };
@@ -48,6 +54,23 @@ export function prunedExportSelection(allNodes, selected, activeSubtree) {
       delete pruned[n.id];
     }
   }
+
+  // Co-located collapse: gather the purchased non-granted ids in each cell, keep
+  // the lowest, drop the others.
+  const idsByCell = new Map();
+  for (const n of allNodes) {
+    if (n.alreadyGranted || !pruned[n.id]) continue;
+    const cell = cellKey(n);
+    const ids = idsByCell.get(cell) ?? [];
+    ids.push(n.id);
+    idsByCell.set(cell, ids);
+  }
+  for (const ids of idsByCell.values()) {
+    if (ids.length < 2) continue;
+    ids.sort((a, b) => a - b);
+    for (const id of ids.slice(1)) delete pruned[id];
+  }
+
   return pruned;
 }
 

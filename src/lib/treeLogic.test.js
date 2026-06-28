@@ -9,16 +9,15 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { computeInvalidNodeIds, cellKey } from "./treeLogic.js";
+import { computeInvalidNodeIds, cellKey, spentPoints } from "./treeLogic.js";
 
 const require = createRequire(import.meta.url);
 
 /**
- * A legal maximal selection: every non-granted node at full rank, but at most
- * one per co-located cell (lowest id wins, matching computeInvalidNodeIds'
- * tiebreaker). Selecting *both* halves of a co-located cell is an illegal build,
- * so the real-data cascade tests below build from this rather than raw "select
- * everything".
+ * A canonical maximal selection: every non-granted node at full rank, but at most
+ * one id per co-located cell (lowest id wins) — the game's one-id-per-slot form.
+ * The real-data cascade tests below build from this rather than raw "select
+ * everything" so co-located cells aren't double-counted against section budgets.
  */
 function selectAllLegal(allNodes) {
   const selected = {};
@@ -290,19 +289,22 @@ test("parent at full rank satisfies child prereq", () => {
 
 // ─── Co-located node exclusivity ─────────────────────────────────────────────
 
-test("co-located cell: purchasing both variants flags the duplicate", () => {
-  // Two non-granted nodes occupying one grid cell (same treeType + posX,posY).
+test("co-located cell: both variants are one talent, not a conflict", () => {
+  // Two non-granted nodes occupying one grid cell (same treeType + posX,posY) are
+  // duplicate records for a single talent slot (see cellKey). The game emits one,
+  // but a tool-built string can set both — that is the same one-point pick, not a
+  // conflict, so neither is flagged.
   const a = node(40, 0);
   const b = { ...node(41, 0), posX: a.posX };
   const nodes = [a, b];
 
-  // Only one purchased → legal, nothing invalid.
+  // Only one purchased → nothing invalid.
   assertInvalid(computeInvalidNodeIds(nodes, { 40: sel() }, byId(nodes)));
-  // Both purchased → the later (higher-id) one is the illegal duplicate.
+  // Both purchased → still nothing invalid, and the cell counts as one point.
   assertInvalid(
     computeInvalidNodeIds(nodes, { 40: sel(), 41: sel() }, byId(nodes)),
-    41,
   );
+  assert.strictEqual(spentPoints(nodes, { 40: sel(), 41: sel() }, "class"), 1);
 });
 
 test("hero-subtree exclusivity flags picks outside the committed subtree", () => {
@@ -336,12 +338,11 @@ test("gate ignores a co-located duplicate's double-counted point", () => {
   const b = { ...node(2, 0), posX: 5 };
   const g = node(3, 1, { spentRequired: 3, connections: [1] });
   const nodes = [a, b, g];
-  // Raw total would be 3 (A+B+G) and pass the gate, but B is an illegal
-  // co-located duplicate, so the legal section total is 2 (A+G): G fails its
-  // gate and is flagged alongside the duplicate B.
+  // Raw total would be 3 (A+B+G) and pass the gate, but the A/B cell counts once,
+  // so the section total is 2 (cell + G): G fails its gate and is flagged. The
+  // duplicate B is not itself a conflict — it is the same talent as A.
   assertInvalid(
     computeInvalidNodeIds(nodes, { 1: sel(), 2: sel(), 3: sel() }, byId(nodes)),
-    2,
     3,
   );
 });

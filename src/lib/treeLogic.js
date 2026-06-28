@@ -29,37 +29,24 @@ export function hasUpperPrereq(node, selected, nodeById) {
 /**
  * Points invested across `allNodes` within one tree section, excluding granted
  * nodes (they don't consume the budget). When `heroSubtree` is given, only nodes
- * in that subtree count; otherwise the whole `treeType` counts. Single shared
- * accumulator behind both the section-budget check (sectionPoints) and the gate
- * check (gatedPoints) so the two can't drift.
+ * in that subtree count; otherwise the whole `treeType` counts.
+ *
+ * Counts at most one purchased node per co-located cell. A cell is a single
+ * talent slot, but the game (and third-party tools) can serialise more than one
+ * node record for it — selecting "Starfire" can light up two co-located node ids
+ * for one talent (see cellKey). Counting both would over-report the section by a
+ * point per duplicate (e.g. 35/34 class), so collapse co-located picks to one.
+ * (Importing such a string in-game and re-exporting confirms the game keeps only
+ * the lowest-id node — exactly the one this collapse keeps.)
+ *
+ * Single shared accumulator behind both the section-budget check (sectionPoints)
+ * and the gate check (gatedPoints) so the two can't drift.
  */
 export function spentPoints(allNodes, selected, treeType, heroSubtree = null) {
   let total = 0;
-  for (const n of allNodes) {
-    if (n.alreadyGranted || n.treeType !== treeType) continue;
-    if (heroSubtree != null && n.heroSubtree !== heroSubtree) continue;
-    total += selected[n.id]?.pointsInvested ?? 0;
-  }
-  return total;
-}
-
-/**
- * Points spent in the same tree section as `node`, counting per-heroSubtree
- * for hero nodes. Excludes alreadyGranted nodes (they don't consume the budget).
- * Used for spentRequired gate checks.
- *
- * Counts at most one purchased node per co-located cell: a cell holds only one
- * legal pick, so a crafted/corrupt build that selects both halves must not have
- * the illegal second point inflate the section total and wrongly satisfy a
- * downstream gate. (Prereq-invalid points still count toward the gate — those
- * sit in their own cells, so only structural co-located duplicates collapse.)
- */
-export function gatedPoints(node, allNodes, selected) {
-  const heroSubtree = node.treeType === "hero" ? node.heroSubtree : null;
-  let total = 0;
   const countedCells = new Set();
   for (const n of allNodes) {
-    if (n.alreadyGranted || n.treeType !== node.treeType) continue;
+    if (n.alreadyGranted || n.treeType !== treeType) continue;
     if (heroSubtree != null && n.heroSubtree !== heroSubtree) continue;
     const pts = selected[n.id]?.pointsInvested ?? 0;
     if (pts === 0) continue;
@@ -72,14 +59,28 @@ export function gatedPoints(node, allNodes, selected) {
 }
 
 /**
+ * Points spent in the same tree section as `node`, counting per-heroSubtree
+ * for hero nodes. Excludes alreadyGranted nodes (they don't consume the budget).
+ * Used for spentRequired gate checks. Delegates to spentPoints so the gate and
+ * section-budget totals share one accumulator (including the co-located-cell
+ * collapse) and can't drift.
+ */
+export function gatedPoints(node, allNodes, selected) {
+  const heroSubtree = node.treeType === "hero" ? node.heroSubtree : null;
+  return spentPoints(allNodes, selected, node.treeType, heroSubtree);
+}
+
+/**
  * A grid-cell key. Nodes that render on the same spot share it: the same panel
  * (treeType, plus heroSubtree for hero nodes) and the same posX,posY.
  *
  * Some talents are reachable through two node ids that occupy one cell — a
  * Blizzard tree quirk: druid's Starfire / Moonkin Form, paladin's Lightforged
- * Blessing, monk Conduit's Stampede / Celestial Conduit. They are mutually
- * exclusive variants of a single slot, so a build may purchase at most one
- * non-granted node per cell. (Co-located *granted* roots — Halo-style pairs that
+ * Blessing. These are duplicate node records for a single talent slot, so the
+ * cell is worth one point however many of its ids a serialised build sets: the
+ * game's own export keeps one, but tool-built strings can set several. The app
+ * counts (spentPoints), gates (gatedPoints), and encodes (prunedExportSelection)
+ * a cell as a single talent. (Co-located *granted* roots — Halo-style pairs that
  * are auto-granted together — are exempt; they are never purchased.)
  */
 export function cellKey(node) {
@@ -130,6 +131,11 @@ export function buildGrantedSeed(treeData) {
  * see gatedPoints). Prereq-invalid nodes' points still count toward the sum —
  * gate violations stem from actual point removals, not from cascaded invalidity.
  *
+ * A co-located cell's duplicate node ids are NOT flagged: they are records for a
+ * single talent (see cellKey), so a build that sets several of them is the same
+ * one-point pick, not a conflict — spentPoints/gatedPoints already collapse the
+ * cell to one and the exporter emits one id, matching the game's canonical form.
+ *
  * alreadyGranted nodes are never flagged; they are permanently valid.
  *
  * @param {object[]} allNodes  treeData.nodes
@@ -141,8 +147,7 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
   const invalid = new Set();
 
   // Topological order: posY ascending guarantees parents processed before
-  // children. The id tiebreaker makes co-located ordering deterministic, so the
-  // same node of a shared cell is the one kept valid across runs.
+  // children. The posX then id tiebreakers just make the walk deterministic.
   const sorted = allNodes
     .filter((n) => selected[n.id] && !n.alreadyGranted)
     .sort((a, b) =>
@@ -152,10 +157,6 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
           ? a.posX - b.posX
           : a.id - b.id,
     );
-
-  // The first valid purchased node in a cell claims it; a later purchased node
-  // sharing that cell is an illegal co-located duplicate (see cellKey).
-  const claimedCells = new Set();
 
   // Hero-subtree exclusivity: a build may invest in only one hero subtree. A
   // crafted/corrupt build string (or an import path that bypasses canSpendPoint)
@@ -199,12 +200,7 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
       }
     }
 
-    // Co-located exclusivity: at most one non-granted node per cell.
-    const cell = cellKey(node);
-    if (!shouldFlag && claimedCells.has(cell)) shouldFlag = true;
-
     if (shouldFlag) invalid.add(node.id);
-    else claimedCells.add(cell);
   }
 
   return invalid;

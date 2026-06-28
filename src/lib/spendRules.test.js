@@ -179,4 +179,15 @@ describe("prunedExportSelection", () => {
     prunedExportSelection(NODES, selected, "Left");
     assert.deepStrictEqual(selected, snapshot);
   });
+
+  test("collapses a co-located cell to its lowest-id node", () => {
+    // Two non-granted class nodes sharing one cell (duplicate records for one
+    // talent). A tool-built import can set both; the export keeps only the lowest.
+    const A = node(40, "class", 0, { posX: 5 });
+    const B = node(41, "class", 0, { posX: 5 });
+    const nodes = [A, B];
+    const out = prunedExportSelection(nodes, { 40: full(), 41: full() }, null);
+    assert.ok(out[40], "lowest-id node kept");
+    assert.strictEqual(out[41], undefined, "higher-id duplicate dropped");
+  });
 });

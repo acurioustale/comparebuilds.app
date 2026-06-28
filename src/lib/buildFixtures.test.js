@@ -22,7 +22,12 @@ import {
   collectClassNodes,
   generateBuildString,
 } from "./buildString.js";
-import { computeInvalidNodeIds, buildGrantedSeed } from "./treeLogic.js";
+import {
+  computeInvalidNodeIds,
+  buildGrantedSeed,
+  spentPoints,
+} from "./treeLogic.js";
+import { buildExportString } from "./exportBuild.js";
 
 const require = createRequire(import.meta.url);
 const classIndex = require("../data/classes.json");
@@ -225,4 +230,52 @@ describe("real in-game build fixtures", () => {
       });
     });
   }
+});
+
+// A real string built by a third-party druid calculator (zeroed hash) that sets
+// BOTH co-located node ids for one talent slot. Guardian's Starfire cell holds two
+// duplicate records (91044 + 91046); the tool lit up both, which over-counts the
+// class section by a point (35/34) and once made the editor cry "Resolve conflicts
+// first". The game itself keeps only the lowest id on re-export — so the app must
+// treat the cell as one talent: not a conflict, counted once, and re-encoded to a
+// single canonical id.
+describe("tool-built string with a co-located duplicate (Guardian Starfire)", () => {
+  const STRING =
+    "CgGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgZmZmFzMjZWMLGmZZZAbDGNRzMziZmZmlxMMAAAAAmhZsNzALbzMYMbDgpAAAAbYmBYxMYgZxyGgZGAA";
+  const STARFIRE_LOW = 91044;
+  const STARFIRE_DUP = 91046;
+
+  const data = require("../data/druid.json");
+  const sd = data.specs.guardian;
+  const classNodes = collectClassNodes(data);
+  const nodeById = Object.fromEntries(sd.nodes.map((n) => [n.id, n]));
+  const parsed = parseBuildString(STRING, classNodes);
+
+  test("the string really sets both co-located ids", () => {
+    expect(parsed.nodes[STARFIRE_LOW]).toBeTruthy();
+    expect(parsed.nodes[STARFIRE_DUP]).toBeTruthy();
+  });
+
+  test("the duplicate is not flagged as a conflict", () => {
+    const selected = { ...buildGrantedSeed(sd), ...parsed.nodes };
+    const invalid = computeInvalidNodeIds(sd.nodes, selected, nodeById);
+    expect(invalid.size).toBe(0);
+  });
+
+  test("the cell counts once, so the class section is within budget", () => {
+    expect(spentPoints(sd.nodes, parsed.nodes, "class")).toBe(
+      sd.pointBudget.class,
+    );
+  });
+
+  test("re-exporting drops the duplicate, keeping the canonical id", () => {
+    const selected = { ...buildGrantedSeed(sd), ...parsed.nodes };
+    const regen = buildExportString(sd, selected, parsed.specId, classNodes);
+    const reparsed = parseBuildString(regen, classNodes);
+    expect(reparsed.nodes[STARFIRE_LOW]).toBeTruthy();
+    expect(reparsed.nodes[STARFIRE_DUP]).toBeUndefined();
+    expect(spentPoints(sd.nodes, reparsed.nodes, "class")).toBe(
+      sd.pointBudget.class,
+    );
+  });
 });
