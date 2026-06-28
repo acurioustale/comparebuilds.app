@@ -425,7 +425,7 @@ export default function InteractiveTalentTree({
                 invalidNodeIds.size > 0 ||
                 copyState !== "idle"
               }
-              className="bg-transparent border border-wow-dim hover:border-wow-gold text-wow-muted hover:text-wow-text text-xs px-3 py-1.5 rounded select-none disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="wow-btn text-xs px-3 py-1.5 rounded text-wow-text select-none disabled:opacity-30 disabled:cursor-not-allowed"
               style={
                 copyState === "done"
                   ? { color: "#4ade80", borderColor: "#166534" }
