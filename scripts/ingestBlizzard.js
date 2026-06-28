@@ -493,6 +493,61 @@ export async function normaliseSpec(specInfo, tree, db2, fns) {
   };
 }
 
+/**
+ * Collapse co-located duplicate nodes within a built spec.
+ *
+ * A single talent slot can be backed by more than one node id at one grid cell:
+ * druid Starfire (91044/91046, same spell) and Moonkin Form (82208/91047, the
+ * base-form spell vs a talent variant), paladin Lightforged Blessing
+ * (103850/103852/103853). A grid cell IS one slot — so however many of its ids a
+ * serialised build sets, it is one talent worth one point; counting or encoding
+ * several over-budgets the section.
+ *
+ * The game's own loadout export keeps a single id per cell, and it is always the
+ * lowest — confirmed against in-game re-exports for both a same-spell cell
+ * (Starfire → 91044) and a different-spell one (Moonkin → 82208). So group the
+ * non-granted nodes in a cell by talent NAME and, for any same-name group with
+ * more than one id, keep the lowest and drop the rest (pruning connections to
+ * them). Name — not spell — is the unifying key, because Moonkin's two ids are
+ * one slot yet carry different spells; the cell already proves they are one slot,
+ * and the same-name check guards against ever merging two genuinely different
+ * talents that Blizzard might someday place at one cell (today none exist; a real
+ * either/or pick is modelled as a CHOICE node, a single id).
+ *
+ * Mutates spec.nodes; returns the dropped ids so the caller can hold their wire
+ * positions in class-level unusedNodeIds — their build-string bit positions must
+ * not move.
+ *
+ * @param {object} spec  a normalised spec ({ nodes, ... })
+ * @returns {number[]} dropped duplicate node ids
+ */
+export function collapseColocatedDuplicates(spec) {
+  const cellKey = (n) =>
+    `${n.treeType}|${n.heroSubtree ?? ""}|${n.posX},${n.posY}`;
+  // cell → (talent name → node ids)
+  const byCell = new Map();
+  for (const n of spec.nodes) {
+    if (n.alreadyGranted) continue;
+    const byName = byCell.get(cellKey(n)) ?? new Map();
+    byName.set(n.name, [...(byName.get(n.name) ?? []), n.id]);
+    byCell.set(cellKey(n), byName);
+  }
+
+  const dropIds = new Set();
+  for (const byName of byCell.values())
+    for (const ids of byName.values()) {
+      if (ids.length < 2) continue;
+      ids.sort((a, b) => a - b);
+      for (const id of ids.slice(1)) dropIds.add(id);
+    }
+  if (dropIds.size === 0) return [];
+
+  spec.nodes = spec.nodes.filter((n) => !dropIds.has(n.id));
+  for (const n of spec.nodes)
+    n.connections = (n.connections ?? []).filter((id) => !dropIds.has(id));
+  return [...dropIds];
+}
+
 async function normaliseClass(cls, treeMap, api, db2, fns) {
   const specs = {};
   for (const specInfo of cls.specs) {
@@ -523,6 +578,21 @@ async function normaliseClass(cls, treeMap, api, db2, fns) {
       .filter((n) => isEmptyNode(n) && n.node_type?.type !== "CHOICE")
       .map((n) => n.id)
       .sort((a, b) => a - b);
+  }
+
+  // Collapse same-talent co-located duplicates in each spec, and keep the dropped
+  // ids in the class-wide wire layout via unusedNodeIds so build-string bit
+  // positions (and existing share links) don't move. A dropped id must leave
+  // EVERY spec, or validateClassData's serialisation-space disjointness check
+  // would reject it as both a real node and an unused placeholder.
+  const droppedDuplicates = new Set();
+  for (const spec of Object.values(specs))
+    for (const id of collapseColocatedDuplicates(spec))
+      droppedDuplicates.add(id);
+  if (droppedDuplicates.size > 0) {
+    unusedNodeIds = [...new Set([...unusedNodeIds, ...droppedDuplicates])].sort(
+      (a, b) => a - b,
+    );
   }
 
   return {

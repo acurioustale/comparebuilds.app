@@ -190,4 +190,17 @@ describe("prunedExportSelection", () => {
     assert.ok(out[40], "lowest-id node kept");
     assert.strictEqual(out[41], undefined, "higher-id duplicate dropped");
   });
+
+  test("drops selected ids that aren't real nodes in the spec tree", () => {
+    // A tool string can set a bit the ingest collapsed into unusedNodeIds (no
+    // longer a real spec node), and a seeded edit can carry the hero-gate id.
+    // Neither should encode as a purchased node, so they self-heal out on export.
+    const out = prunedExportSelection(
+      NODES,
+      { 1: full(), 999999: full() },
+      "Left",
+    );
+    assert.ok(out[1], "real node kept");
+    assert.strictEqual(out[999999], undefined, "unknown id dropped");
+  });
 });

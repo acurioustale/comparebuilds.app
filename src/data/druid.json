@@ -4,7 +4,10 @@
   "classSlug": "druid",
   "color": "#FF7C0A",
   "icon": "druid",
-  "unusedNodeIds": [],
+  "unusedNodeIds": [
+    91046,
+    91047
+  ],
   "specs": {
     "balance": {
       "specId": 102,
@@ -2595,21 +2598,6 @@
           "choices": null
         },
         {
-          "id": 91046,
-          "type": "square",
-          "treeType": "class",
-          "posX": 18,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "maxRanks": 1,
-          "name": "Starfire",
-          "icon": "spell_arcane_starfire",
-          "description": "Call down a burst of energy, causing 354 Arcane damage to the target, and 124 Arcane damage to all other enemies within 5 yards. Deals reduced damage beyond 8 targets.",
-          "choices": null
-        },
-        {
           "id": 82239,
           "type": "round",
           "treeType": "class",
@@ -2768,21 +2756,6 @@
           "choices": null
         },
         {
-          "id": 91047,
-          "type": "square",
-          "treeType": "class",
-          "posX": 18,
-          "posY": 4,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "maxRanks": 1,
-          "name": "Moonkin Form",
-          "icon": "spell_nature_forceofnature",
-          "description": "Shapeshift into Moonkin Form, increasing the damage of your spells by 10% and your armor by 125%, and granting protection from Polymorph effects.\r\n\r\nThe act of shapeshifting frees you from movement impairing effects.",
-          "choices": null
-        },
-        {
           "id": 82221,
           "type": "square",
           "treeType": "class",
@@ -2878,7 +2851,6 @@
           "posX": 16,
           "posY": 5,
           "connections": [
-            91047,
             82205,
             82208,
             82241
@@ -5076,21 +5048,6 @@
           "choices": null
         },
         {
-          "id": 91046,
-          "type": "square",
-          "treeType": "class",
-          "posX": 18,
-          "posY": 2,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "maxRanks": 1,
-          "name": "Starfire",
-          "icon": "spell_arcane_starfire",
-          "description": "Call down a burst of energy, causing 356 Arcane damage to the target, and 122 Arcane damage to all other enemies within 5 yards. Deals reduced damage beyond 8 targets.",
-          "choices": null
-        },
-        {
           "id": 82239,
           "type": "round",
           "treeType": "class",
@@ -5249,21 +5206,6 @@
           "choices": null
         },
         {
-          "id": 91047,
-          "type": "square",
-          "treeType": "class",
-          "posX": 18,
-          "posY": 4,
-          "connections": [],
-          "spentRequired": 0,
-          "alreadyGranted": false,
-          "maxRanks": 1,
-          "name": "Moonkin Form",
-          "icon": "spell_nature_forceofnature",
-          "description": "Shapeshift into Moonkin Form, increasing the damage of your spells by 10% and your armor by 125%, and granting protection from Polymorph effects.\r\n\r\nThe act of shapeshifting frees you from movement impairing effects.",
-          "choices": null
-        },
-        {
           "id": 82221,
           "type": "square",
           "treeType": "class",
@@ -5359,7 +5301,6 @@
           "posX": 16,
           "posY": 5,
           "connections": [
-            91047,
             82205,
             82208,
             82241
