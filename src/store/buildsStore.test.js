@@ -17,6 +17,7 @@ import {
   MAX_BUILD_NAME_LEN,
 } from "./buildsStore.js";
 import { collectClassNodes, generateBuildString } from "../lib/buildString.js";
+import { wireLayout } from "../lib/wireLayout.js";
 
 const require = createRequire(import.meta.url);
 const get = () => useBuildsStore.getState();
@@ -356,5 +357,79 @@ describe("setInteractiveNodes", () => {
       get().interactiveNodes[leftNode.id],
       "lone active subtree should be preserved",
     );
+  });
+});
+
+// ── Edit and replace ──────────────────────────────────────────────────────────
+
+describe("editBuild and replaceBuild", () => {
+  test("editBuild seeds from parsed nodes and sets editingIndex", async () => {
+    const [a] = genStrings("death_knight", "blood", 1);
+    await get().addBuild(a);
+    get().editBuild(0);
+    assert.strictEqual(get().addingBuild, true);
+    assert.strictEqual(get().editingIndex, 0);
+    assert.ok(Object.keys(get().interactiveNodes).length > 0);
+  });
+
+  test("replaceBuild swaps string, re-parses, keeps name, and rejects mismatches/duplicates", async () => {
+    const [a, b, c] = genStrings("death_knight", "blood", 3);
+    const [mage] = genStrings("mage", "fire", 1);
+    await get().addBuild(a);
+    await get().addBuild(b);
+    get().setBuildName(0, "First Slot");
+
+    // Replace slot 0 with c
+    await get().replaceBuild(0, c);
+    assert.strictEqual(get().buildStrings[0], c);
+    assert.strictEqual(get().buildNames[0], "First Slot");
+    assert.ok(get().parsedBuilds[0]);
+
+    // Reject duplicate of slot 1 (b)
+    await get().replaceBuild(0, b);
+    assert.match(get().error ?? "", /already been added/);
+    assert.strictEqual(get().buildStrings[0], c);
+
+    // Reject spec mismatch (mage)
+    await get().replaceBuild(0, mage);
+    assert.match(get().error ?? "", /Spec mismatch/);
+    assert.strictEqual(get().buildStrings[0], c);
+  });
+
+  test("addBuild and replaceBuild resolve truthy on success, falsy on rejection", async () => {
+    const [a, b, c] = genStrings("death_knight", "blood", 3);
+
+    // addBuild: truthy when committed, falsy when rejected as a duplicate.
+    assert.ok(await get().addBuild(a), "first add should succeed");
+    assert.ok(await get().addBuild(b), "second add should succeed");
+    assert.ok(!(await get().addBuild(a)), "duplicate add should be rejected");
+
+    // replaceBuild: truthy on a real swap, falsy when the result duplicates a slot.
+    assert.ok(await get().replaceBuild(0, c), "valid replace should succeed");
+    assert.ok(
+      !(await get().replaceBuild(0, b)),
+      "replace into a duplicate should be rejected",
+    );
+  });
+});
+
+// ── layoutHash ────────────────────────────────────────────────────────────────
+
+describe("layoutHash tracking", () => {
+  test("computes layoutHash on spec load and supports setSharedLayoutHash", async () => {
+    const [a] = genStrings("death_knight", "blood", 1);
+    await get().addBuild(a);
+    const st = get();
+    assert.ok(st.layoutHash, "layoutHash should be set on load");
+    // The stamp is the class-level wire-layout fingerprint (16 hex chars), not a
+    // per-spec hash, so it also moves when a sibling spec shifts the bit layout.
+    assert.strictEqual(st.layoutHash.length, 16);
+    assert.strictEqual(
+      st.layoutHash,
+      wireLayout(require("../data/death_knight.json")).hash,
+    );
+
+    get().setSharedLayoutHash("oldhash1");
+    assert.strictEqual(get().sharedLayoutHash, "oldhash1");
   });
 });

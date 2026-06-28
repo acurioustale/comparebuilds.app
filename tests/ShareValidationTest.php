@@ -126,4 +126,26 @@ final class ShareValidationTest extends TestCase
         $_SERVER['REMOTE_ADDR'] = '203.0.113.8';
         $this->assertNotSame($first, client_ip_hash());
     }
+
+    public function testKeepsValidLayoutHash(): void
+    {
+        $r = validate_share_input([
+            'classId' => 1,
+            'specId' => 1,
+            'builds' => ['AA', 'BB'],
+            'layoutHash' => 'abcdef12',
+        ]);
+        $this->assertSame('abcdef12', $r['payload']['layoutHash']);
+    }
+
+    public function testRejectsOverlongLayoutHash(): void
+    {
+        $r = validate_share_input([
+            'classId' => 1,
+            'specId' => 1,
+            'builds' => ['AA', 'BB'],
+            'layoutHash' => str_repeat('x', 17),
+        ]);
+        $this->assertArrayHasKey('error', $r);
+    }
 }

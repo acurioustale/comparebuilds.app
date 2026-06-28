@@ -98,4 +98,58 @@ describe("BuildManager import flow", () => {
       expect(screen.queryByPlaceholderText(/Blood Death Knight/)).toBeNull(),
     );
   });
+
+  test("pencil button opens build for editing", async () => {
+    render(<BuildManager />);
+    const [s] = genStrings("death_knight", "blood", 1);
+    paste(screen.getAllByPlaceholderText("Paste build string…")[0], s);
+    await screen.findByPlaceholderText(/Blood Death Knight/);
+    const pencil = await screen.findByLabelText("Edit build 1");
+    expect(pencil).toBeInTheDocument();
+    fireEvent.click(pencil);
+    expect(useBuildsStore.getState().editingIndex).toBe(0);
+  });
+
+  test("export menu opens and displays share actions", async () => {
+    render(<BuildManager />);
+    const [a, b] = genStrings("death_knight", "blood", 2);
+    paste(screen.getAllByPlaceholderText("Paste build string…")[0], a);
+    await screen.findByPlaceholderText(/Build 1 — Blood Death Knight/);
+    paste(screen.getByPlaceholderText("Paste build string…"), b);
+    await screen.findByPlaceholderText(/Build 2 — Blood Death Knight/);
+
+    const exportBtn = await screen.findByRole("button", {
+      name: /Export \/ Share/i,
+    });
+    expect(exportBtn).toBeInTheDocument();
+    fireEvent.click(exportBtn);
+
+    const shortLinkBtn = await screen.findByText(/Copy short link/i);
+    const instantLinkBtn = await screen.findByText(/Copy instant link/i);
+    expect(shortLinkBtn).toBeInTheDocument();
+    expect(instantLinkBtn).toBeInTheDocument();
+
+    fireEvent.click(instantLinkBtn);
+    await waitFor(() => {
+      expect(screen.getByText(/Export \/ Share/i)).toBeInTheDocument();
+    });
+  });
+
+  test("export menu closes on Escape", async () => {
+    render(<BuildManager />);
+    const [a, b] = genStrings("death_knight", "blood", 2);
+    paste(screen.getAllByPlaceholderText("Paste build string…")[0], a);
+    await screen.findByPlaceholderText(/Build 1 — Blood Death Knight/);
+    paste(screen.getByPlaceholderText("Paste build string…"), b);
+    await screen.findByPlaceholderText(/Build 2 — Blood Death Knight/);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Export \/ Share/i }),
+    );
+    await screen.findByText(/Copy short link/i);
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByText(/Copy short link/i)).toBeNull(),
+    );
+  });
 });

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
 import Tooltip from "./Tooltip";
+import ExportMenu from "./ExportMenu";
 import {
   useBuildsStore,
   MAX_BUILDS,
@@ -10,6 +11,7 @@ import { encodeBuildsHash } from "../lib/shareLink";
 import classesIndex from "../data/classes.json";
 import { iconUrl, onIconError } from "../lib/iconUrl";
 import { activeHeroSubtree, sectionPoints } from "../lib/spendRules";
+import { generateSimcProfileset } from "../lib/simcProfile";
 
 function ClassIcon({ name, size = 36 }) {
   // WoW class icons use the slug classicon_{name} with underscores removed.
@@ -166,6 +168,7 @@ function FilledSlot({
   loading,
   onRemove,
   onRename,
+  onEdit,
 }) {
   const [flash, setFlash] = useState(false);
   const flashTimer = useRef(null);
@@ -220,6 +223,18 @@ function FilledSlot({
           {flash ? "✓" : "⧉"}
         </button>
       </Tooltip>
+
+      {parsed && (
+        <Tooltip content="Edit build" placement="bottom" delay={300}>
+          <button
+            onClick={onEdit}
+            aria-label={`Edit build ${index + 1}`}
+            className="shrink-0 w-6 h-6 flex items-center justify-center text-wow-dim hover:text-wow-gold transition-colors text-sm leading-none rounded"
+          >
+            ✎
+          </button>
+        </Tooltip>
+      )}
 
       <button
         onClick={onRemove}
@@ -343,6 +358,7 @@ export default function BuildManager() {
     classId,
     specId,
     treeData,
+    layoutHash,
     isLoading,
     error,
     addBuild,
@@ -350,6 +366,7 @@ export default function BuildManager() {
     clearAllBuilds,
     preloadSpec,
     setBuildName,
+    editBuild,
   } = useBuildsStore(
     useShallow((s) => ({
       buildStrings: s.buildStrings,
@@ -358,6 +375,7 @@ export default function BuildManager() {
       classId: s.classId,
       specId: s.specId,
       treeData: s.treeData,
+      layoutHash: s.layoutHash,
       isLoading: s.isLoading,
       error: s.error,
       addBuild: s.addBuild,
@@ -365,19 +383,23 @@ export default function BuildManager() {
       clearAllBuilds: s.clearAllBuilds,
       preloadSpec: s.preloadSpec,
       setBuildName: s.setBuildName,
+      editBuild: s.editBuild,
     })),
   );
 
   const [copyState, setCopyState] = useState("idle"); // 'idle' | 'copying' | 'copied' | 'error'
   const [permalinkState, setPermalinkState] = useState("idle"); // 'idle' | 'copied' | 'error'
+  const [simcState, setSimcState] = useState("idle"); // 'idle' | 'copied' | 'error'
   // Reset timers, cleared on unmount so they can't fire setState on a removed
   // share-controls component (e.g. clearing all builds within the 2s window).
   const permalinkTimer = useRef(null);
   const copyTimer = useRef(null);
+  const simcTimer = useRef(null);
   useEffect(
     () => () => {
       clearTimeout(permalinkTimer.current);
       clearTimeout(copyTimer.current);
+      clearTimeout(simcTimer.current);
     },
     [],
   );
@@ -413,6 +435,7 @@ export default function BuildManager() {
       const token = encodeBuildsHash({
         builds: buildStrings,
         names: buildNames,
+        layoutHash,
       });
       const url = `${window.location.origin}${window.location.pathname}#b=${token}`;
       await navigator.clipboard.writeText(url);
@@ -425,7 +448,7 @@ export default function BuildManager() {
         2000,
       );
     }
-  }, [permalinkState, buildStrings, buildNames]);
+  }, [permalinkState, buildStrings, buildNames, layoutHash]);
 
   const handleCopyLink = useCallback(async () => {
     if (copyState !== "idle") return;
@@ -445,6 +468,7 @@ export default function BuildManager() {
           labels,
           className: classDisplayName,
           specName: specDisplayName,
+          layoutHash,
         }),
       });
       if (!res.ok) {
@@ -470,6 +494,35 @@ export default function BuildManager() {
     buildNames,
     classDisplayName,
     specDisplayName,
+    layoutHash,
+  ]);
+
+  const handleCopySimc = useCallback(async () => {
+    if (simcState !== "idle") return;
+    try {
+      const profileset = generateSimcProfileset(
+        buildStrings,
+        buildNames,
+        classDisplayName,
+        specDisplayName,
+        treeData,
+        parsedBuilds,
+      );
+      await navigator.clipboard.writeText(profileset);
+      setSimcState("copied");
+    } catch {
+      setSimcState("error");
+    } finally {
+      simcTimer.current = setTimeout(() => setSimcState("idle"), 2000);
+    }
+  }, [
+    simcState,
+    buildStrings,
+    buildNames,
+    classDisplayName,
+    specDisplayName,
+    treeData,
+    parsedBuilds,
   ]);
 
   // Human-readable build label: "Build N — [Hero Spec] Spec Class"
@@ -579,6 +632,7 @@ export default function BuildManager() {
                   loading={isLoading && parsedBuilds[i] === null}
                   onRemove={() => removeBuild(i)}
                   onRename={(v) => setBuildName(i, v)}
+                  onEdit={() => editBuild(i)}
                 />
               );
             }
@@ -601,17 +655,13 @@ export default function BuildManager() {
       {/* ── Action buttons ─────────────────────────── */}
       {allParsed && (
         <section className="flex justify-end items-center gap-2 pt-3 border-t border-wow-dim">
-          <ShareButton
-            state={copyState}
-            onClick={handleCopyLink}
-            idleLabel="Copy link"
-            tooltip="A short link that shows a preview when posted. Expires after 90 days."
-          />
-          <ShareButton
-            state={permalinkState}
-            onClick={handleCopyPermalink}
-            idleLabel="Copy permalink"
-            tooltip="A permanent link with the build encoded in it — never expires and works offline, but it's long and shows no preview."
+          <ExportMenu
+            onShareServer={handleCopyLink}
+            onShareClient={handleCopyPermalink}
+            onShareSimc={handleCopySimc}
+            serverStatus={copyState}
+            clientStatus={permalinkState}
+            simcStatus={simcState}
           />
         </section>
       )}
@@ -626,46 +676,5 @@ function SectionLabel({ children }) {
     <p className="text-wow-gold-dark text-xs uppercase tracking-widest mb-1.5">
       {children}
     </p>
-  );
-}
-
-// A share-action button: a copy control whose label tracks its state machine
-// ('idle' | 'copying' | 'copied' | 'error') and whose colour flips on success or
-// failure. Shared by the short server link and the self-contained permalink, which
-// differ only in their idle/busy labels and tooltip copy. (The permalink never
-// enters 'copying', so its busyLabel is unused.)
-function ShareButton({
-  state,
-  onClick,
-  tooltip,
-  idleLabel,
-  busyLabel = "Saving…",
-}) {
-  const label =
-    state === "copying"
-      ? busyLabel
-      : state === "copied"
-        ? "Copied!"
-        : state === "error"
-          ? "Failed"
-          : idleLabel;
-
-  return (
-    <Tooltip content={tooltip} placement="top" delay={300}>
-      <button
-        onClick={onClick}
-        disabled={state !== "idle"}
-        className="wow-btn px-3 py-1.5 text-xs rounded select-none"
-        style={
-          state === "copied"
-            ? { color: "#4ade80", borderColor: "#166534" }
-            : state === "error"
-              ? { color: "#f87171", borderColor: "#7f1d1d" }
-              : undefined
-        }
-      >
-        {label}
-      </button>
-    </Tooltip>
   );
 }

@@ -19,6 +19,8 @@ export const SearchContext = createContext({ active: false, matchIds: null });
 // single-tree and interactive views (which never provide it) are unaffected.
 export const ChangesFilterContext = createContext(false);
 
+export const SpotlightContext = createContext(null);
+
 // The blue ring drawn around a node that matches the active search query.
 const SEARCH_RING =
   "0 0 0 2px rgba(110,200,255,0.95), 0 0 12px rgba(110,200,255,0.55)";
@@ -49,14 +51,21 @@ const DIM = 0.12;
 export function useNodeEmphasis(nodeId, isChange = true) {
   const { active, matchIds } = useContext(SearchContext);
   const changesOnly = useContext(ChangesFilterContext);
+  const spotlightId = useContext(SpotlightContext);
   const searchHit = active && matchIds ? matchIds.has(nodeId) : false;
   const searchDimmed = active && matchIds ? !searchHit : false;
   const changesDimmed = changesOnly && !isChange;
+  const spotlightDimmed = spotlightId != null && spotlightId !== nodeId;
   const dimmed = searchDimmed || changesDimmed;
   return {
     searchHit,
     searchDimmed,
-    effOpacity: (base) => (dimmed ? Math.min(base, DIM) : base),
+    effOpacity: (base) =>
+      dimmed
+        ? Math.min(base, DIM)
+        : spotlightDimmed
+          ? Math.min(base, 0.3)
+          : base,
     searchRing: searchHit ? SEARCH_RING : null,
   };
 }

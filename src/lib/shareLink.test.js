@@ -55,6 +55,13 @@ describe("shareLink encode/decode", () => {
     assert.strictEqual(decodeBuildsHash(encodeBuildsHashRaw('{"x":1}')), null);
     assert.strictEqual(decodeBuildsHash(encodeBuildsHashRaw('{"b":[]}')), null);
   });
+
+  test("round-trips layoutHash", () => {
+    const builds = ["CoPAAAA"];
+    const layoutHash = "abcdef12";
+    const out = decodeBuildsHash(encodeBuildsHash({ builds, layoutHash }));
+    assert.strictEqual(out.layoutHash, layoutHash);
+  });
 });
 
 // Helper to craft an arbitrary JSON payload as a token, for the malformed cases.

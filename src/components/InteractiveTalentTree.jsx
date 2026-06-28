@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Tooltip from "./Tooltip";
 import TalentTree from "./TalentTree";
-import { generateBuildString, heroGateSelection } from "../lib/buildString";
 import { computeInvalidNodeIds, buildGrantedSeed } from "../lib/treeLogic";
-import {
-  sectionPoints,
-  canSpendPoint,
-  activeHeroSubtree,
-  prunedExportSelection,
-} from "../lib/spendRules";
+import { sectionPoints, canSpendPoint } from "../lib/spendRules";
 import { byId } from "./treeLayout";
 import { useShallow } from "zustand/react/shallow";
 import { useBuildsStore } from "../store/buildsStore";
+import { buildExportString } from "../lib/exportBuild";
 
 // ─── Export button ────────────────────────────────────────────────────────────
 
-function ExportButton({ onClick, state, invalidCount, hasSelection }) {
+function ExportButton({
+  onClick,
+  state,
+  invalidCount,
+  hasSelection,
+  isEditing,
+}) {
   const hasInvalid = invalidCount > 0;
   // Completeness is NOT required — partial builds (e.g. low-level twinks) are valid.
   // Only block on conflicts (unmet prereqs/gates) or an empty selection.
@@ -24,12 +25,18 @@ function ExportButton({ onClick, state, invalidCount, hasSelection }) {
   const label = hasInvalid
     ? "Resolve conflicts first"
     : state === "copying"
-      ? "Exporting…"
+      ? isEditing
+        ? "Saving…"
+        : "Exporting…"
       : state === "done"
-        ? "Copied & added!"
+        ? isEditing
+          ? "Saved!"
+          : "Copied & added!"
         : state === "error"
           ? "Failed"
-          : "Export build";
+          : isEditing
+            ? "Save changes"
+            : "Add to comparison";
 
   const btn = (
     <button
@@ -80,6 +87,8 @@ export default function InteractiveTalentTree({
     interactiveNodes: selected,
     setInteractiveNodes,
     addBuild,
+    replaceBuild,
+    editingIndex,
     finishAddingBuild,
   } = useBuildsStore(
     useShallow((s) => ({
@@ -87,17 +96,22 @@ export default function InteractiveTalentTree({
       interactiveNodes: s.interactiveNodes,
       setInteractiveNodes: s.setInteractiveNodes,
       addBuild: s.addBuild,
+      replaceBuild: s.replaceBuild,
+      editingIndex: s.editingIndex,
       finishAddingBuild: s.finishAddingBuild,
     })),
   );
   const [exportState, setExportState] = useState("idle");
+  const [copyState, setCopyState] = useState("idle");
   // Holds the pending "reset after the status flashes" timer so it can be
   // cleared if the component unmounts first (avoids a state update / store
   // mutation after teardown).
   const resetTimerRef = useRef(null);
+  const copyTimerRef = useRef(null);
   useEffect(
     () => () => {
       if (resetTimerRef.current != null) clearTimeout(resetTimerRef.current);
+      if (copyTimerRef.current != null) clearTimeout(copyTimerRef.current);
     },
     [],
   );
@@ -280,50 +294,64 @@ export default function InteractiveTalentTree({
 
   // ── Export ──────────────────────────────────────────────────────────────────
 
+  const currentBuildString = useMemo(
+    () => buildExportString(treeData, selected, specId, classNodes),
+    [treeData, selected, specId, classNodes],
+  );
+
+  const handleCopyString = useCallback(async () => {
+    if (
+      copyState !== "idle" ||
+      !currentBuildString ||
+      invalidNodeIds.size > 0 ||
+      (classSpent === 0 && specSpent === 0 && heroSpent === 0)
+    )
+      return;
+    try {
+      await navigator.clipboard.writeText(currentBuildString);
+      setCopyState("done");
+      copyTimerRef.current = setTimeout(() => {
+        copyTimerRef.current = null;
+        setCopyState("idle");
+      }, 2000);
+    } catch {
+      setCopyState("error");
+      copyTimerRef.current = setTimeout(() => {
+        copyTimerRef.current = null;
+        setCopyState("idle");
+      }, 2000);
+    }
+  }, [
+    copyState,
+    currentBuildString,
+    invalidNodeIds.size,
+    classSpent,
+    specSpent,
+    heroSpent,
+  ]);
+
   const handleExport = useCallback(async () => {
-    if (exportState !== "idle" || !classNodes || invalidNodeIds.size > 0)
+    if (
+      exportState !== "idle" ||
+      !currentBuildString ||
+      invalidNodeIds.size > 0
+    )
       return;
     // Allow partial builds (twink/leveling/theorycraft) — just not an empty one.
     if (classSpent === 0 && specSpent === 0 && heroSpent === 0) return;
     setExportState("copying");
     try {
-      const activeSub = activeHeroSubtree(treeData.nodes, selected);
-      // The hero gate node is the hero-tree choice: when hero talents are invested
-      // the in-game format marks it selected with entryChosen = the active subtree.
-      // heroGateSelection owns the 0=left/1=right convention (shared with the
-      // encoder) so the component and the wire format can't disagree.
-      const exportSelection = prunedExportSelection(
-        treeData.nodes,
-        selected,
-        activeSub,
-      );
-      const gateSel = heroGateSelection(
-        heroSpent,
-        activeSub === treeData.heroSubtrees.right.name,
-      );
-      if (gateSel && treeData.heroGateNodeId != null) {
-        exportSelection[treeData.heroGateNodeId] = gateSel;
+      let ok;
+      if (editingIndex != null) {
+        ok = await replaceBuild(editingIndex, currentBuildString);
+      } else {
+        await navigator.clipboard.writeText(currentBuildString);
+        ok = await addBuild(currentBuildString);
       }
-      // Auto-granted nodes encode as selected-but-not-purchased. Class/spec grants
-      // always apply; hero grants only for the active subtree (the inactive one's
-      // granted root is not point-relevant and the game recomputes it on import).
-      const grantedIds = new Set(
-        treeData.nodes
-          .filter(
-            (n) =>
-              n.alreadyGranted &&
-              (n.treeType !== "hero" || n.heroSubtree === activeSub),
-          )
-          .map((n) => n.id),
-      );
-      const buildStr = generateBuildString(
-        exportSelection,
-        specId,
-        classNodes,
-        grantedIds,
-      );
-      await navigator.clipboard.writeText(buildStr);
-      await addBuild(buildStr);
+      // addBuild/replaceBuild set a store error and resolve falsy on rejection
+      // (e.g. an identical build already in a slot); don't flash success or close
+      // the editor in that case — surface it as a failure so the user can adjust.
+      if (!ok) throw new Error("build was rejected");
       setExportState("done");
       // Delay hiding the interactive tree so "Copied & added!" is briefly visible.
       resetTimerRef.current = setTimeout(() => {
@@ -342,15 +370,14 @@ export default function InteractiveTalentTree({
     }
   }, [
     exportState,
-    selected,
-    specId,
-    classNodes,
+    currentBuildString,
     addBuild,
+    replaceBuild,
+    editingIndex,
     invalidNodeIds.size,
     classSpent,
     specSpent,
     heroSpent,
-    treeData,
     finishAddingBuild,
   ]);
 
@@ -391,11 +418,34 @@ export default function InteractiveTalentTree({
           </span>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleCopyString}
+              disabled={
+                !hasUserSelection ||
+                invalidNodeIds.size > 0 ||
+                copyState !== "idle"
+              }
+              className="bg-transparent border border-wow-dim hover:border-wow-gold text-wow-muted hover:text-wow-text text-xs px-3 py-1.5 rounded select-none disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              style={
+                copyState === "done"
+                  ? { color: "#4ade80", borderColor: "#166534" }
+                  : copyState === "error"
+                    ? { color: "#f87171", borderColor: "#7f1d1d" }
+                    : undefined
+              }
+            >
+              {copyState === "done"
+                ? "Copied!"
+                : copyState === "error"
+                  ? "Failed"
+                  : "Copy string"}
+            </button>
             <ExportButton
               onClick={handleExport}
               state={exportState}
               invalidCount={invalidNodeIds.size}
               hasSelection={hasUserSelection}
+              isEditing={editingIndex != null}
             />
             <button
               onClick={handleClearAll}
