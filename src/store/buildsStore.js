@@ -430,6 +430,11 @@ const createStore = (set, get) => ({
         header.specId,
       );
     }
+
+    // Resolves truthy on success and falsy on failure (an error path returned
+    // early above), so the interactive export can tell a committed build from a
+    // rejected one (e.g. a duplicate) instead of always flashing "added".
+    return !get().error;
   },
 
   /**
@@ -614,6 +619,9 @@ const createStore = (set, get) => ({
         buildStrings: newStrings,
       });
     }
+
+    // Mirror addBuildInternal's contract: truthy on success, falsy on failure.
+    return !get().error;
   },
 
   /**

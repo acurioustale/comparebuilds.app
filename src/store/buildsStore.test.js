@@ -395,6 +395,22 @@ describe("editBuild and replaceBuild", () => {
     assert.match(get().error ?? "", /Spec mismatch/);
     assert.strictEqual(get().buildStrings[0], c);
   });
+
+  test("addBuild and replaceBuild resolve truthy on success, falsy on rejection", async () => {
+    const [a, b, c] = genStrings("death_knight", "blood", 3);
+
+    // addBuild: truthy when committed, falsy when rejected as a duplicate.
+    assert.ok(await get().addBuild(a), "first add should succeed");
+    assert.ok(await get().addBuild(b), "second add should succeed");
+    assert.ok(!(await get().addBuild(a)), "duplicate add should be rejected");
+
+    // replaceBuild: truthy on a real swap, falsy when the result duplicates a slot.
+    assert.ok(await get().replaceBuild(0, c), "valid replace should succeed");
+    assert.ok(
+      !(await get().replaceBuild(0, b)),
+      "replace into a duplicate should be rejected",
+    );
+  });
 });
 
 // ── layoutHash ────────────────────────────────────────────────────────────────

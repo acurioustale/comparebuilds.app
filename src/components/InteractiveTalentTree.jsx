@@ -300,7 +300,12 @@ export default function InteractiveTalentTree({
   );
 
   const handleCopyString = useCallback(async () => {
-    if (copyState !== "idle" || !currentBuildString || invalidNodeIds.size > 0)
+    if (
+      copyState !== "idle" ||
+      !currentBuildString ||
+      invalidNodeIds.size > 0 ||
+      (classSpent === 0 && specSpent === 0 && heroSpent === 0)
+    )
       return;
     try {
       await navigator.clipboard.writeText(currentBuildString);
@@ -316,7 +321,14 @@ export default function InteractiveTalentTree({
         setCopyState("idle");
       }, 2000);
     }
-  }, [copyState, currentBuildString, invalidNodeIds.size]);
+  }, [
+    copyState,
+    currentBuildString,
+    invalidNodeIds.size,
+    classSpent,
+    specSpent,
+    heroSpent,
+  ]);
 
   const handleExport = useCallback(async () => {
     if (
@@ -329,12 +341,17 @@ export default function InteractiveTalentTree({
     if (classSpent === 0 && specSpent === 0 && heroSpent === 0) return;
     setExportState("copying");
     try {
+      let ok;
       if (editingIndex != null) {
-        await replaceBuild(editingIndex, currentBuildString);
+        ok = await replaceBuild(editingIndex, currentBuildString);
       } else {
         await navigator.clipboard.writeText(currentBuildString);
-        await addBuild(currentBuildString);
+        ok = await addBuild(currentBuildString);
       }
+      // addBuild/replaceBuild set a store error and resolve falsy on rejection
+      // (e.g. an identical build already in a slot); don't flash success or close
+      // the editor in that case — surface it as a failure so the user can adjust.
+      if (!ok) throw new Error("build was rejected");
       setExportState("done");
       // Delay hiding the interactive tree so "Copied & added!" is briefly visible.
       resetTimerRef.current = setTimeout(() => {
