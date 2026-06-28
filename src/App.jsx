@@ -19,8 +19,10 @@ import { matchNodeIds } from "./lib/talentSearch";
 import {
   SearchContext,
   ChangesFilterContext,
+  SpotlightContext,
 } from "./components/SearchContext";
 import TalentSearch from "./components/TalentSearch";
+import DiffSummaryTable from "./components/DiffSummaryTable";
 import {
   THEME_STORAGE_KEY,
   THEME_COLORS,
@@ -256,6 +258,7 @@ function MainView() {
   // "Changes only" filter, applied to the diff (2 builds) and heatmap (3+). A view
   // preference, so it stays in component state rather than the persisted store.
   const [changesOnly, setChangesOnly] = useState(false);
+  const [spotlightId, setSpotlightId] = useState(null);
 
   // Valid (parsed) builds with their display labels. Memoised so the arrays fed
   // to the comparison views keep a stable identity across unrelated re-renders (a
@@ -404,7 +407,16 @@ function MainView() {
       )}
 
       <ChangesFilterContext.Provider value={changesOnly}>
-        {comparisonEl}
+        <SpotlightContext.Provider value={spotlightId}>
+          {comparisonEl}
+          {valid.length >= 2 && (
+            <DiffSummaryTable
+              treeData={treeData}
+              valid={valid}
+              setSpotlightId={setSpotlightId}
+            />
+          )}
+        </SpotlightContext.Provider>
       </ChangesFilterContext.Provider>
     </>,
   );

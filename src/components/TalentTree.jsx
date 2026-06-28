@@ -1,10 +1,10 @@
-import { memo, useMemo, useId, useRef, useState } from "react";
+import { memo, useMemo, useId, useRef, useState, useContext } from "react";
 import Tooltip from "./Tooltip";
 import { iconUrl, onIconError } from "../lib/iconUrl";
 import { activeHeroSubtree } from "../lib/spendRules";
 import { spentPoints } from "../lib/treeLogic";
 import { prereqChain } from "../lib/prereqChain";
-import { useNodeEmphasis } from "./SearchContext";
+import { useNodeEmphasis, SpotlightContext } from "./SearchContext";
 import {
   CELL,
   ICON,
@@ -269,10 +269,18 @@ const TalentNode = memo(function TalentNode({
   // match also gains a ring), everything else dims. In the diff a "change" is any
   // node carrying a highlight (a-only/b-only/differing). Layers on top of the
   // existing diff/invalid styling.
-  const { searchHit, effOpacity, searchRing } = useNodeEmphasis(
-    node.id,
-    highlight != null,
-  );
+  const spotlightId = useContext(SpotlightContext);
+  const {
+    searchHit,
+    effOpacity: baseEffOpacity,
+    searchRing,
+  } = useNodeEmphasis(node.id, highlight != null);
+  const effOpacity = (base) => {
+    const eff = baseEffOpacity(base);
+    return spotlightId != null && spotlightId !== node.id
+      ? Math.min(eff, 0.3)
+      : eff;
+  };
   // Appends the search-match and prereq-chain rings (when active) onto a node's
   // existing shadow, so they layer over diff/invalid styling without replacing it.
   const withSearchShadow = (shadow) => {
