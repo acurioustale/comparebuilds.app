@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { normaliseSpec, checkpointsFromNodes } from "./ingestBlizzard.js";
+import {
+  normaliseSpec,
+  checkpointsFromNodes,
+  collapseColocatedDuplicates,
+} from "./ingestBlizzard.js";
 
 describe("checkpointsFromNodes", () => {
   it("places one checkpoint per distinct gate at its first (lowest) row, per section, ascending", () => {
@@ -184,5 +188,65 @@ describe("normaliseSpec", () => {
     };
     const spec = await normaliseSpec(specInfo, tree, DB2_STUB, FNS);
     expect(spec.pointBudget.hero).toBe(2); // max(left 1, right 2), not the left's 1
+  });
+});
+
+describe("collapseColocatedDuplicates", () => {
+  const mk = (id, name, posX, posY, opts = {}) => ({
+    id,
+    name,
+    treeType: "class",
+    heroSubtree: null,
+    posX,
+    posY,
+    alreadyGranted: false,
+    connections: [],
+    ...opts,
+  });
+
+  it("collapses same-name co-located nodes to the lowest id and prunes connections", () => {
+    // Same cell, same talent name — one slot (mirrors Starfire / Moonkin Form).
+    const spec = {
+      nodes: [
+        mk(10, "Starfire", 2, 0),
+        mk(11, "Starfire", 2, 0), // duplicate id for the same slot
+        mk(20, "Wrath", 2, 1, { connections: [10, 11] }), // downstream wired to both
+      ],
+    };
+    expect(collapseColocatedDuplicates(spec)).toEqual([11]);
+    expect(spec.nodes.map((n) => n.id)).toEqual([10, 20]);
+    expect(spec.nodes.find((n) => n.id === 20).connections).toEqual([10]);
+  });
+
+  it("collapses a same-name pair even when the cell spans a base/talent variant", () => {
+    // Moonkin Form: 82208 (base-form spell) + 91047 (talent variant) at one cell;
+    // both named "Moonkin Form", so the lowest id wins (matches the game export).
+    const spec = {
+      nodes: [
+        mk(82208, "Moonkin Form", 18, 4),
+        mk(91047, "Moonkin Form", 18, 4),
+      ],
+    };
+    expect(collapseColocatedDuplicates(spec)).toEqual([91047]);
+    expect(spec.nodes.map((n) => n.id)).toEqual([82208]);
+  });
+
+  it("keeps co-located nodes with DIFFERENT names (not the same slot)", () => {
+    const spec = {
+      nodes: [mk(30, "Foo", 4, 0), mk(31, "Bar", 4, 0)],
+    };
+    expect(collapseColocatedDuplicates(spec)).toEqual([]);
+    expect(spec.nodes.map((n) => n.id)).toEqual([30, 31]);
+  });
+
+  it("never touches granted co-located nodes", () => {
+    const spec = {
+      nodes: [
+        mk(10, "Halo", 2, 0, { alreadyGranted: true }),
+        mk(11, "Halo", 2, 0, { alreadyGranted: true }),
+      ],
+    };
+    expect(collapseColocatedDuplicates(spec)).toEqual([]);
+    expect(spec.nodes.map((n) => n.id)).toEqual([10, 11]);
   });
 });

@@ -4,7 +4,9 @@
   "classSlug": "paladin",
   "color": "#F48CBA",
   "icon": "paladin",
-  "unusedNodeIds": [],
+  "unusedNodeIds": [
+    103853
+  ],
   "specs": {
     "holy": {
       "specId": 65,
@@ -809,24 +811,6 @@
           "choices": null
         },
         {
-          "id": 103853,
-          "type": "round",
-          "treeType": "class",
-          "posX": 2,
-          "posY": 9,
-          "connections": [
-            93168,
-            81609
-          ],
-          "spentRequired": 23,
-          "alreadyGranted": false,
-          "maxRanks": 1,
-          "name": "Lightforged Blessing",
-          "icon": "spell_holy_circleofrenewal",
-          "description": "Shield of the Righteous heals you and up to 2 nearby allies for 35.",
-          "choices": null
-        },
-        {
           "id": 103867,
           "type": "round",
           "treeType": "class",
@@ -956,7 +940,6 @@
           "posY": 10,
           "connections": [
             103852,
-            103853,
             103867
           ],
           "spentRequired": 23,
@@ -3432,24 +3415,6 @@
           "choices": null
         },
         {
-          "id": 103853,
-          "type": "round",
-          "treeType": "class",
-          "posX": 2,
-          "posY": 9,
-          "connections": [
-            93168,
-            81609
-          ],
-          "spentRequired": 23,
-          "alreadyGranted": false,
-          "maxRanks": 1,
-          "name": "Lightforged Blessing",
-          "icon": "spell_holy_circleofrenewal",
-          "description": "Shield of the Righteous heals you and up to 2 nearby allies for 35.",
-          "choices": null
-        },
-        {
           "id": 103850,
           "type": "round",
           "treeType": "class",
@@ -3597,7 +3562,6 @@
           "posY": 10,
           "connections": [
             103850,
-            103853,
             103867
           ],
           "spentRequired": 23,

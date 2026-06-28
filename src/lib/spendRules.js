@@ -37,14 +37,26 @@ export function sectionPoints(treeType, allNodes, selected) {
  * writes those as granted via `grantedIds`. With no subtree active (activeSubtree
  * null) every granted hero root is pruned, matching the game's export.
  *
- * Also collapses co-located duplicates: a cell is one talent slot but a selection
- * imported from a tool (or seeded from one to edit) can carry several node ids for
- * it. Keep only the lowest-id purchased node per cell and drop the rest, so the
- * encoded string is the game's canonical single-id form (see cellKey) instead of
- * an over-budget both-ids string.
+ * Drops selected ids that aren't real nodes in this spec tree: unused
+ * placeholders (a co-located duplicate the ingest collapsed now lives in
+ * unusedNodeIds, see cellKey) and the hero-gate node (buildExportString injects
+ * the correct gate selection after pruning). They must never encode as purchased
+ * — so a tool string that set a now-unused duplicate bit self-heals on save.
+ *
+ * Also collapses any co-located duplicates left in the selection: a cell is one
+ * talent slot but a selection imported from a tool (or seeded from one to edit)
+ * can carry several node ids for it. Keep only the lowest-id purchased node per
+ * cell and drop the rest, so the encoded string is the game's canonical single-id
+ * form (see cellKey) instead of an over-budget multi-id string. (The ingest now
+ * collapses every co-located cell in the data to one id; this is belt-and-braces
+ * for a selection that still carries a duplicate.)
  */
 export function prunedExportSelection(allNodes, selected, activeSubtree) {
-  const pruned = { ...selected };
+  const realIds = new Set(allNodes.map((n) => n.id));
+  const pruned = {};
+  for (const [id, sel] of Object.entries(selected)) {
+    if (realIds.has(Number(id))) pruned[id] = sel;
+  }
   for (const n of allNodes) {
     if (
       n.alreadyGranted &&

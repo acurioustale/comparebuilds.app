@@ -32,12 +32,10 @@ export function hasUpperPrereq(node, selected, nodeById) {
  * in that subtree count; otherwise the whole `treeType` counts.
  *
  * Counts at most one purchased node per co-located cell. A cell is a single
- * talent slot, but the game (and third-party tools) can serialise more than one
- * node record for it — selecting "Starfire" can light up two co-located node ids
- * for one talent (see cellKey). Counting both would over-report the section by a
- * point per duplicate (e.g. 35/34 class), so collapse co-located picks to one.
- * (Importing such a string in-game and re-exporting confirms the game keeps only
- * the lowest-id node — exactly the one this collapse keeps.)
+ * talent slot; the ingest already collapses its duplicate node records to one id
+ * (see cellKey), so this only matters when a tool-built string sets a
+ * since-collapsed duplicate's bit. Counting both would over-report the section by
+ * a point per duplicate (e.g. 35/34 class), so collapse co-located picks to one.
  *
  * Single shared accumulator behind both the section-budget check (sectionPoints)
  * and the gate check (gatedPoints) so the two can't drift.
@@ -74,14 +72,19 @@ export function gatedPoints(node, allNodes, selected) {
  * A grid-cell key. Nodes that render on the same spot share it: the same panel
  * (treeType, plus heroSubtree for hero nodes) and the same posX,posY.
  *
- * Some talents are reachable through two node ids that occupy one cell — a
- * Blizzard tree quirk: druid's Starfire / Moonkin Form, paladin's Lightforged
- * Blessing. These are duplicate node records for a single talent slot, so the
- * cell is worth one point however many of its ids a serialised build sets: the
- * game's own export keeps one, but tool-built strings can set several. The app
- * counts (spentPoints), gates (gatedPoints), and encodes (prunedExportSelection)
- * a cell as a single talent. (Co-located *granted* roots — Halo-style pairs that
- * are auto-granted together — are exempt; they are never purchased.)
+ * Some talents are reachable through more than one node id at one cell — a
+ * Blizzard tree quirk. A cell is one talent slot worth one point however many of
+ * its ids a serialised build sets (the game's own export keeps one; tool-built
+ * strings can set several), so the app counts (spentPoints), gates (gatedPoints),
+ * and encodes (prunedExportSelection) a cell as a single talent.
+ *
+ * The ingest collapses every such cell to a single canonical id (the lowest —
+ * what the game's export keeps), parking the duplicates in unusedNodeIds, so the
+ * data that reaches the app already holds one node per cell (druid Starfire and
+ * Moonkin Form, paladin Lightforged Blessing). This logic is therefore the net
+ * for a tool-built string that still sets a since-collapsed duplicate's bit.
+ * (Co-located *granted* roots — Halo-style pairs that are auto-granted together —
+ * are exempt; they are never purchased.)
  */
 export function cellKey(node) {
   return `${node.treeType}|${node.heroSubtree ?? ""}|${node.posX},${node.posY}`;
