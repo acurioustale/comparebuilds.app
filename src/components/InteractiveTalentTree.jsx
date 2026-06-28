@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Tooltip from "./Tooltip";
 import TalentTree from "./TalentTree";
-import { generateBuildString, heroGateSelection } from "../lib/buildString";
 import { computeInvalidNodeIds, buildGrantedSeed } from "../lib/treeLogic";
-import {
-  sectionPoints,
-  canSpendPoint,
-  activeHeroSubtree,
-  prunedExportSelection,
-} from "../lib/spendRules";
+import { sectionPoints, canSpendPoint } from "../lib/spendRules";
 import { byId } from "./treeLayout";
 import { useShallow } from "zustand/react/shallow";
 import { useBuildsStore } from "../store/buildsStore";
+import { buildExportString } from "../lib/exportBuild";
 
 // ─── Export button ────────────────────────────────────────────────────────────
 
@@ -41,7 +36,7 @@ function ExportButton({
           ? "Failed"
           : isEditing
             ? "Save changes"
-            : "Export build";
+            : "Add to comparison";
 
   const btn = (
     <button
@@ -107,13 +102,16 @@ export default function InteractiveTalentTree({
     })),
   );
   const [exportState, setExportState] = useState("idle");
+  const [copyState, setCopyState] = useState("idle");
   // Holds the pending "reset after the status flashes" timer so it can be
   // cleared if the component unmounts first (avoids a state update / store
   // mutation after teardown).
   const resetTimerRef = useRef(null);
+  const copyTimerRef = useRef(null);
   useEffect(
     () => () => {
       if (resetTimerRef.current != null) clearTimeout(resetTimerRef.current);
+      if (copyTimerRef.current != null) clearTimeout(copyTimerRef.current);
     },
     [],
   );
@@ -296,53 +294,46 @@ export default function InteractiveTalentTree({
 
   // ── Export ──────────────────────────────────────────────────────────────────
 
+  const currentBuildString = useMemo(
+    () => buildExportString(treeData, selected, specId, classNodes),
+    [treeData, selected, specId, classNodes],
+  );
+
+  const handleCopyString = useCallback(async () => {
+    if (copyState !== "idle" || !currentBuildString || invalidNodeIds.size > 0)
+      return;
+    try {
+      await navigator.clipboard.writeText(currentBuildString);
+      setCopyState("done");
+      copyTimerRef.current = setTimeout(() => {
+        copyTimerRef.current = null;
+        setCopyState("idle");
+      }, 2000);
+    } catch {
+      setCopyState("error");
+      copyTimerRef.current = setTimeout(() => {
+        copyTimerRef.current = null;
+        setCopyState("idle");
+      }, 2000);
+    }
+  }, [copyState, currentBuildString, invalidNodeIds.size]);
+
   const handleExport = useCallback(async () => {
-    if (exportState !== "idle" || !classNodes || invalidNodeIds.size > 0)
+    if (
+      exportState !== "idle" ||
+      !currentBuildString ||
+      invalidNodeIds.size > 0
+    )
       return;
     // Allow partial builds (twink/leveling/theorycraft) — just not an empty one.
     if (classSpent === 0 && specSpent === 0 && heroSpent === 0) return;
     setExportState("copying");
     try {
-      const activeSub = activeHeroSubtree(treeData.nodes, selected);
-      // The hero gate node is the hero-tree choice: when hero talents are invested
-      // the in-game format marks it selected with entryChosen = the active subtree.
-      // heroGateSelection owns the 0=left/1=right convention (shared with the
-      // encoder) so the component and the wire format can't disagree.
-      const exportSelection = prunedExportSelection(
-        treeData.nodes,
-        selected,
-        activeSub,
-      );
-      const gateSel = heroGateSelection(
-        heroSpent,
-        activeSub === treeData.heroSubtrees.right.name,
-      );
-      if (gateSel && treeData.heroGateNodeId != null) {
-        exportSelection[treeData.heroGateNodeId] = gateSel;
-      }
-      // Auto-granted nodes encode as selected-but-not-purchased. Class/spec grants
-      // always apply; hero grants only for the active subtree (the inactive one's
-      // granted root is not point-relevant and the game recomputes it on import).
-      const grantedIds = new Set(
-        treeData.nodes
-          .filter(
-            (n) =>
-              n.alreadyGranted &&
-              (n.treeType !== "hero" || n.heroSubtree === activeSub),
-          )
-          .map((n) => n.id),
-      );
-      const buildStr = generateBuildString(
-        exportSelection,
-        specId,
-        classNodes,
-        grantedIds,
-      );
       if (editingIndex != null) {
-        await replaceBuild(editingIndex, buildStr);
+        await replaceBuild(editingIndex, currentBuildString);
       } else {
-        await navigator.clipboard.writeText(buildStr);
-        await addBuild(buildStr);
+        await navigator.clipboard.writeText(currentBuildString);
+        await addBuild(currentBuildString);
       }
       setExportState("done");
       // Delay hiding the interactive tree so "Copied & added!" is briefly visible.
@@ -362,9 +353,7 @@ export default function InteractiveTalentTree({
     }
   }, [
     exportState,
-    selected,
-    specId,
-    classNodes,
+    currentBuildString,
     addBuild,
     replaceBuild,
     editingIndex,
@@ -372,7 +361,6 @@ export default function InteractiveTalentTree({
     classSpent,
     specSpent,
     heroSpent,
-    treeData,
     finishAddingBuild,
   ]);
 
@@ -413,6 +401,28 @@ export default function InteractiveTalentTree({
           </span>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleCopyString}
+              disabled={
+                !hasUserSelection ||
+                invalidNodeIds.size > 0 ||
+                copyState !== "idle"
+              }
+              className="bg-transparent border border-wow-dim hover:border-wow-gold text-wow-muted hover:text-wow-text text-xs px-3 py-1.5 rounded select-none disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              style={
+                copyState === "done"
+                  ? { color: "#4ade80", borderColor: "#166534" }
+                  : copyState === "error"
+                    ? { color: "#f87171", borderColor: "#7f1d1d" }
+                    : undefined
+              }
+            >
+              {copyState === "done"
+                ? "Copied!"
+                : copyState === "error"
+                  ? "Failed"
+                  : "Copy string"}
+            </button>
             <ExportButton
               onClick={handleExport}
               state={exportState}
