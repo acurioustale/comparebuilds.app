@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
 import { useShallow } from "zustand/react/shallow";
 import BuildManager from "./components/BuildManager";
 import HeatmapTree from "./components/HeatmapTree";
@@ -246,13 +246,15 @@ function MainView() {
 
   // Search/filter state, shared with every tree node via SearchContext.
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const matchIds = useMemo(
-    () => (treeData ? matchNodeIds(query, treeData.nodes) : EMPTY_MATCH),
-    [query, treeData],
+    () =>
+      treeData ? matchNodeIds(deferredQuery, treeData.nodes) : EMPTY_MATCH,
+    [deferredQuery, treeData],
   );
   const search = useMemo(
-    () => ({ active: query.trim().length > 0, matchIds }),
-    [query, matchIds],
+    () => ({ active: deferredQuery.trim().length > 0, matchIds }),
+    [deferredQuery, matchIds],
   );
 
   // "Differences only" filter, applied to the diff (2 builds) and heatmap (3+). A

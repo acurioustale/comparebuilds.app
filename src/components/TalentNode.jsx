@@ -140,7 +140,7 @@ export const TalentNode = memo(function TalentNode({
     sel?.pointsInvested ?? (alreadyGranted ? node.maxRanks : 0);
   const entryChosen = sel?.entryChosen ?? null;
 
-  const tip = (
+  const renderTip = () => (
     <NodeTooltip
       node={node}
       entryChosen={entryChosen}
@@ -288,7 +288,7 @@ export const TalentNode = memo(function TalentNode({
     const totalW = CHOICE_ICON * 2 + CHOICE_GAP;
     return (
       <Tooltip
-        content={tip}
+        renderContent={renderTip}
         placement="top"
         delay={300}
         touch={interactive ? "hold" : "tap"}
@@ -406,7 +406,7 @@ export const TalentNode = memo(function TalentNode({
     const showApexRank = isSelected && node.maxRanks > 1;
     return (
       <Tooltip
-        content={tip}
+        renderContent={renderTip}
         placement="top"
         delay={300}
         touch={interactive ? "hold" : "tap"}
@@ -506,7 +506,7 @@ export const TalentNode = memo(function TalentNode({
 
   return (
     <Tooltip
-      content={tip}
+      renderContent={renderTip}
       placement="top"
       delay={300}
       touch={interactive ? "hold" : "tap"}

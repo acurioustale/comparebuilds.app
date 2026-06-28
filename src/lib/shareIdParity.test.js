@@ -27,7 +27,8 @@ const jsPattern = (() => {
 // PHP file. Deliberately anchored so it ignores BUILD_PATTERN and the like.
 const phpPatterns = (src) => {
   const out = [];
-  const re = /preg_match\(\s*'\/(\^\[A-Za-z0-9\][^']*\$)\/'/g;
+  const re =
+    /(?:preg_match\(\s*|const\s+SHARE_ID_PATTERN\s*=\s*)'\/(\^\[A-Za-z0-9\][^']*\$)\/'/g;
   let m;
   while ((m = re.exec(src)) !== null) out.push(m[1]);
   return out;

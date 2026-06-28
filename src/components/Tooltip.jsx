@@ -45,6 +45,7 @@ function compose(a, b) {
 
 export default function Tooltip({
   content,
+  renderContent,
   placement = "top",
   delay = 0,
   touch = "tap",
@@ -147,7 +148,7 @@ export default function Tooltip({
             className="wow-tooltip"
             {...getFloatingProps()}
           >
-            {content}
+            {renderContent ? renderContent() : content}
             <FloatingArrow
               ref={arrowRef}
               context={context}

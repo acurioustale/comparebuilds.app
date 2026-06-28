@@ -98,7 +98,8 @@ export function parseAll(strings, classNodes) {
   return strings.map((s) => {
     try {
       return parseBuildString(s, classNodes);
-    } catch {
+    } catch (err) {
+      console.error(`Failed to parse build string: ${err.message}`, err);
       return null;
     }
   });

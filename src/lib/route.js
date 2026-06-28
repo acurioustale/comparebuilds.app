@@ -15,6 +15,8 @@ import classesIndex from "../data/classes.json";
 // api/og.php; shareIdParity.test.js pins all three together across the two
 // languages so the SPA route, the share page, and its OG image can't drift.
 const SHARE_ID_RE = /^[A-Za-z0-9]{8,16}$/;
+const TRIM_SLASHES_RE = /^\/+|\/+$/g;
+const LEADING_HASH_RE = /^#/;
 
 // slug ("death_knight") ↔ URL segment ("death-knight").
 const toSegment = (slug) => slug.replaceAll("_", "-");
@@ -35,7 +37,7 @@ for (const cls of classesIndex) {
 
 /** Returns the specId for a "/<class>/<spec>" pathname, or null. */
 export function specIdForPath(pathname) {
-  const key = (pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
+  const key = (pathname || "").replace(TRIM_SLASHES_RE, "").toLowerCase();
   return SPEC_BY_PATH.has(key) ? SPEC_BY_PATH.get(key) : null;
 }
 
@@ -50,7 +52,7 @@ export function resolveRoute(
     ? window.location
     : { hash: "", pathname: "" },
 ) {
-  const hash = (location.hash || "").replace(/^#/, "");
+  const hash = (location.hash || "").replace(LEADING_HASH_RE, "");
 
   if (SHARE_ID_RE.test(hash)) {
     return { kind: "server-share", id: hash };
