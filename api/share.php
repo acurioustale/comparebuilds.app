@@ -196,6 +196,11 @@ function validate_share_input(mixed $body): array
         }
     }
 
+    $layoutHash = $body['layoutHash'] ?? null;
+    if ($layoutHash !== null && (!is_string($layoutHash) || mb_strlen($layoutHash) > 16)) {
+        return ['error' => 'layoutHash, when present, must be a string ≤ 16 chars'];
+    }
+
     $payload = ['classId' => $classId, 'specId' => $specId, 'builds' => $builds];
     if ($labels !== null) {
         $payload['labels'] = $labels;
@@ -205,6 +210,9 @@ function validate_share_input(mixed $body): array
     }
     if ($specName !== null) {
         $payload['specName'] = $specName;
+    }
+    if ($layoutHash !== null) {
+        $payload['layoutHash'] = $layoutHash;
     }
 
     return ['payload' => $payload];

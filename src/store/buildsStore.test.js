@@ -17,6 +17,7 @@ import {
   MAX_BUILD_NAME_LEN,
 } from "./buildsStore.js";
 import { collectClassNodes, generateBuildString } from "../lib/buildString.js";
+import { wireLayout } from "../lib/wireLayout.js";
 
 const require = createRequire(import.meta.url);
 const get = () => useBuildsStore.getState();
@@ -393,5 +394,26 @@ describe("editBuild and replaceBuild", () => {
     await get().replaceBuild(0, mage);
     assert.match(get().error ?? "", /Spec mismatch/);
     assert.strictEqual(get().buildStrings[0], c);
+  });
+});
+
+// ── layoutHash ────────────────────────────────────────────────────────────────
+
+describe("layoutHash tracking", () => {
+  test("computes layoutHash on spec load and supports setSharedLayoutHash", async () => {
+    const [a] = genStrings("death_knight", "blood", 1);
+    await get().addBuild(a);
+    const st = get();
+    assert.ok(st.layoutHash, "layoutHash should be set on load");
+    // The stamp is the class-level wire-layout fingerprint (16 hex chars), not a
+    // per-spec hash, so it also moves when a sibling spec shifts the bit layout.
+    assert.strictEqual(st.layoutHash.length, 16);
+    assert.strictEqual(
+      st.layoutHash,
+      wireLayout(require("../data/death_knight.json")).hash,
+    );
+
+    get().setSharedLayoutHash("oldhash1");
+    assert.strictEqual(get().sharedLayoutHash, "oldhash1");
   });
 });

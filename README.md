@@ -126,10 +126,10 @@ In your hosting control panel, point the `comparebuilds.app` domain to the web r
 
 `api/share.php` handles short links for sharing builds:
 
-| Method | Parameters                                                                                                                                                                                                                                      | Response                                                                           |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `POST` | JSON body `{ classId, specId, builds: ["…","…"] }` — 2–5 build strings, each ≤ 2000 chars. Optional: `labels` (array parallel to `builds`, each ≤ 40 chars — the per-slot names) and `className`/`specName` (≤ 64 chars, used by the OG image). | `{ id }` — 6-char alphanumeric                                                     |
-| `GET`  | `?id=xxxxxx`                                                                                                                                                                                                                                    | Stored JSON payload (includes `labels`/`className`/`specName` when they were sent) |
+| Method | Parameters                                                                                                                                                                                                                                                                                                                     | Response                                                                                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `POST` | JSON body `{ classId, specId, builds: ["…","…"] }` — 2–5 build strings, each ≤ 2000 chars. Optional: `labels` (array parallel to `builds`, each ≤ 40 chars — the per-slot names), `className`/`specName` (≤ 64 chars, used by the OG image), and `layoutHash` (≤ 16-char hex structural fingerprint of the class wire layout). | `{ id }` — 6-char alphanumeric                                                                  |
+| `GET`  | `?id=xxxxxx`                                                                                                                                                                                                                                                                                                                   | Stored JSON payload (includes `labels`/`className`/`specName`/`layoutHash` when they were sent) |
 
 Rows older than 90 days are deleted on each `POST` request.
 
@@ -158,6 +158,8 @@ Two ways to share builds:
   (`…/#b=<token>`, base64url of the build strings). No server call, no rate limit,
   works offline; the trade-off is a long URL. Opening either kind loads the builds
   on page load (a share in the URL takes precedence over locally saved state).
+
+Both link types embed a detect-only `layoutHash` stamp — a structural fingerprint of the talent tree at the time of sharing. If a game patch shifts talent positions or alters the tree structure, opening an older share link displays an honest warning banner explaining that talent positions may have shifted, rather than silently misparsing or rendering a corrupt build.
 
 ## Local persistence
 

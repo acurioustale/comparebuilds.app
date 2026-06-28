@@ -7,6 +7,7 @@ import {
   collectClassNodes,
 } from "../lib/buildString";
 import { buildGrantedSeed, spentPoints } from "../lib/treeLogic";
+import { wireLayout } from "../lib/wireLayout";
 // NOTE: these limits are mirrored server-side in api/share.php (MAX_BUILDS,
 // MAX_BUILD_LEN). Keep the two in sync — the server rejects anything past them, so
 // validating here too just gives a clearer message before the share round-trip.
@@ -158,9 +159,15 @@ async function loadTreeData(
     }
 
     const currentStrings = get().buildStrings;
+    // Class-level wire-layout fingerprint: the same hash the snapshot pins, and
+    // the detect-only patch stamp embedded in share links. Class-level (not
+    // treeData/spec-level) so it also moves when a sibling spec shifts the
+    // shared bit layout.
+    const layoutHash = wireLayout(classData).hash;
     set({
       classNodes,
       treeData,
+      layoutHash,
       isLoading: false,
       // Re-parse every string that may have arrived while we were loading
       parsedBuilds: parseAll(currentStrings, classNodes),
@@ -250,12 +257,20 @@ const EMPTY = {
    * Index of the build currently being edited in the interactive tree, or null.
    */
   editingIndex: null,
+
+  /** @type {string|null} Structural hash of the active spec tree. */
+  layoutHash: null,
+
+  /** @type {string|null} Structural hash restored from a share link. */
+  sharedLayoutHash: null,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 const createStore = (set, get) => ({
   ...EMPTY,
+
+  setSharedLayoutHash: (hash) => set({ sharedLayoutHash: hash ?? null }),
 
   /**
    * Validates and appends a build string. Async because the first build

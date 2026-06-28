@@ -358,6 +358,7 @@ export default function BuildManager() {
     classId,
     specId,
     treeData,
+    layoutHash,
     isLoading,
     error,
     addBuild,
@@ -374,6 +375,7 @@ export default function BuildManager() {
       classId: s.classId,
       specId: s.specId,
       treeData: s.treeData,
+      layoutHash: s.layoutHash,
       isLoading: s.isLoading,
       error: s.error,
       addBuild: s.addBuild,
@@ -433,6 +435,7 @@ export default function BuildManager() {
       const token = encodeBuildsHash({
         builds: buildStrings,
         names: buildNames,
+        layoutHash,
       });
       const url = `${window.location.origin}${window.location.pathname}#b=${token}`;
       await navigator.clipboard.writeText(url);
@@ -445,7 +448,7 @@ export default function BuildManager() {
         2000,
       );
     }
-  }, [permalinkState, buildStrings, buildNames]);
+  }, [permalinkState, buildStrings, buildNames, layoutHash]);
 
   const handleCopyLink = useCallback(async () => {
     if (copyState !== "idle") return;
@@ -465,6 +468,7 @@ export default function BuildManager() {
           labels,
           className: classDisplayName,
           specName: specDisplayName,
+          layoutHash,
         }),
       });
       if (!res.ok) {
@@ -490,6 +494,7 @@ export default function BuildManager() {
     buildNames,
     classDisplayName,
     specDisplayName,
+    layoutHash,
   ]);
 
   const handleCopySimc = useCallback(async () => {

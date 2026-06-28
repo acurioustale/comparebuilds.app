@@ -431,6 +431,7 @@ function useShareRehydration() {
     rehydrateTreeData,
     setBuildNames,
     preloadSpec,
+    setSharedLayoutHash,
   } = useBuildsStore(
     useShallow((s) => ({
       addBuild: s.addBuild,
@@ -438,6 +439,7 @@ function useShareRehydration() {
       rehydrateTreeData: s.rehydrateTreeData,
       setBuildNames: s.setBuildNames,
       preloadSpec: s.preloadSpec,
+      setSharedLayoutHash: s.setSharedLayoutHash,
     })),
   );
   const [shareError, setShareError] = useState(null);
@@ -495,6 +497,7 @@ function useShareRehydration() {
         return;
       }
       (async () => {
+        if (decoded.layoutHash) setSharedLayoutHash(decoded.layoutHash);
         for (const buildString of decoded.builds) {
           await addBuild(buildString);
         }
@@ -521,6 +524,7 @@ function useShareRehydration() {
           setShareError("Invalid share data.");
           return;
         }
+        if (data.layoutHash) setSharedLayoutHash(data.layoutHash);
         for (const buildString of data.builds) {
           await addBuild(buildString);
         }
@@ -546,6 +550,14 @@ function useShareRehydration() {
 export default function App() {
   const { shareError, dismissShareError } = useShareRehydration();
   const { mode, next, cycleTheme } = useTheme();
+  const { layoutHash, sharedLayoutHash } = useBuildsStore(
+    useShallow((s) => ({
+      layoutHash: s.layoutHash,
+      sharedLayoutHash: s.sharedLayoutHash,
+    })),
+  );
+  const patchWarning =
+    layoutHash && sharedLayoutHash && layoutHash !== sharedLayoutHash;
 
   return (
     <div className="min-h-screen text-wow-text flex flex-col relative">
@@ -607,6 +619,19 @@ export default function App() {
             >
               ×
             </button>
+          </div>
+        )}
+        {patchWarning && (
+          <div
+            className="max-w-2xl mx-auto mb-4 px-3 py-2.5 rounded text-xs text-center"
+            style={{
+              background: "rgba(60,10,10,0.7)",
+              border: "1px solid rgba(180,40,40,0.4)",
+              color: "#ffaaaa",
+            }}
+          >
+            These builds were created during a previous game patch. Talent
+            positions may have shifted, causing points to misalign or disappear.
           </div>
         )}
         <BuildManager />

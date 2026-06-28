@@ -33,11 +33,12 @@ function b64urlDecode(token) {
 
 /**
  * Encodes builds + optional names into a hash token (the part after `#b=`).
- * @param {{ builds: string[], names?: (string|null|undefined)[] }} input
+ * @param {{ builds: string[], names?: (string|null|undefined)[], layoutHash?: string|null }} input
  * @returns {string}
  */
-export function encodeBuildsHash({ builds, names }) {
+export function encodeBuildsHash({ builds, names, layoutHash }) {
   const payload = { b: builds };
+  if (layoutHash) payload.h = layoutHash;
   // Only carry names when at least one is set, to keep links short.
   if (Array.isArray(names) && names.some((n) => n)) {
     payload.n = builds.map((_, i) => names[i] ?? "");
@@ -49,7 +50,7 @@ export function encodeBuildsHash({ builds, names }) {
  * Decodes a hash token back into builds + names. Returns null for anything
  * malformed so the caller can fall back gracefully.
  * @param {string} token  The value after `#b=`.
- * @returns {{ builds: string[], names: string[] } | null}
+ * @returns {{ builds: string[], names: string[], layoutHash: string|null } | null}
  */
 export function decodeBuildsHash(token) {
   if (typeof token !== "string" || token.length === 0) return null;
@@ -74,7 +75,7 @@ export function decodeBuildsHash(token) {
       );
     }
     if (builds.length === 0) return null;
-    return { builds, names };
+    return { builds, names, layoutHash: obj.h ?? null };
   } catch {
     return null;
   }
