@@ -533,7 +533,12 @@ if ($method === 'GET') {
     }
 
     header('Cache-Control: public, max-age=86400');
-    echo $data;
+
+    // Validated-on-write JSON blob, returned verbatim as application/json with
+    // X-Content-Type-Options: nosniff — the browser won't render it as HTML, so
+    // this is not an XSS sink (the /s/<id> page mode above escapes via
+    // render_share_page; the SPA consumes this as data).
+    echo $data; // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
     exit;
 }
 
