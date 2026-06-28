@@ -78,6 +78,7 @@ describe("persistence", () => {
       "buildNames",
       "buildStrings",
       "classId",
+      "editingIndex",
       "interactiveNodes",
       "specId",
     ]);

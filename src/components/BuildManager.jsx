@@ -166,6 +166,7 @@ function FilledSlot({
   loading,
   onRemove,
   onRename,
+  onEdit,
 }) {
   const [flash, setFlash] = useState(false);
   const flashTimer = useRef(null);
@@ -220,6 +221,18 @@ function FilledSlot({
           {flash ? "✓" : "⧉"}
         </button>
       </Tooltip>
+
+      {parsed && (
+        <Tooltip content="Edit build" placement="bottom" delay={300}>
+          <button
+            onClick={onEdit}
+            aria-label={`Edit build ${index + 1}`}
+            className="shrink-0 w-6 h-6 flex items-center justify-center text-wow-dim hover:text-wow-gold transition-colors text-sm leading-none rounded"
+          >
+            ✎
+          </button>
+        </Tooltip>
+      )}
 
       <button
         onClick={onRemove}
@@ -350,6 +363,7 @@ export default function BuildManager() {
     clearAllBuilds,
     preloadSpec,
     setBuildName,
+    editBuild,
   } = useBuildsStore(
     useShallow((s) => ({
       buildStrings: s.buildStrings,
@@ -365,6 +379,7 @@ export default function BuildManager() {
       clearAllBuilds: s.clearAllBuilds,
       preloadSpec: s.preloadSpec,
       setBuildName: s.setBuildName,
+      editBuild: s.editBuild,
     })),
   );
 
@@ -579,6 +594,7 @@ export default function BuildManager() {
                   loading={isLoading && parsedBuilds[i] === null}
                   onRemove={() => removeBuild(i)}
                   onRename={(v) => setBuildName(i, v)}
+                  onEdit={() => editBuild(i)}
                 />
               );
             }

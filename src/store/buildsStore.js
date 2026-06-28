@@ -245,6 +245,11 @@ const EMPTY = {
    * MainView renders the interactive tree alongside the comparison view.
    */
   addingBuild: false,
+
+  /**
+   * Index of the build currently being edited in the interactive tree, or null.
+   */
+  editingIndex: null,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -492,7 +497,109 @@ const createStore = (set, get) => ({
   },
 
   /** Called after a successful interactive export to hide the interactive tree. */
-  finishAddingBuild: () => set({ addingBuild: false }),
+  finishAddingBuild: () => set({ addingBuild: false, editingIndex: null }),
+
+  /**
+   * Opens the build at `index` in the interactive calculator, seeded with its selections.
+   * @param {number} index
+   */
+  editBuild: (index) => {
+    const { treeData, parsedBuilds } = get();
+    if (!treeData || !parsedBuilds[index]) return;
+    set({ addingBuild: true, editingIndex: index });
+    get().setInteractiveNodes({
+      ...buildGrantedSeed(treeData),
+      ...parsedBuilds[index].nodes,
+    });
+  },
+
+  /**
+   * Replaces the build string at `index` with `buildString`, re-parses, and preserves its name.
+   * @param {number} index
+   * @param {string} buildString
+   */
+  replaceBuild: (index, buildString) => {
+    const run = addBuildQueue.then(() =>
+      get().replaceBuildInternal(index, buildString),
+    );
+    addBuildQueue = run.catch(() => {});
+    return run;
+  },
+
+  replaceBuildInternal: async (index, buildString) => {
+    set({ error: null });
+
+    if (!buildString || typeof buildString !== "string") {
+      set({ error: "Build string must be a non-empty string." });
+      return;
+    }
+
+    if (buildString.length > MAX_BUILD_LEN) {
+      set({
+        error: `Build string is too long (max ${MAX_BUILD_LEN} characters).`,
+      });
+      return;
+    }
+
+    const {
+      buildStrings,
+      specId: currentSpecId,
+      classNodes,
+      isLoading,
+    } = get();
+
+    if (index < 0 || index >= buildStrings.length) return;
+
+    if (buildStrings.some((s, i) => i !== index && s === buildString)) {
+      set({ error: "That build has already been added." });
+      return;
+    }
+
+    let header;
+    try {
+      header = parseSpecId(buildString);
+    } catch (err) {
+      const isVersion =
+        err instanceof RangeError && /version/i.test(err.message);
+      set({
+        error: isVersion
+          ? `${err.message}. This build string is from a newer game format than this tool supports.`
+          : "Could not read the build string header — it may be truncated or corrupt.",
+      });
+      return;
+    }
+
+    if (currentSpecId !== null && header.specId !== currentSpecId) {
+      const match = findClassForSpec(header.specId);
+      const existingMatch = findClassForSpec(currentSpecId);
+      const existingLabel = existingMatch
+        ? `${existingMatch.cls.displayName} — ${existingMatch.spec.displayName}`
+        : `spec ${currentSpecId}`;
+      const incomingLabel = match
+        ? `${match.cls.displayName} — ${match.spec.displayName}`
+        : `spec ${header.specId}`;
+      set({
+        error:
+          `Spec mismatch: loaded builds are ${existingLabel}, ` +
+          `but this string is for ${incomingLabel}.`,
+      });
+      return;
+    }
+
+    const newStrings = [...buildStrings];
+    newStrings[index] = buildString;
+
+    if (classNodes && !isLoading) {
+      set({
+        buildStrings: newStrings,
+        parsedBuilds: parseAll(newStrings, classNodes),
+      });
+    } else {
+      set({
+        buildStrings: newStrings,
+      });
+    }
+  },
 
   /**
    * Renames the slot at `index`. Trimmed to MAX_BUILD_NAME_LEN; '' means unnamed.
@@ -616,6 +723,7 @@ export const useBuildsStore = create(
       classId: state.classId,
       interactiveNodes: state.interactiveNodes,
       addingBuild: state.addingBuild,
+      editingIndex: state.editingIndex,
     }),
     // Forward-compat hook: if the persisted shape ever changes, bump `version`
     // above and translate older payloads here. v1 is the initial shape, so this

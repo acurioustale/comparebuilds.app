@@ -98,4 +98,15 @@ describe("BuildManager import flow", () => {
       expect(screen.queryByPlaceholderText(/Blood Death Knight/)).toBeNull(),
     );
   });
+
+  test("pencil button opens build for editing", async () => {
+    render(<BuildManager />);
+    const [s] = genStrings("death_knight", "blood", 1);
+    paste(screen.getAllByPlaceholderText("Paste build string…")[0], s);
+    await screen.findByPlaceholderText(/Blood Death Knight/);
+    const pencil = await screen.findByLabelText("Edit build 1");
+    expect(pencil).toBeInTheDocument();
+    fireEvent.click(pencil);
+    expect(useBuildsStore.getState().editingIndex).toBe(0);
+  });
 });

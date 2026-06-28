@@ -15,7 +15,13 @@ import { useBuildsStore } from "../store/buildsStore";
 
 // ─── Export button ────────────────────────────────────────────────────────────
 
-function ExportButton({ onClick, state, invalidCount, hasSelection }) {
+function ExportButton({
+  onClick,
+  state,
+  invalidCount,
+  hasSelection,
+  isEditing,
+}) {
   const hasInvalid = invalidCount > 0;
   // Completeness is NOT required — partial builds (e.g. low-level twinks) are valid.
   // Only block on conflicts (unmet prereqs/gates) or an empty selection.
@@ -24,12 +30,18 @@ function ExportButton({ onClick, state, invalidCount, hasSelection }) {
   const label = hasInvalid
     ? "Resolve conflicts first"
     : state === "copying"
-      ? "Exporting…"
+      ? isEditing
+        ? "Saving…"
+        : "Exporting…"
       : state === "done"
-        ? "Copied & added!"
+        ? isEditing
+          ? "Saved!"
+          : "Copied & added!"
         : state === "error"
           ? "Failed"
-          : "Export build";
+          : isEditing
+            ? "Save changes"
+            : "Export build";
 
   const btn = (
     <button
@@ -80,6 +92,8 @@ export default function InteractiveTalentTree({
     interactiveNodes: selected,
     setInteractiveNodes,
     addBuild,
+    replaceBuild,
+    editingIndex,
     finishAddingBuild,
   } = useBuildsStore(
     useShallow((s) => ({
@@ -87,6 +101,8 @@ export default function InteractiveTalentTree({
       interactiveNodes: s.interactiveNodes,
       setInteractiveNodes: s.setInteractiveNodes,
       addBuild: s.addBuild,
+      replaceBuild: s.replaceBuild,
+      editingIndex: s.editingIndex,
       finishAddingBuild: s.finishAddingBuild,
     })),
   );
@@ -322,8 +338,12 @@ export default function InteractiveTalentTree({
         classNodes,
         grantedIds,
       );
-      await navigator.clipboard.writeText(buildStr);
-      await addBuild(buildStr);
+      if (editingIndex != null) {
+        await replaceBuild(editingIndex, buildStr);
+      } else {
+        await navigator.clipboard.writeText(buildStr);
+        await addBuild(buildStr);
+      }
       setExportState("done");
       // Delay hiding the interactive tree so "Copied & added!" is briefly visible.
       resetTimerRef.current = setTimeout(() => {
@@ -346,6 +366,8 @@ export default function InteractiveTalentTree({
     specId,
     classNodes,
     addBuild,
+    replaceBuild,
+    editingIndex,
     invalidNodeIds.size,
     classSpent,
     specSpent,
@@ -396,6 +418,7 @@ export default function InteractiveTalentTree({
               state={exportState}
               invalidCount={invalidNodeIds.size}
               hasSelection={hasUserSelection}
+              isEditing={editingIndex != null}
             />
             <button
               onClick={handleClearAll}

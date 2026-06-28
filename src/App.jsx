@@ -217,6 +217,7 @@ function MainView() {
     classNodes,
     addingBuild,
     startAddingBuild,
+    editingIndex,
   } = useBuildsStore(
     useShallow((s) => ({
       treeData: s.treeData,
@@ -226,6 +227,7 @@ function MainView() {
       classNodes: s.classNodes,
       addingBuild: s.addingBuild,
       startAddingBuild: s.startAddingBuild,
+      editingIndex: s.editingIndex,
     })),
   );
   // Comparison views are width-fit per build by the FitToWidth coordinator. The
@@ -369,6 +371,11 @@ function MainView() {
       {/* Interactive tree shown while building another */}
       {addingBuild && (
         <TreeCard>
+          {editingIndex != null && (
+            <p className="text-wow-gold-dark text-xs uppercase tracking-widest mb-2 text-center">
+              Editing Build {editingIndex + 1}
+            </p>
+          )}
           <InteractiveTalentTree
             treeData={treeData}
             classNodes={classNodes}
