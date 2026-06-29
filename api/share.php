@@ -365,9 +365,9 @@ function canonicalize_payload(array $payload): string
 
 /**
  * Opens a new PDO connection to the share database. Schema creation is a
- * separate step (ensure_share_schema) run only on the write path, so the
- * read-only endpoints — the GET fetch and the OG image — don't pay a DDL
- * round-trip on every request.
+ * separate step (ensure_share_schema) run during deployment/migration, so
+ * live endpoints don't pay a DDL round-trip or acquire metadata locks on
+ * every request.
  */
 function get_db_connection(): PDO
 {
@@ -420,8 +420,6 @@ function is_duplicate_key_error(PDOException $e): bool
  */
 function store_share(PDO $pdo, array $payload, string $ipHash): string
 {
-    ensure_share_schema($pdo);
-
     // Serialize the rate-limit check and the insert per IP via an advisory lock
     // so a burst from one IP can't each read a below-limit count before any of
     // them inserts (a TOCTOU race that would let the per-IP cap be exceeded).

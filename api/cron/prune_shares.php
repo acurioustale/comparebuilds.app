@@ -24,9 +24,16 @@ try {
 
     // Prune shares older than 180 days (~6 months)
     $stmt = $pdo->prepare('DELETE FROM comparebuilds_shares WHERE created_at < NOW() - INTERVAL 180 DAY');
-    $stmt->execute();
-
-    echo 'Pruned ' . $stmt->rowCount() . " expired shares successfully.\n";
+    try {
+        $stmt->execute();
+        echo 'Pruned ' . $stmt->rowCount() . " expired shares successfully.\n";
+    } catch (PDOException $e) {
+        if (($e->errorInfo[0] ?? '') === '42S02' || ($e->errorInfo[1] ?? 0) === 1146) {
+            echo "Table comparebuilds_shares does not exist yet (no shares created). Exiting cleanly.\n";
+        } else {
+            throw $e;
+        }
+    }
 } catch (Throwable $e) {
     error_log('Share pruning cron failed: ' . $e->getMessage());
     exit(1);
