@@ -52,7 +52,7 @@ for arg in "$@"; do
 	esac
 done
 
-rsync -avz --delete "${rsync_args[@]}" \
+rsync -avz --delete "${rsync_args[@]:-}" \
 	--exclude '.git' \
 	--exclude '.claude' \
 	--exclude 'deploy.sh' \
