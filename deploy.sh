@@ -52,12 +52,21 @@ for arg in "$@"; do
 	esac
 done
 
-rsync -avz --delete "${rsync_args[@]:-}" \
-	--exclude '.git' \
-	--exclude '.claude' \
-	--exclude 'deploy.sh' \
-	"$stage/" \
-	"${REMOTE}:${TARGET}"
+if [[ "${#rsync_args[@]}" -gt 0 ]]; then
+	rsync -avz --delete "${rsync_args[@]}" \
+		--exclude '.git' \
+		--exclude '.claude' \
+		--exclude 'deploy.sh' \
+		"$stage/" \
+		"${REMOTE}:${TARGET}"
+else
+	rsync -avz --delete \
+		--exclude '.git' \
+		--exclude '.claude' \
+		--exclude 'deploy.sh' \
+		"$stage/" \
+		"${REMOTE}:${TARGET}"
+fi
 
 if [[ "$is_dry_run" -eq 0 ]]; then
 	echo "Running schema migration..."
