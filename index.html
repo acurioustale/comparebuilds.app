@@ -47,6 +47,21 @@
       })();
     </script>
 
+    <!-- Preload primary custom font to prevent FOIT/layout shifts -->
+    <link
+      rel="preload"
+      href="/dist/assets/FRIZQT__-WOy3sDCz.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin="anonymous"
+    />
+    <!-- Preconnect to Blizzard CDN if dynamic render icons are fetched directly in fallback flows -->
+    <link
+      rel="preconnect"
+      href="https://render.worldofwarcraft.com"
+      crossorigin
+    />
+
     <!-- Icons -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
