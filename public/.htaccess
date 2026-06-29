@@ -27,7 +27,7 @@
   # is silently blocked (reintroducing the theme flash). tools/check-csp.mjs (the
   # "CSP guard" gate step) recomputes the hash from the built dist/ and fails the
   # build if this token has drifted, so the two can't fall out of sync unnoticed.
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-GBf0omRIaZT+mW0MTOPipq5S33bi82fvIP8OYMqBTMs='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-xh7M2t3oCHA26cHM02ChDRcJob4ZPTl0JQfjj9EbBJo='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
@@ -41,6 +41,9 @@
   # than /icons because Apache reserves /icons for its autoindex graphics.)
   <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg)$">
     Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  <FilesMatch "\.(html|css|js)$">
+    Header set Cache-Control "no-cache"
   </FilesMatch>
 </IfModule>
 

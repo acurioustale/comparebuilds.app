@@ -36,13 +36,15 @@
          will block it. The "CSP guard" gate step (tools/check-csp.mjs) recomputes
          the hash from the built dist/ and fails if it no longer matches. -->
     <script>
-      try {
-        var t = localStorage.getItem("comparebuilds-theme");
-        if (t === "light" || t === "dark")
-          document.documentElement.dataset.theme = t;
-      } catch (e) {
-        /* localStorage unavailable — CSS follows the OS preference */
-      }
+      (function () {
+        try {
+          var t = localStorage.getItem("comparebuilds-theme");
+          if (t === "light" || t === "dark")
+            document.documentElement.dataset.theme = t;
+        } catch (e) {
+          /* localStorage unavailable — CSS follows the OS preference */
+        }
+      })();
     </script>
 
     <!-- Icons -->
@@ -68,6 +70,7 @@
       property="og:image"
       content="https://comparebuilds.app/og-image.png"
     />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
