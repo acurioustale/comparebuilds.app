@@ -183,8 +183,11 @@ export function validateClassData(data, indexEntry = null) {
 
       // Type-specific shape
       if (n.type === "choice") {
-        if (!isArr(n.choices) || n.choices.length < 2) {
-          nAt("choice node must have a choices array of length >= 2");
+        // entryChosen is encoded in a fixed 2-bit wire field (0–3), so a choice
+        // node can carry at most 4 options; more would silently mis-decode
+        // share links (buildString clamps the index to the last option).
+        if (!isArr(n.choices) || n.choices.length < 2 || n.choices.length > 4) {
+          nAt("choice node must have a choices array of length 2–4");
         } else {
           n.choices.forEach((ch, ci) => {
             if (!isStr(ch?.name))

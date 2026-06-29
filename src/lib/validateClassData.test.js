@@ -381,7 +381,22 @@ describe("node-level fields", () => {
         nodes[0].icon = null;
         nodes[0].choices = null;
       }),
-      "choices array of length >= 2",
+      "choices array of length 2–4",
+    ));
+
+  test("choice node with more than 4 choices", () =>
+    assertHasError(
+      breakNode((nodes) => {
+        nodes[0].type = "choice";
+        nodes[0].name = null;
+        nodes[0].icon = null;
+        nodes[0].choices = Array.from({ length: 5 }, (_, i) => ({
+          name: `c${i}`,
+          icon: "x",
+          maxRanks: 1,
+        }));
+      }),
+      "choices array of length 2–4",
     ));
 
   test("choice option missing fields", () =>
