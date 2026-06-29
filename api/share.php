@@ -167,9 +167,39 @@ function render_share_page(string $id, ?array $data): void
  * truthy in config.php (i.e. you know a trusted proxy always sets/appends them).
  * Defaults to REMOTE_ADDR.
  */
+function is_ip_in_cidr(string $ip, string $cidr): bool
+{
+    if (str_contains($cidr, '/')) {
+        list($subnet, $bits) = explode('/', $cidr, 2);
+        $bits = (int) $bits;
+        $ipCalc = ip2long($ip);
+        $subnetCalc = ip2long($subnet);
+        if ($ipCalc === false || $subnetCalc === false) {
+            return false;
+        }
+        $mask = -1 << (32 - $bits);
+        return ($ipCalc & $mask) === ($subnetCalc & $mask);
+    }
+    return $ip === $cidr;
+}
+
+function is_trusted_proxy(string $ip): bool
+{
+    if (!defined('TRUSTED_PROXIES') || !is_array(TRUSTED_PROXIES)) {
+        return true;
+    }
+    foreach (TRUSTED_PROXIES as $proxy) {
+        if (is_ip_in_cidr($ip, $proxy)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function client_ip(): string
 {
-    if (defined('TRUST_PROXY') && TRUST_PROXY) {
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (defined('TRUST_PROXY') && TRUST_PROXY && is_trusted_proxy($remoteAddr)) {
         if (defined('TRUST_CLOUDFLARE') && TRUST_CLOUDFLARE && !empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
             return $_SERVER['HTTP_CF_CONNECTING_IP'];
         }
@@ -184,7 +214,7 @@ function client_ip(): string
             }
         }
     }
-    return $_SERVER['REMOTE_ADDR'] ?? '';
+    return $remoteAddr;
 }
 
 /** Salted hash of the client IP, used only for rate limiting (not reversible to an IP in practice). */

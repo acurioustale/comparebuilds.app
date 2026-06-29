@@ -26,6 +26,10 @@ define('SHARE_IP_SALT', 'change-me-to-a-long-random-string');
 // Leave it undefined/false on direct hosting — the headers are client-spoofable.
 // define('TRUST_PROXY', true);
 
+// If using TRUST_PROXY, you can explicitly define a list of trusted proxy IPs or CIDRs
+// to verify that the request truly came from your reverse proxy before trusting forwarded headers:
+// define('TRUSTED_PROXIES', ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.1']);
+
 // If using TRUST_PROXY and your proxy specifically passes CF-Connecting-IP or
 // X-Real-IP, explicitly enable the matching flag below to trust those headers:
 // define('TRUST_CLOUDFLARE', true);
