@@ -222,18 +222,23 @@ export const TalentNode = memo(function TalentNode({
       (node.maxRanks > 1
         ? `, ${pointsInvested} of ${node.maxRanks} points`
         : "");
-  // Enter/Space spend a point; Delete/Backspace refund (keyboard analogue of right-click).
-  const onKeyDown = interactive
-    ? (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onNodeClick(node.id);
-        } else if (e.key === "Delete" || e.key === "Backspace") {
-          e.preventDefault();
-          onNodeContextMenu?.(node.id);
+  // Enter/Space spend a point; Delete/Backspace refund (keyboard analogue of
+  // right-click). `entryIndex` is the choice-option index for choice nodes and
+  // undefined otherwise, so the same handler serves every node shape.
+  const makeKeyDown = (entryIndex) =>
+    interactive
+      ? (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (entryIndex == null) onNodeClick(node.id);
+            else onNodeClick(node.id, entryIndex);
+          } else if (e.key === "Delete" || e.key === "Backspace") {
+            e.preventDefault();
+            onNodeContextMenu?.(node.id);
+          }
         }
-      }
-    : undefined;
+      : undefined;
+  const onKeyDown = makeKeyDown();
 
   const nodeOpacity = isSelected ? 1 : highlight ? 0.55 : locked ? 0.16 : 0.42;
   const nodeBorder = isSelected
@@ -334,22 +339,7 @@ export const TalentNode = memo(function TalentNode({
                     ? `${ch.name}${chosen ? " — selected" : ""}`
                     : undefined
                 }
-                onKeyDown={
-                  interactive
-                    ? (e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          onNodeClick(node.id, i);
-                        } else if (
-                          e.key === "Delete" ||
-                          e.key === "Backspace"
-                        ) {
-                          e.preventDefault();
-                          onNodeContextMenu?.(node.id);
-                        }
-                      }
-                    : undefined
-                }
+                onKeyDown={makeKeyDown(i)}
                 style={{
                   position: "relative",
                   width: CHOICE_ICON,
