@@ -18,26 +18,7 @@ export const MAX_BUILD_LEN = 2000;
 // Per-slot name cap. Mirrored server-side in api/share.php (MAX_LABEL_LEN).
 export const MAX_BUILD_NAME_LEN = 40;
 
-// ─── Async tree-data loader (module-level to cancel stale loads) ──────────────
-
-// Incremented every time a new load starts. The load callback checks this
-// before committing results so a clearAllBuilds() or rapid spec-switch
-// never applies stale data.
-let loadGen = 0;
-
-// Serialises addBuild() calls. addBuild reads buildStrings, then commits across
-// an await (the first build's dynamic import); two calls dispatched before the
-// first commits would both see an empty list, both take the isFirst branch, and
-// clobber each other's array write and specId. Chaining each call after the
-// previous one keeps that read-modify-write atomic.
-let addBuildQueue = Promise.resolve();
-
-// Bumped by structural edits (removeBuild / clearAllBuilds) that reindex the
-// slot arrays. removeBuild and clearAllBuilds run synchronously, OUTSIDE
-// addBuildQueue, so a replaceBuild deferred behind the queue could otherwise
-// run after a reindex and overwrite the wrong slot. replaceBuild captures this
-// value when queued and bails if it changed while it waited.
-let slotGen = 0;
+// ─── Async tree-data loader ───────────────────────────────────────────────────
 
 /**
  * @param {function} set Zustand set function
@@ -56,14 +37,14 @@ async function loadTreeData(
   specId,
   { preserveInteractive = false } = {},
 ) {
-  const gen = ++loadGen;
-  set({ isLoading: true, error: null });
+  const gen = get().loadGen + 1;
+  set({ isLoading: true, error: null, loadGen: gen });
 
   try {
     const classData = await importClassData(classSlug);
 
     // Bail if the store was reset or re-targeted while we were awaiting
-    if (loadGen !== gen) return;
+    if (get().loadGen !== gen) return;
 
     const classNodes = collectClassNodes(classData);
     const treeData = classData.specs[specSlug];
@@ -97,7 +78,7 @@ async function loadTreeData(
         }),
     });
   } catch (err) {
-    if (loadGen !== gen) return;
+    if (get().loadGen !== gen) return;
     console.error(`Failed to load tree data: ${err.message}`, err);
     const message = `Failed to load tree data: ${err.message}`;
     // An interactive preload (no build strings) optimistically set specId
@@ -195,6 +176,9 @@ const EMPTY = {
 
 const createStore = (set, get) => ({
   ...EMPTY,
+  loadGen: 0,
+  addBuildQueue: Promise.resolve(),
+  slotGen: 0,
 
   /**
    * @param {string|null} hash Layout hash string or null
@@ -220,9 +204,10 @@ const createStore = (set, get) => ({
    * @returns {Promise<boolean>} Resolves true on success, false on failure
    */
   addBuild: (buildString) => {
-    const run = addBuildQueue.then(() => get().addBuildInternal(buildString));
+    const queue = get().addBuildQueue;
+    const run = queue.then(() => get().addBuildInternal(buildString));
     // Keep the queue alive even if this call rejects, so later calls still run.
-    addBuildQueue = run.catch(() => {});
+    set({ addBuildQueue: run.catch(() => {}) });
     return run;
   },
 
@@ -389,7 +374,8 @@ const createStore = (set, get) => ({
 
     // Reindexing the slots invalidates any positional index captured by a
     // replaceBuild still waiting in addBuildQueue.
-    slotGen++;
+    const nextSlotGen = get().slotGen + 1;
+    set({ slotGen: nextSlotGen });
 
     const newStrings = buildStrings.filter((_, i) => i !== index);
     const newParsed = parsedBuilds.filter((_, i) => i !== index);
@@ -397,8 +383,7 @@ const createStore = (set, get) => ({
 
     if (newStrings.length === 0) {
       // Invalidate any in-flight load so its commit is a no-op
-      loadGen++;
-      set({ ...EMPTY });
+      set({ ...EMPTY, loadGen: get().loadGen + 1 });
     } else {
       set({
         buildStrings: newStrings,
@@ -413,9 +398,8 @@ const createStore = (set, get) => ({
    * @returns {void}
    */
   clearAllBuilds: () => {
-    loadGen++; // cancel any in-flight load
-    slotGen++; // invalidate any queued replaceBuild's captured index
-    set({ ...EMPTY });
+    // cancel any in-flight load and invalidate any queued replaceBuild
+    set({ ...EMPTY, loadGen: get().loadGen + 1, slotGen: get().slotGen + 1 });
   },
 
   /**
@@ -499,15 +483,16 @@ const createStore = (set, get) => ({
    * @returns {Promise<boolean>}
    */
   replaceBuild: (index, buildString) => {
-    const gen = slotGen;
-    const run = addBuildQueue.then(() => {
+    const gen = get().slotGen;
+    const queue = get().addBuildQueue;
+    const run = queue.then(() => {
       // A structural edit (removeBuild / clearAllBuilds) reindexed the slots
       // after this replace was queued, so the captured index is stale — skip
       // rather than overwrite the wrong slot.
-      if (slotGen !== gen) return false;
+      if (get().slotGen !== gen) return false;
       return get().replaceBuildInternal(index, buildString);
     });
-    addBuildQueue = run.catch(() => {});
+    set({ addBuildQueue: run.catch(() => {}) });
     return run;
   },
 
@@ -658,8 +643,7 @@ const createStore = (set, get) => ({
     // If the load failed, the restored build strings can never render — discard
     // the stale persisted state rather than leaving a tree-less dead end.
     if (!get().treeData) {
-      loadGen++;
-      set({ ...EMPTY });
+      set({ ...EMPTY, loadGen: get().loadGen + 1 });
       return;
     }
 
