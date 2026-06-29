@@ -156,8 +156,9 @@ the same build twice returns the same id instead of creating a duplicate row.
 
 - **Per-IP rate limit** — 20 creates per IP per hour (`429` past that), tracked via a
   salted IP hash; set `SHARE_IP_SALT` in `config.php` to a random secret. Behind a
-  trusted reverse proxy/CDN, also set `TRUST_PROXY` so the limit keys on the real
-  client (the first `X-Forwarded-For` hop) instead of the proxy address.
+  trusted reverse proxy/CDN, set `TRUST_PROXY` so the limit keys on the real client
+  (the last `X-Forwarded-For` hop) instead of the proxy address. For Cloudflare or
+  Nginx, explicitly define `TRUST_CLOUDFLARE` or `TRUST_X_REAL_IP` to trust those headers.
 - **Body cap** — requests over 16 KB are rejected (`413`) before parsing; JSON depth is capped.
 - **Strict validation** — `classId`/`specId` must be positive integers, 2–5 builds, each a
   base64 build string ≤ 2000 chars; only the validated fields are stored (never the raw body).

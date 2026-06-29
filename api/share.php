@@ -69,7 +69,8 @@ function fail(int $code, string $msg): void
 /** The canonical site origin (overridable in config.php for staging). */
 function site_origin(): string
 {
-    return defined('SITE_ORIGIN') ? SITE_ORIGIN : 'https://comparebuilds.app';
+    $origin = defined('SITE_ORIGIN') ? SITE_ORIGIN : 'https://comparebuilds.app';
+    return rtrim($origin, '/');
 }
 
 /**
@@ -125,6 +126,7 @@ function render_share_page(string $id, ?array $data): void
     $e = fn (string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
     header('Content-Type: text/html; charset=utf-8');
+    header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
     header('Cache-Control: public, max-age=86400');
     echo "<!doctype html>\n<html lang=\"en\">\n<head>\n"
        . "<meta charset=\"utf-8\">\n"
@@ -168,10 +170,10 @@ function render_share_page(string $id, ?array $data): void
 function client_ip(): string
 {
     if (defined('TRUST_PROXY') && TRUST_PROXY) {
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        if (defined('TRUST_CLOUDFLARE') && TRUST_CLOUDFLARE && !empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
             return $_SERVER['HTTP_CF_CONNECTING_IP'];
         }
-        if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        if (defined('TRUST_X_REAL_IP') && TRUST_X_REAL_IP && !empty($_SERVER['HTTP_X_REAL_IP'])) {
             return $_SERVER['HTTP_X_REAL_IP'];
         }
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
@@ -424,7 +426,7 @@ function store_share(PDO $pdo, array $payload, string $ipHash): string
     // so a burst from one IP can't each read a below-limit count before any of
     // them inserts (a TOCTOU race that would let the per-IP cap be exceeded).
     $lockName = 'cb_share_' . substr($ipHash, 0, 48);
-    $lk = $pdo->prepare('SELECT GET_LOCK(?, 5)');
+    $lk = $pdo->prepare('SELECT GET_LOCK(?, 1)');
     $lk->execute([$lockName]);
     if ((int) $lk->fetchColumn() !== 1) {
         throw new ShareException(503, 'Server busy — please try again', 5);

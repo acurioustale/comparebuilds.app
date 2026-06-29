@@ -143,6 +143,7 @@ final class ShareValidationTest extends TestCase
     public function testClientIpUsesCfConnectingIpWhenProxyTrusted(): void
     {
         define('TRUST_PROXY', true);
+        define('TRUST_CLOUDFLARE', true);
         $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
         $_SERVER['HTTP_CF_CONNECTING_IP'] = '198.51.100.10';
         $_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 198.51.100.9';
@@ -154,6 +155,7 @@ final class ShareValidationTest extends TestCase
     public function testClientIpUsesXRealIpWhenProxyTrusted(): void
     {
         define('TRUST_PROXY', true);
+        define('TRUST_X_REAL_IP', true);
         $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
         $_SERVER['HTTP_X_REAL_IP'] = '198.51.100.11';
         $_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 198.51.100.9';
