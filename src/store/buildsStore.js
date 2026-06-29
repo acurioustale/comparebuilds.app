@@ -631,8 +631,7 @@ const createStore = (set, get) => ({
     // data regen removed it). Don't strand the user on saved-but-unloadable
     // builds — clear back to a clean slate.
     if (!match) {
-      loadGen++;
-      set({ ...EMPTY });
+      set({ ...EMPTY, loadGen: get().loadGen + 1 });
       return;
     }
 
@@ -677,43 +676,48 @@ export const useBuildsStore = create(
     // wrapper around an undefined store. This keeps the Node test environment,
     // where `localStorage` is not a real Storage, from crashing on writes.
     //
-    // When it IS available, wrap writes: a real browser's localStorage can still
-    // throw at write time (quota exceeded, or Safari private mode), and that throw
-    // would otherwise surface inside a state update. Swallow it so persistence
-    // degrades to best-effort ("not saved this session") instead of breaking the
-    // app. Reads pass straight through — getItem does not throw in these modes.
+    // When localStorage is unavailable (Vitest, strict webviews, or Safari private
+    // mode), provide an in-memory fallback storage implementation so persistence
+    // degrades gracefully without dropping writes or throwing errors during active interaction.
     storage: createJSONStorage(() => {
+      const memStorage = new Map();
+      const fallbackStorage = {
+        getItem: (name) => memStorage.get(name) ?? null,
+        setItem: (name, value) => memStorage.set(name, value),
+        removeItem: (name) => memStorage.delete(name),
+      };
+
       if (typeof localStorage === "undefined" || !localStorage) {
-        throw new Error("localStorage unavailable");
+        return fallbackStorage;
       }
       const testKey = "__comparebuilds_test__";
       try {
         localStorage.setItem(testKey, "test");
-      } catch (err) {
-        throw new Error("localStorage unavailable or quota exceeded", {
-          cause: err,
-        });
-      } finally {
-        try {
-          localStorage.removeItem(testKey);
-        } catch {
-          // Ignore cleanup errors if storage is completely unwriteable
-        }
+        localStorage.removeItem(testKey);
+      } catch {
+        return fallbackStorage;
       }
       return {
-        getItem: (name) => localStorage.getItem(name),
+        getItem: (name) =>
+          memStorage.has(name)
+            ? memStorage.get(name)
+            : localStorage.getItem(name),
         setItem: (name, value) => {
           try {
             localStorage.setItem(name, value);
+            memStorage.delete(name);
           } catch (err) {
             console.error(
-              `[zustand persist middleware] Failed to save state to localStorage: ${err.message}`,
+              `[zustand persist middleware] Failed to save state to localStorage: ${err.message}. Falling back to in-memory storage.`,
               err,
             );
-            // Best-effort: a failed write must not break a state update.
+            memStorage.set(name, value);
           }
         },
-        removeItem: (name) => localStorage.removeItem(name),
+        removeItem: (name) => {
+          localStorage.removeItem(name);
+          memStorage.delete(name);
+        },
       };
     }),
     // Persist only the small, serialisable slices. treeData/classNodes/
