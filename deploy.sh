@@ -37,14 +37,29 @@ cp -a dist/. "$stage/"
 mkdir -p "$stage/api"
 cp -a api/share.php api/og.php api/fonts api/cron "$stage/api/"
 
-rsync -avz --delete "$@" \
+rsync_args=()
+is_dry_run=0
+for arg in "$@"; do
+	case "$arg" in
+	--dry-run)
+		rsync_args+=("--dry-run")
+		is_dry_run=1
+		;;
+	*)
+		echo "Usage: ./deploy.sh [--dry-run]" >&2
+		exit 1
+		;;
+	esac
+done
+
+rsync -avz --delete "${rsync_args[@]}" \
 	--exclude '.git' \
 	--exclude '.claude' \
 	--exclude 'deploy.sh' \
 	"$stage/" \
 	"${REMOTE}:${TARGET}"
 
-if [[ "$*" != *"--dry-run"* ]]; then
+if [[ "$is_dry_run" -eq 0 ]]; then
 	echo "Running schema migration..."
 	# shellcheck disable=SC2029
 	ssh "${REMOTE}" "php ${TARGET}api/cron/ensure_schema.php" || true
