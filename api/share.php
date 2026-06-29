@@ -420,8 +420,6 @@ function is_duplicate_key_error(PDOException $e): bool
  */
 function store_share(PDO $pdo, array $payload, string $ipHash): string
 {
-    ensure_share_schema($pdo);
-
     // Serialize the rate-limit check and the insert per IP via an advisory lock
     // so a burst from one IP can't each read a below-limit count before any of
     // them inserts (a TOCTOU race that would let the per-IP cap be exceeded).
@@ -441,7 +439,18 @@ function store_share(PDO $pdo, array $payload, string $ipHash): string
             'SELECT COUNT(*) AS c FROM comparebuilds_shares '
             . 'WHERE ip_hash = ? AND created_at > NOW() - INTERVAL ' . RATE_LIMIT_WINDOW . ' SECOND'
         );
-        $rl->execute([$ipHash]);
+        try {
+            $rl->execute([$ipHash]);
+        } catch (PDOException $e) {
+            // SQLSTATE 42S02 / MySQL 1146: Table doesn't exist.
+            // Execute DDL schema creation exactly once on first use, then retry.
+            if (($e->errorInfo[0] ?? '') === '42S02' || ($e->errorInfo[1] ?? 0) === 1146) {
+                ensure_share_schema($pdo);
+                $rl->execute([$ipHash]);
+            } else {
+                throw $e;
+            }
+        }
         if ((int) $rl->fetch()['c'] >= RATE_LIMIT_MAX) {
             throw new ShareException(429, 'Too many shares created — please try again later', RATE_LIMIT_WINDOW);
         }

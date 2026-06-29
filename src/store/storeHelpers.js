@@ -97,8 +97,12 @@ export async function importClassData(classSlug) {
  * @param {object[]} classNodes
  * @returns {(object|null)[]}
  */
-export function parseAll(strings, classNodes) {
+export function parseAll(strings, classNodes, existingStrings = [], existingParsed = []) {
   return strings.map((s) => {
+    const existingIdx = existingStrings.indexOf(s);
+    if (existingIdx !== -1 && existingParsed[existingIdx] != null) {
+      return existingParsed[existingIdx];
+    }
     try {
       return parseBuildString(s, classNodes);
     } catch (err) {

@@ -86,7 +86,12 @@ async function loadTreeData(
       layoutHash,
       isLoading: false,
       // Re-parse every string that may have arrived while we were loading
-      parsedBuilds: parseAll(currentStrings, classNodes),
+      parsedBuilds: parseAll(
+        currentStrings,
+        classNodes,
+        get().buildStrings,
+        get().parsedBuilds,
+      ),
       // In interactive mode (no imported builds), seed pre-granted nodes so
       // prerequisite checks evaluate against the full effective selection set.
       // Skipped on rehydration (preserveInteractive), where the persisted
@@ -341,7 +346,12 @@ const createStore = (set, get) => ({
       // Tree data already available — parse the new string immediately
       set({
         buildStrings: newStrings,
-        parsedBuilds: parseAll(newStrings, classNodes),
+        parsedBuilds: parseAll(
+          newStrings,
+          classNodes,
+          get().buildStrings,
+          get().parsedBuilds,
+        ),
         buildNames: newNames,
       });
     } else if (isLoading) {
@@ -586,7 +596,12 @@ const createStore = (set, get) => ({
     if (classNodes && !isLoading) {
       set({
         buildStrings: newStrings,
-        parsedBuilds: parseAll(newStrings, classNodes),
+        parsedBuilds: parseAll(
+          newStrings,
+          classNodes,
+          get().buildStrings,
+          get().parsedBuilds,
+        ),
       });
     } else {
       set({
