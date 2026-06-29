@@ -28,10 +28,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Read tool versions
+        id: versions
+        run: |
+          {
+            echo "php=$(awk '/^php / {print $2}' .tool-versions)"
+            echo "shfmt=$(awk '/^shfmt / {print $2}' .tool-versions)"
+            echo "phpcsfixer=$(awk '/^php-cs-fixer / {print $2}' .tool-versions)"
+            echo "phpunit=$(awk '/^phpunit / {print $2}' .tool-versions)"
+            echo "actionlint=$(awk '/^actionlint / {print $2}' .tool-versions)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Shell scripts (shellcheck + shfmt)
         run: |
           shellcheck ./*.sh
-          curl -sSfL https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64 -o /tmp/shfmt
+          curl -sSfL https://github.com/mvdan/sh/releases/download/v${{ steps.versions.outputs.shfmt }}/shfmt_v${{ steps.versions.outputs.shfmt }}_linux_amd64 -o /tmp/shfmt
           chmod +x /tmp/shfmt
           /tmp/shfmt -d ./*.sh
 
@@ -40,25 +51,25 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
+          php-version: ${{ steps.versions.outputs.php }}
 
       - name: PHP (syntax, format, tests)
         run: |
           for f in $(git ls-files '*.php' '*.php.example'); do php -l "$f"; done
-          curl -sSfL https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/download/v3.95.10/php-cs-fixer.phar -o /tmp/php-cs-fixer
+          curl -sSfL https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/download/v${{ steps.versions.outputs.phpcsfixer }}/php-cs-fixer.phar -o /tmp/php-cs-fixer
           php /tmp/php-cs-fixer fix --dry-run --config .php-cs-fixer.dist.php
-          curl -sSfL https://phar.phpunit.de/phpunit-13.2.1.phar -o /tmp/phpunit
+          curl -sSfL https://phar.phpunit.de/phpunit-${{ steps.versions.outputs.phpunit }}.phar -o /tmp/phpunit
           php /tmp/phpunit
 
       - name: Workflows (actionlint)
         run: |
-          curl -sSfL https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz | tar xz actionlint
+          curl -sSfL https://github.com/rhysd/actionlint/releases/download/v${{ steps.versions.outputs.actionlint }}/actionlint_${{ steps.versions.outputs.actionlint }}_linux_amd64.tar.gz | tar xz actionlint
           ./actionlint
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: ".tool-versions"
           cache: npm
 
       - name: Install dependencies
@@ -118,7 +129,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: ".tool-versions"
           cache: npm
 
       - name: Install dependencies

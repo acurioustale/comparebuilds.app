@@ -21,22 +21,19 @@ case "${1:-}" in
 	;;
 esac
 
-# CI pins Node 22. Warn (don't block) on a mismatch: a different engine can pass
+# Parse tool versions from .tool-versions (the single source of truth)
+ci_node_major="$(awk '/^nodejs/ {print $2}' .tool-versions)"
+SHFMT_VERSION="$(awk '/^shfmt/ {print $2}' .tool-versions)"
+PHPCSFIXER_VERSION="$(awk '/^php-cs-fixer/ {print $2}' .tool-versions)"
+PHPUNIT_VERSION="$(awk '/^phpunit/ {print $2}' .tool-versions)"
+ACTIONLINT_VERSION="$(awk '/^actionlint/ {print $2}' .tool-versions)"
+
+# CI pins Node. Warn (don't block) on a mismatch: a different engine can pass
 # here yet behave differently in CI.
-ci_node_major=22
 local_node_major="$(node -v | sed 's/^v//; s/\..*//')"
 if [[ "$local_node_major" != "$ci_node_major" ]]; then
 	echo "warning: local Node is v$local_node_major, CI uses v$ci_node_major." >&2
 fi
-
-# Versions of the brew-installed CLIs pinned in .github/workflows/deploy.yml.
-# Mirrored here so a local tool that has drifted from CI is caught before push
-# instead of surfacing as a mystery formatting/lint failure in the pipeline.
-# Keep in sync with deploy.yml. (Prettier and the other npm tools aren't listed:
-# they're pinned by package-lock.json and `npm ci`, so local always matches CI.)
-SHFMT_VERSION="3.13.1"
-PHPCSFIXER_VERSION="3.95.10"
-ACTIONLINT_VERSION="1.7.12"
 
 # Assert a present tool reports the pinned version; the needle is matched
 # literally so the surrounding "v"/extra output in --version lines doesn't
@@ -93,6 +90,7 @@ fi
 
 if command -v phpunit >/dev/null; then
 	step "PHP tests (phpunit)"
+	require_version phpunit "$PHPUNIT_VERSION" "$(phpunit --version | head -1)"
 	phpunit
 else
 	echo "note: phpunit not installed - skipping (CI enforces it)." >&2
