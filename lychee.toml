@@ -13,3 +13,7 @@ no_progress = true
 
 # 2xx is success; a 429 (rate-limited) response still proves the link exists.
 accept = ["200..=299", "429"]
+
+# Exclude source-relative asset preloads that are resolved by Vite during build,
+# as Lychee checks static root-relative paths against public/.
+exclude = ["/src/assets/fonts/FRIZQT__\\.ttf"]
