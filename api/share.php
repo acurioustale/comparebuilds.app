@@ -503,14 +503,19 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
     try {
         // ── Per-IP rate limit ────────────────────────────────────────────────
         $rateLimited = false;
+        $currentCount = 0;
         if ($redis !== null) {
             try {
                 $rlKey = 'cb_rl_share_' . $ipHash;
                 $current = $redis->get($rlKey);
                 if ($current !== false && (int) $current >= RATE_LIMIT_MAX) {
+                    $currentCount = (int) $current;
                     $rateLimited = true;
+                    // Penalty escalation: double the window for repeat offenders
+                    $redis->expire($rlKey, RATE_LIMIT_WINDOW * 2);
                 } else {
                     $count = $redis->incr($rlKey);
+                    $currentCount = (int) $count;
                     if ($count === 1) {
                         $redis->expire($rlKey, RATE_LIMIT_WINDOW);
                     }
@@ -521,10 +526,6 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
             }
         }
 
-        if ($rateLimited) {
-            throw new ShareException(429, 'Too many shares created — please try again later', RATE_LIMIT_WINDOW);
-        }
-
         if ($redis === null) {
             // Bound the window against the DB clock (NOW()), not a PHP timestamp, so a
             // timezone/DST skew can't shift it. The window is a trusted constant.
@@ -533,9 +534,21 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
                 . 'WHERE ip_hash = ? AND created_at > NOW() - INTERVAL ' . RATE_LIMIT_WINDOW . ' SECOND'
             );
             $rl->execute([$ipHash]);
-            if ((int) $rl->fetch()['c'] >= RATE_LIMIT_MAX) {
-                throw new ShareException(429, 'Too many shares created — please try again later', RATE_LIMIT_WINDOW);
+            $currentCount = (int) $rl->fetch()['c'];
+            if ($currentCount >= RATE_LIMIT_MAX) {
+                $rateLimited = true;
             }
+        }
+
+        if (!headers_sent()) {
+            $remaining = max(0, RATE_LIMIT_MAX - $currentCount);
+            header('X-RateLimit-Limit: ' . RATE_LIMIT_MAX);
+            header('X-RateLimit-Remaining: ' . $remaining);
+            header('X-RateLimit-Reset: ' . (time() + RATE_LIMIT_WINDOW));
+        }
+
+        if ($rateLimited) {
+            throw new ShareException(429, 'Too many shares created — please try again later', RATE_LIMIT_WINDOW);
         }
 
         // ── Content-addressing & deduplication ───────────────────────────────
