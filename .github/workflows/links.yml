@@ -24,5 +24,5 @@ jobs:
         with:
           # --root-dir resolves index.html's root-relative asset links (/favicon.svg
           # etc.) against public/, where Vite serves them from.
-          args: "--config lychee.toml --root-dir public README.md CLAUDE.md index.html"
+          args: "--config lychee.toml --root-dir public README.md CLAUDE.md SECURITY.md index.html"
           fail: true
