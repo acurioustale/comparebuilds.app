@@ -8,7 +8,7 @@
  * coverage before.
  */
 
-import { describe, test, beforeEach } from "vitest";
+import { describe, test, beforeEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import {
@@ -18,6 +18,7 @@ import {
 } from "./buildsStore.js";
 import { collectClassNodes, generateBuildString } from "../lib/buildString.js";
 import { wireLayout } from "../lib/wireLayout.js";
+import * as storeHelpers from "./storeHelpers.js";
 
 const require = createRequire(import.meta.url);
 const get = () => useBuildsStore.getState();
@@ -483,5 +484,47 @@ describe("layoutHash tracking", () => {
 
     get().setSharedLayoutHash("oldhash1");
     assert.strictEqual(get().sharedLayoutHash, "oldhash1");
+  });
+});
+
+// ── Error handling ────────────────────────────────────────────────────────────
+
+describe("loadTreeData error handling", () => {
+  test("surfaces error and keeps build string when addBuild fails to load tree data", async () => {
+    const [s] = genStrings("death_knight", "blood", 1);
+    const spy = vi
+      .spyOn(storeHelpers, "importClassData")
+      .mockRejectedValueOnce(new Error("mock network failure"));
+
+    await get().addBuild(s);
+
+    const st = get();
+    assert.strictEqual(st.isLoading, false);
+    assert.match(
+      st.error ?? "",
+      /Failed to load tree data: mock network failure/,
+    );
+    assert.strictEqual(st.buildStrings.length, 1);
+
+    spy.mockRestore();
+  });
+
+  test("resets state to EMPTY when preloadSpec fails to load tree data", async () => {
+    const spy = vi
+      .spyOn(storeHelpers, "importClassData")
+      .mockRejectedValueOnce(new Error("mock preload failure"));
+
+    await get().preloadSpec(DK_BLOOD);
+
+    const st = get();
+    assert.strictEqual(st.isLoading, false);
+    assert.match(
+      st.error ?? "",
+      /Failed to load tree data: mock preload failure/,
+    );
+    assert.strictEqual(st.specId, null);
+    assert.strictEqual(st.buildStrings.length, 0);
+
+    spy.mockRestore();
   });
 });
