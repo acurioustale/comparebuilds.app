@@ -5,17 +5,53 @@
 // budgets, hero-subtree exclusivity, gates, and prerequisites — can be unit-tested
 // without a DOM.
 
-import {
-  hasUpperPrereq,
-  gatedPoints,
-  spentPoints,
-  cellKey,
-  activeHeroSubtree,
-} from "./treeLogic.js";
+import { hasUpperPrereq, cellKey, activeHeroSubtree } from "./treeLogic.js";
 
 // activeHeroSubtree lives in treeLogic (shared with the validity cascade); keep
 // re-exporting it here so the interactive component's import path is unchanged.
 export { activeHeroSubtree };
+
+const spendCache = new WeakMap();
+
+function getSpendMemo(allNodes, selected) {
+  if (!selected || typeof selected !== "object") {
+    return {
+      activeSub: null,
+      selectedCells: new Map(),
+      sectionPts: { class: 0, spec: 0, hero: 0 },
+      heroSubPts: new Map(),
+    };
+  }
+  let memo = spendCache.get(selected);
+  if (!memo) {
+    const activeSub = activeHeroSubtree(allNodes, selected);
+    const selectedCells = new Map();
+    const sectionPts = { class: 0, spec: 0, hero: 0 };
+    const heroSubPts = new Map();
+
+    for (const n of allNodes) {
+      if (n.alreadyGranted) continue;
+      const pts = selected[n.id]?.pointsInvested ?? 0;
+      if (pts > 0) {
+        const cell = cellKey(n);
+        if (!selectedCells.has(cell)) {
+          selectedCells.set(cell, n.id);
+          sectionPts[n.treeType] = (sectionPts[n.treeType] ?? 0) + pts;
+          if (n.treeType === "hero" && n.heroSubtree != null) {
+            heroSubPts.set(
+              n.heroSubtree,
+              (heroSubPts.get(n.heroSubtree) ?? 0) + pts,
+            );
+          }
+        }
+      }
+    }
+
+    memo = { activeSub, selectedCells, sectionPts, heroSubPts };
+    spendCache.set(selected, memo);
+  }
+  return memo;
+}
 
 /**
  * Total points spent in a tree section (class/spec/hero), excluding granted nodes.
@@ -26,7 +62,8 @@ export { activeHeroSubtree };
  * @returns {number} Total points spent in section
  */
 export function sectionPoints(treeType, allNodes, selected) {
-  return spentPoints(allNodes, selected, treeType);
+  const memo = getSpendMemo(allNodes, selected);
+  return memo.sectionPts[treeType] ?? 0;
 }
 
 /**
@@ -115,25 +152,24 @@ export function prunedExportSelection(allNodes, selected, activeSubtree) {
  */
 export function canSpendPoint(node, allNodes, selected, nodeById, budget) {
   if (node.alreadyGranted) return false;
+  const memo = getSpendMemo(allNodes, selected);
   if (node.treeType === "hero") {
-    const activeSub = activeHeroSubtree(allNodes, selected);
-    if (activeSub !== null && activeSub !== node.heroSubtree) return false;
+    if (memo.activeSub !== null && memo.activeSub !== node.heroSubtree)
+      return false;
   }
   // Co-located exclusivity: a cell holds at most one purchased node, so refuse
   // this one if a different non-granted node sharing its cell is already taken.
   const cell = cellKey(node);
-  for (const other of allNodes) {
-    if (
-      other.id !== node.id &&
-      !other.alreadyGranted &&
-      selected[other.id] &&
-      cellKey(other) === cell
-    ) {
-      return false;
-    }
-  }
-  if (sectionPoints(node.treeType, allNodes, selected) >= budget[node.treeType])
+  const occupyingId = memo.selectedCells.get(cell);
+  if (occupyingId !== undefined && occupyingId !== node.id) {
     return false;
-  if (gatedPoints(node, allNodes, selected) < node.spentRequired) return false;
+  }
+  if ((memo.sectionPts[node.treeType] ?? 0) >= budget[node.treeType])
+    return false;
+  const gatedPts =
+    node.treeType === "hero"
+      ? (memo.heroSubPts.get(node.heroSubtree) ?? 0)
+      : (memo.sectionPts[node.treeType] ?? 0);
+  if (gatedPts < node.spentRequired) return false;
   return hasUpperPrereq(node, selected, nodeById);
 }
