@@ -90,6 +90,11 @@ export async function importClassData(classSlug) {
   return mod.default ?? mod;
 }
 
+// WeakMap keyed by `classNodes` array identity -> Map of buildString -> parsed result.
+// Memoizes parsed build trees by their individual base64 build string so unmodified
+// builds aren't repeatedly unpacked by BitReader during store updates.
+const parseCache = new WeakMap();
+
 /**
  * Parses every build string against the loaded node list, returning null for
  * strings that fail (so the array stays parallel to buildStrings).
@@ -97,17 +102,24 @@ export async function importClassData(classSlug) {
  * @param {object[]} classNodes
  * @returns {(object|null)[]}
  */
-export function parseAll(strings, classNodes, existingStrings = [], existingParsed = []) {
+export function parseAll(strings, classNodes) {
+  let cache = parseCache.get(classNodes);
+  if (!cache) {
+    cache = new Map();
+    parseCache.set(classNodes, cache);
+  }
+
   return strings.map((s) => {
-    const existingIdx = existingStrings.indexOf(s);
-    if (existingIdx !== -1 && existingParsed[existingIdx] != null) {
-      return existingParsed[existingIdx];
+    if (cache.has(s)) {
+      return cache.get(s);
     }
+    let result = null;
     try {
-      return parseBuildString(s, classNodes);
+      result = parseBuildString(s, classNodes);
     } catch (err) {
       console.error(`Failed to parse build string: ${err.message}`, err);
-      return null;
     }
+    cache.set(s, result);
+    return result;
   });
 }
