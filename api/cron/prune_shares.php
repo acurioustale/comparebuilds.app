@@ -34,6 +34,21 @@ try {
             throw $e;
         }
     }
+
+    // Prune cache_og image files older than 180 days
+    $cacheDir = __DIR__ . '/../../../cache_og';
+    if (is_dir($cacheDir)) {
+        $expireTime = time() - (180 * 86400);
+        $iterator = new DirectoryIterator($cacheDir);
+        $imgCount = 0;
+        foreach ($iterator as $fileinfo) {
+            if ($fileinfo->isFile() && $fileinfo->getMTime() < $expireTime) {
+                @unlink($fileinfo->getPathname());
+                $imgCount++;
+            }
+        }
+        echo 'Pruned ' . $imgCount . " expired OG cached images successfully.\n";
+    }
 } catch (Throwable $e) {
     error_log('Share pruning cron failed: ' . $e->getMessage());
     exit(1);
