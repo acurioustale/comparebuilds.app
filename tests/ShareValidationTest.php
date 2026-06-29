@@ -174,6 +174,28 @@ final class ShareValidationTest extends TestCase
         $this->assertSame('203.0.113.7', client_ip());
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testClientIpIgnoresForwardedHeaderWhenNotInTrustedProxies(): void
+    {
+        define('TRUST_PROXY', true);
+        define('TRUSTED_PROXIES', ['10.0.0.0/8', '192.168.1.1']);
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.7'; // Untrusted proxy IP
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 198.51.100.9';
+        $this->assertSame('203.0.113.7', client_ip());
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testClientIpUsesForwardedHeaderWhenInTrustedProxies(): void
+    {
+        define('TRUST_PROXY', true);
+        define('TRUSTED_PROXIES', ['10.0.0.0/8', '192.168.1.1']);
+        $_SERVER['REMOTE_ADDR'] = '10.0.5.5'; // Trusted proxy IP
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 198.51.100.9';
+        $this->assertSame('198.51.100.9', client_ip());
+    }
+
     public function testClientIpHashIsDeterministicAndIpDependent(): void
     {
         $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
