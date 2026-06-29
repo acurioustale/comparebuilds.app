@@ -52,9 +52,14 @@ export class BitReader {
    * @returns {number} Unsigned integer value
    */
   readBits(count) {
+    if (count > 53) {
+      throw new RangeError(
+        `Cannot safely read more than 53 bits into a JS number (requested ${count})`,
+      );
+    }
     let result = 0;
     for (let i = 0; i < count; i++) {
-      result |= this.readBit() << i;
+      result += this.readBit() * 2 ** i;
     }
     return result;
   }
@@ -93,6 +98,11 @@ export class BitWriter {
    * @returns {void}
    */
   writeBits(value, count) {
+    if (count > 31 && value !== 0) {
+      throw new RangeError(
+        `Cannot safely write non-zero values for count > 31 (requested ${count})`,
+      );
+    }
     for (let i = 0; i < count; i++) this.#bits.push((value >> i) & 1);
   }
 
