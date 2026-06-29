@@ -113,6 +113,11 @@ final class ShareConcurrencyTest extends TestCase
                 $this->unlocked = true;
                 return true;
             }
+            public function eval($script, $args, $numKeys)
+            {
+                $this->unlocked = true;
+                return 1;
+            }
         };
 
         $checkStmt = $this->createMock(PDOStatement::class);
