@@ -25,6 +25,12 @@ if [[ ! -f dist/index.html ]]; then
 fi
 
 stage="$(mktemp -d)"
+# mktemp -d makes the staging dir 0700. The rsync below mirrors this directory
+# with -a (which preserves permissions), so that mode would be copied onto the
+# web root and lock Apache out (403, "unable to read .htaccess file"). Make the
+# staging root web-readable so the deploy keeps the web root at 0755 (and heals
+# a root previously left at 0700).
+chmod 755 "$stage"
 trap 'rm -rf "$stage"' EXIT
 
 cp -a dist/. "$stage/"
