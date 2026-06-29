@@ -390,109 +390,15 @@ export const TalentNode = memo(function TalentNode({
     );
   }
 
-  // ── Apex node ────────────────────────────────────────────────────────────────
-  if (node.type === "apex") {
-    const S = APEX_ICON;
-    const showApexRank = isSelected && node.maxRanks > 1;
-    return (
-      <Tooltip
-        renderContent={renderTip}
-        placement="top"
-        delay={300}
-        touch={interactive ? "hold" : "tap"}
-      >
-        <div
-          onClick={
-            hasHandlers ? guardClick(() => onNodeClick?.(node.id)) : undefined
-          }
-          onContextMenu={onContextMenu}
-          {...makeTouchHandlers(onNodeTap ? () => onNodeTap(node.id) : null)}
-          {...hoverProps}
-          className={interactive ? "tnode" : undefined}
-          role={interactive ? "button" : undefined}
-          tabIndex={interactive ? 0 : undefined}
-          aria-pressed={interactive ? isSelected : undefined}
-          aria-label={interactive ? ariaLabel : undefined}
-          onKeyDown={onKeyDown}
-          style={{
-            position: "absolute",
-            left: px - S / 2,
-            top: py - S / 2,
-            cursor: nodeCursor,
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              width: S,
-              height: S,
-              borderRadius: "50%",
-              overflow: "hidden",
-              border: `2px solid ${nodeBorder}`,
-              opacity: effOpacity(nodeOpacity),
-              boxShadow: withSearchShadow(
-                nodeShadow(isSelected, highlight, invalid),
-              ),
-              transition: "opacity 0.2s",
-            }}
-          >
-            <img
-              src={iconUrl(node.icon)}
-              onError={onIconError}
-              width={S}
-              height={S}
-              alt=""
-              draggable={false}
-              loading="lazy"
-              decoding="async"
-              style={{ display: "block" }}
-            />
-            {invalid && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  width: S,
-                  height: S,
-                  background: "rgba(180,30,30,0.4)",
-                  borderRadius: "50%",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-          </div>
-          {showApexRank && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: -1,
-                right: -1,
-                fontSize: 8,
-                lineHeight: 1,
-                background: "rgba(0,0,0,0.92)",
-                color: pointsInvested >= node.maxRanks ? "#c8a84b" : "#9a8a6a",
-                padding: "1px 3px",
-                borderTopLeftRadius: 3,
-                fontVariantNumeric: "tabular-nums",
-                fontFamily: "ui-monospace,monospace",
-                pointerEvents: "none",
-                zIndex: 3,
-              }}
-            >
-              {pointsInvested}/{node.maxRanks}
-            </div>
-          )}
-        </div>
-      </Tooltip>
-    );
-  }
-
-  // ── Round / square node ──────────────────────────────────────────────────────
-  const S = ICON;
-  const isRound = node.type === "round";
-  const showRank = node.maxRanks > 1 && isSelected;
-  const radius = isRound ? "50%" : 4;
+  // ── Apex / round / square node ───────────────────────────────────────────────
+  // One icon-shell serves all three single-icon shapes; they differ only in icon
+  // size, corner radius, and border width. (Choice nodes, handled above, are the
+  // only shape with two sub-icons.)
+  const isApex = node.type === "apex";
+  const S = isApex ? APEX_ICON : ICON;
+  const radius = isApex || node.type === "round" ? "50%" : 4;
+  const borderWidth = isApex ? 2 : 1.5;
+  const showRank = isSelected && node.maxRanks > 1;
 
   return (
     <Tooltip
@@ -528,7 +434,7 @@ export const TalentNode = memo(function TalentNode({
             height: S,
             borderRadius: radius,
             overflow: "hidden",
-            border: `1.5px solid ${nodeBorder}`,
+            border: `${borderWidth}px solid ${nodeBorder}`,
             opacity: effOpacity(nodeOpacity),
             boxShadow: withSearchShadow(
               nodeShadow(isSelected, highlight, invalid),
