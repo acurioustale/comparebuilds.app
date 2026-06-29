@@ -179,60 +179,114 @@ if (is_file($cacheFile)) {
 
 try {
     $pdo = get_db_connection();
+    $redis = get_redis_connection();
 
     // ── Concurrency throttling & rate limiting ──────────────────────────────
     $ipHash = client_ip_hash();
     $lockName = 'cb_og_' . substr($ipHash, 0, 48);
-    $lk = $pdo->prepare('SELECT GET_LOCK(?, 1)');
-    $lk->execute([$lockName]);
-    if ((int) $lk->fetchColumn() !== 1) {
-        header('Retry-After: 5');
-        bail(503);
+    $usedRedisLock = false;
+
+    if ($redis !== null) {
+        $redisBusy = false;
+        try {
+            if (!$redis->set($lockName, '1', ['nx', 'ex' => 5])) {
+                $redisBusy = true;
+            } else {
+                $usedRedisLock = true;
+            }
+        } catch (Throwable $e) {
+            $redis = null;
+        }
+        if ($redisBusy) {
+            header('Retry-After: 5');
+            bail(503);
+        }
+    }
+
+    if (!$usedRedisLock) {
+        $lk = $pdo->prepare('SELECT GET_LOCK(?, 1)');
+        $lk->execute([$lockName]);
+        if ((int) $lk->fetchColumn() !== 1) {
+            header('Retry-After: 5');
+            bail(503);
+        }
     }
 
     try {
-        $count = 0;
-        try {
-            $rl = $pdo->prepare(
-                'SELECT COUNT(*) AS c FROM comparebuilds_og_requests '
-                . 'WHERE ip_hash = ? AND created_at > NOW() - INTERVAL ' . OG_RATE_LIMIT_WINDOW . ' SECOND'
-            );
-            $rl->execute([$ipHash]);
-            $count = (int) $rl->fetch()['c'];
-        } catch (PDOException $e) {
-            // Table might not exist yet if no share has ever been created.
+        $rateLimited = false;
+        if ($redis !== null) {
+            try {
+                $rlKey = 'cb_rl_og_' . $ipHash;
+                $current = $redis->get($rlKey);
+                if ($current !== false && (int) $current >= OG_RATE_LIMIT_MAX) {
+                    $rateLimited = true;
+                } else {
+                    $count = $redis->incr($rlKey);
+                    if ($count === 1) {
+                        $redis->expire($rlKey, OG_RATE_LIMIT_WINDOW);
+                    }
+                }
+            } catch (Throwable $e) {
+                $redis = null;
+            }
         }
-        if ($count >= OG_RATE_LIMIT_MAX) {
-            $rel = $pdo->prepare('SELECT RELEASE_LOCK(?)');
-            $rel->execute([$lockName]);
+
+        if ($rateLimited) {
+            if ($usedRedisLock && $redis !== null) {
+                try { $redis->del($lockName); } catch (Throwable $e) {}
+            } else {
+                $rel = $pdo->prepare('SELECT RELEASE_LOCK(?)');
+                $rel->execute([$lockName]);
+            }
             header('Retry-After: ' . OG_RATE_LIMIT_WINDOW);
             bail(429);
         }
 
-        if (random_int(1, 100) === 1) {
+        if ($redis === null) {
+            $count = 0;
             try {
-                $prune = $pdo->prepare(
-                    'DELETE FROM comparebuilds_og_requests '
-                    . 'WHERE created_at < NOW() - INTERVAL ' . OG_PRUNE_WINDOW . ' SECOND'
+                $rl = $pdo->prepare(
+                    'SELECT COUNT(*) AS c FROM comparebuilds_og_requests '
+                    . 'WHERE ip_hash = ? AND created_at > NOW() - INTERVAL ' . OG_RATE_LIMIT_WINDOW . ' SECOND'
                 );
-                $prune->execute();
-            } catch (Throwable $e) {
-                // Non-fatal — proceed even if cleanup fails.
+                $rl->execute([$ipHash]);
+                $count = (int) $rl->fetch()['c'];
+            } catch (PDOException $e) {
+                // Table might not exist yet if no share has ever been created.
+            }
+            if ($count >= OG_RATE_LIMIT_MAX) {
+                $rel = $pdo->prepare('SELECT RELEASE_LOCK(?)');
+                $rel->execute([$lockName]);
+                header('Retry-After: ' . OG_RATE_LIMIT_WINDOW);
+                bail(429);
+            }
+
+            if (random_int(1, 100) === 1) {
+                try {
+                    $prune = $pdo->prepare(
+                        'DELETE FROM comparebuilds_og_requests '
+                        . 'WHERE created_at < NOW() - INTERVAL ' . OG_PRUNE_WINDOW . ' SECOND'
+                    );
+                    $prune->execute();
+                } catch (Throwable $e) {
+                    // Non-fatal — proceed even if cleanup fails.
+                }
             }
         }
 
         $data = get_share($pdo, $id);
 
-        // Only log a request for a share that actually exists. Logging before the
-        // lookup let probes for non-existent ids burn the per-IP budget and grow
-        // the table; a 404 below releases the lock and bails without logging.
-        if ($data) {
+        if ($data && $redis === null) {
             $logReq = $pdo->prepare('INSERT INTO comparebuilds_og_requests (ip_hash) VALUES (?)');
             $logReq->execute([$ipHash]);
         }
     } finally {
-        $rel = $pdo->prepare('SELECT RELEASE_LOCK(?)');
-        $rel->execute([$lockName]);
+        if ($usedRedisLock && $redis !== null) {
+            try { $redis->del($lockName); } catch (Throwable $e) {}
+        } else {
+            $rel = $pdo->prepare('SELECT RELEASE_LOCK(?)');
+            $rel->execute([$lockName]);
+        }
     }
 } catch (Throwable $e) {
     bail(500);

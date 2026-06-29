@@ -413,6 +413,26 @@ function get_db_connection(): PDO
     );
 }
 
+/**
+ * Opens a Redis connection if configured and available, returning null on failure or if unconfigured.
+ */
+function get_redis_connection(): ?object
+{
+    if (!defined('REDIS_HOST') || !class_exists('Redis')) {
+        return null;
+    }
+    try {
+        $redis = new Redis();
+        $port = defined('REDIS_PORT') ? REDIS_PORT : 6379;
+        if (@$redis->connect(REDIS_HOST, $port, 1.0)) {
+            return $redis;
+        }
+    } catch (Throwable $e) {
+        // Fall back gracefully to MySQL if Redis is down or unreachable.
+    }
+    return null;
+}
+
 /** Creates the shares table if it doesn't exist. Cheap no-op once present. */
 function ensure_share_schema(PDO $pdo): void
 {
@@ -448,30 +468,73 @@ function is_duplicate_key_error(PDOException $e): bool
  * the same build from another IP. Enforces the per-IP rate limit and prunes
  * expired rows. Throws ShareException for client-visible failures.
  */
-function store_share(PDO $pdo, array $payload, string $ipHash): string
+function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = null): string
 {
     // Serialize the rate-limit check and the insert per IP via an advisory lock
     // so a burst from one IP can't each read a below-limit count before any of
     // them inserts (a TOCTOU race that would let the per-IP cap be exceeded).
     $lockName = 'cb_share_' . substr($ipHash, 0, 48);
-    $lk = $pdo->prepare('SELECT GET_LOCK(?, 1)');
-    $lk->execute([$lockName]);
-    if ((int) $lk->fetchColumn() !== 1) {
-        throw new ShareException(503, 'Server busy — please try again', 5);
+    $usedRedisLock = false;
+
+    if ($redis !== null) {
+        try {
+            if (!$redis->set($lockName, '1', ['nx', 'ex' => 5])) {
+                throw new ShareException(503, 'Server busy — please try again', 5);
+            }
+            $usedRedisLock = true;
+        } catch (ShareException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            // Redis connection dropped/failed during set — fall back to MySQL lock.
+            $redis = null;
+        }
+    }
+
+    if (!$usedRedisLock) {
+        $lk = $pdo->prepare('SELECT GET_LOCK(?, 1)');
+        $lk->execute([$lockName]);
+        if ((int) $lk->fetchColumn() !== 1) {
+            throw new ShareException(503, 'Server busy — please try again', 5);
+        }
     }
 
     $id = null;
     try {
         // ── Per-IP rate limit ────────────────────────────────────────────────
-        // Bound the window against the DB clock (NOW()), not a PHP timestamp, so a
-        // timezone/DST skew can't shift it. The window is a trusted constant.
-        $rl = $pdo->prepare(
-            'SELECT COUNT(*) AS c FROM comparebuilds_shares '
-            . 'WHERE ip_hash = ? AND created_at > NOW() - INTERVAL ' . RATE_LIMIT_WINDOW . ' SECOND'
-        );
-        $rl->execute([$ipHash]);
-        if ((int) $rl->fetch()['c'] >= RATE_LIMIT_MAX) {
+        $rateLimited = false;
+        if ($redis !== null) {
+            try {
+                $rlKey = 'cb_rl_share_' . $ipHash;
+                $current = $redis->get($rlKey);
+                if ($current !== false && (int) $current >= RATE_LIMIT_MAX) {
+                    $rateLimited = true;
+                } else {
+                    $count = $redis->incr($rlKey);
+                    if ($count === 1) {
+                        $redis->expire($rlKey, RATE_LIMIT_WINDOW);
+                    }
+                }
+            } catch (Throwable $e) {
+                // Fall back to MySQL rate limit check
+                $redis = null;
+            }
+        }
+
+        if ($rateLimited) {
             throw new ShareException(429, 'Too many shares created — please try again later', RATE_LIMIT_WINDOW);
+        }
+
+        if ($redis === null) {
+            // Bound the window against the DB clock (NOW()), not a PHP timestamp, so a
+            // timezone/DST skew can't shift it. The window is a trusted constant.
+            $rl = $pdo->prepare(
+                'SELECT COUNT(*) AS c FROM comparebuilds_shares '
+                . 'WHERE ip_hash = ? AND created_at > NOW() - INTERVAL ' . RATE_LIMIT_WINDOW . ' SECOND'
+            );
+            $rl->execute([$ipHash]);
+            if ((int) $rl->fetch()['c'] >= RATE_LIMIT_MAX) {
+                throw new ShareException(429, 'Too many shares created — please try again later', RATE_LIMIT_WINDOW);
+            }
         }
 
         // ── Content-addressing & deduplication ───────────────────────────────
@@ -521,11 +584,14 @@ function store_share(PDO $pdo, array $payload, string $ipHash): string
             }
         }
     } finally {
-        // One release covering every exit (success, throw, exhaustion). The lock
-        // would also drop at connection close, but release it promptly so it
-        // isn't held during response rendering.
-        $rel = $pdo->prepare('SELECT RELEASE_LOCK(?)');
-        $rel->execute([$lockName]);
+        if ($usedRedisLock && $redis !== null) {
+            try {
+                $redis->del($lockName);
+            } catch (Throwable $e) {}
+        } else {
+            $rel = $pdo->prepare('SELECT RELEASE_LOCK(?)');
+            $rel->execute([$lockName]);
+        }
     }
 
     if ($id === null) {
@@ -649,7 +715,7 @@ if ($method === 'POST') {
     $ipHash = client_ip_hash();
 
     try {
-        $id = store_share($pdo, $payload, $ipHash);
+        $id = store_share($pdo, $payload, $ipHash, get_redis_connection());
     } catch (ShareException $e) {
         // Client-visible failures carry their own status/message/Retry-After.
         if ($e->retryAfter !== null) {
