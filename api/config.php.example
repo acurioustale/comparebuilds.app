@@ -14,6 +14,12 @@ define('DB_NAME', 'your_database_name');
 define('DB_USER', 'your_db_user');
 define('DB_PASS', 'your_db_password');
 
+// Optional: Redis configuration for high-performance rate limiting and concurrency locking.
+// If defined and the Redis extension is available, share.php and og.php will use Redis,
+// gracefully falling back to MySQL GET_LOCK and database rate limiting if Redis is unavailable.
+// define('REDIS_HOST', '127.0.0.1');
+// define('REDIS_PORT', 6379);
+
 // Optional but recommended: a random secret used to salt the hashed client IPs
 // stored for rate limiting. Generate one once, e.g. `openssl rand -hex 32`.
 // If omitted, share.php falls back to a non-secret default.
