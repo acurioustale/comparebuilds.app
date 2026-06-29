@@ -11,15 +11,14 @@
  * therefore the security boundary: the app renders it without trusting upstream.
  *
  * SCOPE — this covers exactly the fields that are rendered as HTML:
- *   - node.description, choice[].description, apex rank[].description.
+ *   - node.description, choice[].description, apex rank[].description, and heroSubtrees.{left,right}.description.
  * Those are the only `dangerouslySetInnerHTML` sinks in the app, and the only
  * fields the ingest sanitises. Other description fields in the data
- * (spec.description, heroSubtrees.{left,right}.description, and the spec
- * descriptions in classes.json) are SHORT PLAIN-TEXT blurbs and are NOT
- * sanitised — they are safe only because nothing renders them as HTML. If you
- * ever surface one of them, render it as text (`{value}`, which React escapes)
- * — do NOT pass it to dangerouslySetInnerHTML, or run it through this sanitiser
- * first.
+ * (spec.description and the spec descriptions in classes.json) are SHORT PLAIN-TEXT
+ * blurbs and are NOT sanitised — they are safe only because nothing renders them as
+ * HTML. If you ever surface one of them, render it as text (`{value}`, which React
+ * escapes) — do NOT pass it to dangerouslySetInnerHTML, or run it through this
+ * sanitiser first.
  *
  * Strategy — escape by default. The input is split into tag-like tokens and the
  * text between them. Text is always HTML-escaped. A tag survives ONLY if it
