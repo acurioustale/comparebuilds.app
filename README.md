@@ -303,7 +303,7 @@ image renderer (`OgRenderTest.php`). Run it with `phpunit`, or let `./validate.s
 run everything — JavaScript, PHP, the linters, and the build — at once.
 
 Cross-stack parity tests keep the JS and PHP mirrors in sync: `limitsParity.test.js`
-pins `MAX_BUILDS`/`MAX_BUILD_LEN`/`MAX_BUILD_NAME_LEN` in `buildsStore.js` against
+pins `MAX_BUILDS`/`MAX_BUILD_LEN`/`MAX_BUILD_NAME_LEN` in `slices/constants.js` against
 `api/share.php`, and `shareIdParity.test.js` pins the share-id regex in `route.js`
 against both `share.php` and `og.php`. A change to one side that forgets the other
 fails the gate.
