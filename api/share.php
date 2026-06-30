@@ -442,7 +442,7 @@ function ensure_share_schema(PDO $pdo): void
 {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS comparebuilds_shares (
-            id         VARCHAR(32) NOT NULL PRIMARY KEY,
+            id         VARCHAR(32) COLLATE utf8mb4_bin NOT NULL PRIMARY KEY,
             data       MEDIUMTEXT  NOT NULL,
             ip_hash    CHAR(64)    NULL,
             created_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -455,7 +455,8 @@ function ensure_share_schema(PDO $pdo): void
             id         INT AUTO_INCREMENT PRIMARY KEY,
             ip_hash    CHAR(64)  NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_ip_created (ip_hash, created_at)
+            INDEX idx_ip_created (ip_hash, created_at),
+            INDEX idx_created (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
 }
