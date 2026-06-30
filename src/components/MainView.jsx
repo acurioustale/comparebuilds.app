@@ -96,6 +96,78 @@ function SingleBuildView({ treeData, parsedBuild, widths, footer = null }) {
   );
 }
 
+function ThreePlusBuildsView({
+  treeData,
+  validParsed,
+  validLabels,
+  widths,
+  footer,
+  changesOnly,
+  setChangesOnly,
+}) {
+  return (
+    <div className="mt-6">
+      <FitToWidth widths={widths}>
+        {(layout) => (
+          <div className="p-4 wow-panel rounded w-max">
+            <HeatmapTree
+              treeData={treeData}
+              builds={validParsed}
+              labels={validLabels}
+              layout={layout}
+              changesToggle={
+                <ChangesFilterToggle
+                  value={changesOnly}
+                  onChange={setChangesOnly}
+                />
+              }
+            />
+            {footer && <PanelFooter>{footer}</PanelFooter>}
+          </div>
+        )}
+      </FitToWidth>
+    </div>
+  );
+}
+
+function PairedBuildView({
+  treeData,
+  buildA,
+  buildB,
+  labelA,
+  labelB,
+  widths,
+  footer,
+  changesOnly,
+  setChangesOnly,
+}) {
+  return (
+    <div className="mt-6">
+      <FitToWidth widths={widths}>
+        {(layout) => (
+          <div className="p-4 wow-panel rounded w-max">
+            <SideBySideDiff
+              treeData={treeData}
+              buildA={buildA}
+              buildB={buildB}
+              labelA={labelA}
+              labelB={labelB}
+              layout={layout}
+              changesToggle={
+                <ChangesFilterToggle
+                  value={changesOnly}
+                  onChange={setChangesOnly}
+                />
+              }
+            />
+            {footer && <PanelFooter>{footer}</PanelFooter>}
+          </div>
+        )}
+      </FitToWidth>
+    </div>
+  );
+}
+
 export default function MainView() {
   const {
     treeData,
@@ -192,57 +264,29 @@ export default function MainView() {
   let comparisonEl = null;
   if (valid.length >= 3) {
     comparisonEl = (
-      <div className="mt-6">
-        <FitToWidth widths={treeWidths}>
-          {(layout) => (
-            <div className="p-4 wow-panel rounded w-max">
-              <HeatmapTree
-                treeData={treeData}
-                builds={validParsed}
-                labels={validLabels}
-                layout={layout}
-                changesToggle={
-                  <ChangesFilterToggle
-                    value={changesOnly}
-                    onChange={setChangesOnly}
-                  />
-                }
-              />
-              {comparisonFooter && (
-                <PanelFooter>{comparisonFooter}</PanelFooter>
-              )}
-            </div>
-          )}
-        </FitToWidth>
-      </div>
+      <ThreePlusBuildsView
+        treeData={treeData}
+        validParsed={validParsed}
+        validLabels={validLabels}
+        widths={treeWidths}
+        footer={comparisonFooter}
+        changesOnly={changesOnly}
+        setChangesOnly={setChangesOnly}
+      />
     );
   } else if (valid.length === 2) {
     comparisonEl = (
-      <div className="mt-6">
-        <FitToWidth widths={pairedWidths}>
-          {(layout) => (
-            <div className="p-4 wow-panel rounded w-max">
-              <SideBySideDiff
-                treeData={treeData}
-                buildA={valid[0].parsed}
-                buildB={valid[1].parsed}
-                labelA={valid[0].label}
-                labelB={valid[1].label}
-                layout={layout}
-                changesToggle={
-                  <ChangesFilterToggle
-                    value={changesOnly}
-                    onChange={setChangesOnly}
-                  />
-                }
-              />
-              {comparisonFooter && (
-                <PanelFooter>{comparisonFooter}</PanelFooter>
-              )}
-            </div>
-          )}
-        </FitToWidth>
-      </div>
+      <PairedBuildView
+        treeData={treeData}
+        buildA={valid[0].parsed}
+        buildB={valid[1].parsed}
+        labelA={valid[0].label}
+        labelB={valid[1].label}
+        widths={pairedWidths}
+        footer={comparisonFooter}
+        changesOnly={changesOnly}
+        setChangesOnly={setChangesOnly}
+      />
     );
   } else if (valid.length === 1) {
     comparisonEl = (
