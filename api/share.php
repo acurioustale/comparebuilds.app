@@ -189,7 +189,9 @@ function is_ip_in_cidr(string $ip, string $cidr): bool
 
         // Compare byte by byte
         for ($i = 0; $i < $ipLen; $i++) {
-            if ($bits <= 0) break;
+            if ($bits <= 0) {
+                break;
+            }
             $mask = $bits >= 8 ? 0xFF : (0xFF << (8 - $bits)) & 0xFF;
             if ((ord($ipBinary[$i]) & $mask) !== (ord($subnetBinary[$i]) & $mask)) {
                 return false;
