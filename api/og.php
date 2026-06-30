@@ -252,11 +252,13 @@ try {
             // Count every valid-id request, whether or not the share exists, so a
             // flood of nonexistent ids is still bounded — matching the Redis path,
             // which increments its counter before the share lookup.
-            try {
-                $logReq = $pdo->prepare('INSERT INTO comparebuilds_og_requests (ip_hash) VALUES (?)');
-                $logReq->execute([$ipHash]);
-            } catch (PDOException $e) {
-                // Table might not exist yet if no share has ever been created.
+            if ($count <= OG_RATE_LIMIT_MAX * 2) {
+                try {
+                    $logReq = $pdo->prepare('INSERT INTO comparebuilds_og_requests (ip_hash) VALUES (?)');
+                    $logReq->execute([$ipHash]);
+                } catch (PDOException $e) {
+                    // Table might not exist yet if no share has ever been created.
+                }
             }
         }
 
