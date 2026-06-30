@@ -2,7 +2,8 @@ import { useShallow } from "zustand/react/shallow";
 import BuildManager from "./components/BuildManager";
 import MainView from "./components/MainView";
 import { useBuildsStore } from "./store/buildsStore";
-import { useTheme, ThemeToggle } from "./hooks/useTheme";
+import { useTheme } from "./hooks/useTheme";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { useShareRehydration } from "./hooks/useShareRehydration";
 
 export default function App() {
