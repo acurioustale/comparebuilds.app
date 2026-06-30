@@ -1,4 +1,4 @@
-import { activeHeroSubtree } from "./spendRules.js";
+import { defaultBuildLabel } from "./buildLabel.js";
 
 /**
  * Generates a SimulationCraft profileset block for the active comparison slots.
@@ -35,17 +35,13 @@ export function generateSimcProfileset(
     let name = buildNames?.[i]?.trim();
 
     if (!name) {
-      if (specDisplayName && classDisplayName) {
-        const parsedBuild = parsedBuilds?.[i];
-        const heroSpec =
-          parsedBuild && treeData
-            ? activeHeroSubtree(treeData.nodes, parsedBuild.nodes)
-            : null;
-        const prefix = heroSpec ? `${heroSpec} ` : "";
-        name = `Build ${i + 1} — ${prefix}${specDisplayName} ${classDisplayName}`;
-      } else {
-        name = `Build ${i + 1}`;
-      }
+      name = defaultBuildLabel({
+        index: i + 1,
+        className: classDisplayName,
+        specName: specDisplayName,
+        treeData,
+        parsedBuild: parsedBuilds?.[i],
+      });
     }
 
     // Strip quotes and backslashes to ensure clean simc profile name

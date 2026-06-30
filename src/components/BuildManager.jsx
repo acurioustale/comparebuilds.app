@@ -5,8 +5,9 @@ import { useBuildsStore, MAX_BUILDS } from "../store/buildsStore";
 import { createServerShare } from "../lib/shareLink";
 import classesIndex from "../data/classes.json";
 import { iconUrl, onIconError } from "../lib/iconUrl";
-import { activeHeroSubtree, sectionPoints } from "../lib/spendRules";
+import { sectionPoints } from "../lib/spendRules";
 import { generateSimcProfileset } from "../lib/simcProfile";
+import { defaultBuildLabel } from "../lib/buildLabel";
 import { FilledSlot, EmptySlot } from "./BuildManagerSlots";
 
 // Action-button label for a copy state. The share link has an async "Saving…"
@@ -290,15 +291,14 @@ export default function BuildManager() {
   ]);
 
   // Human-readable build label: "Build N — [Hero Spec] Spec Class"
-  const buildLabel = (n, parsedBuild) => {
-    if (!specDisplayName || !classDisplayName) return `Build ${n}`;
-    const heroSpec =
-      parsedBuild && treeData
-        ? activeHeroSubtree(treeData.nodes, parsedBuild.nodes)
-        : null;
-    const prefix = heroSpec ? `${heroSpec} ` : "";
-    return `Build ${n} — ${prefix}${specDisplayName} ${classDisplayName}`;
-  };
+  const buildLabel = (n, parsedBuild) =>
+    defaultBuildLabel({
+      index: n,
+      className: classDisplayName,
+      specName: specDisplayName,
+      treeData,
+      parsedBuild,
+    });
 
   const handleClassSelect = useCallback(
     (id) => {
