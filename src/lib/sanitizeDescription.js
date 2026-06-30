@@ -26,6 +26,7 @@ export function sanitizeDescription(input) {
   let purify;
   if (typeof window === "undefined") {
     // In a Node environment (like ingestBlizzard.js or tests), we need jsdom.
+    // eslint-disable-next-line no-undef
     const { JSDOM } = require("jsdom");
     const window = new JSDOM("").window;
     purify = DOMPurify(window);
