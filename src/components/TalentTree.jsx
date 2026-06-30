@@ -2,7 +2,7 @@ import { useMemo, useId, useState } from "react";
 import { TalentNode } from "./TalentNode";
 import { activeHeroSubtree } from "../lib/spendRules";
 import { spentPoints } from "../lib/treeLogic";
-import { prereqChain } from "../lib/prereqChain";
+import { buildDependentsMap, prereqChain } from "../lib/prereqChain";
 import {
   CELL,
   PAD,
@@ -151,11 +151,19 @@ export function TreePanel({
   // Prerequisite-chain hover: the set of node ids in the hovered node's chain
   // (itself, direct prereqs one hop above, immediate dependents below — see
   // prereqChain). Drives a gold ring on those nodes and brighter strokes on the
-  // connecting edges.
+  // connecting edges. The dependents adjacency is precomputed once per panel so a
+  // hover is a single map read rather than a full rescan of every node.
   const [hoveredId, setHoveredId] = useState(null);
+  const dependentsMap = useMemo(
+    () => buildDependentsMap(nodes, nodeById),
+    [nodes, nodeById],
+  );
   const chainIds = useMemo(
-    () => (hoveredId == null ? null : prereqChain(hoveredId, nodes, nodeById)),
-    [hoveredId, nodes, nodeById],
+    () =>
+      hoveredId == null
+        ? null
+        : prereqChain(hoveredId, nodeById, dependentsMap),
+    [hoveredId, nodeById, dependentsMap],
   );
 
   return (
