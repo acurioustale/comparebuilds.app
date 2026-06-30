@@ -13,6 +13,7 @@ import {
   computeInvalidNodeIds,
   cellKey,
   spentPoints,
+  gatedPoints,
   hasUpperPrereq,
 } from "./treeLogic.js";
 
@@ -623,4 +624,64 @@ test("hasUpperPrereq: a partially-ranked upper parent does not satisfy it", () =
     hasUpperPrereq(child, { 1: sel(1) }, byId([parent, child])),
     false,
   );
+});
+
+// ─── gatedPoints ─────────────────────────────────────────────────────────────
+
+test("gatedPoints: non-hero node counts its whole treeType section", () => {
+  // computeInvalidNodeIds now reads gate totals from a precomputed map; gatedPoints
+  // stays the standalone reference other callers use, so guard it directly. A
+  // non-hero node gates over its full treeType — equal to spentPoints(treeType).
+  const a = node(1, 0, { treeType: "spec" });
+  const b = node(2, 1, { maxRanks: 2, treeType: "spec", spentRequired: 2 });
+  const other = node(3, 0, { treeType: "class" });
+  const nodes = [a, b, other];
+  const selected = { 1: sel(), 2: sel(2), 3: sel() };
+  assert.strictEqual(
+    gatedPoints(b, nodes, selected),
+    spentPoints(nodes, selected, "spec"),
+  );
+  // Only spec points count (1 + 2), the class pick is in a different section.
+  assert.strictEqual(gatedPoints(b, nodes, selected), 3);
+});
+
+test("gatedPoints: hero node counts only its own subtree", () => {
+  // A hero node gates per heroSubtree — equal to spentPoints(treeType, subtree).
+  const left = { ...node(50, 0, { treeType: "hero" }), heroSubtree: "L" };
+  const right = { ...node(51, 0, { treeType: "hero" }), heroSubtree: "R" };
+  const nodes = [left, right];
+  const selected = { 50: sel(), 51: sel() };
+  assert.strictEqual(
+    gatedPoints(left, nodes, selected),
+    spentPoints(nodes, selected, "hero", "L"),
+  );
+  assert.strictEqual(gatedPoints(left, nodes, selected), 1);
+  assert.strictEqual(gatedPoints(right, nodes, selected), 1);
+});
+
+// ─── Single-pass gate-total edge cases ───────────────────────────────────────
+
+test("gate total matches gatedPoints for a hero node lacking a subtree", () => {
+  // The precomputed section key folds a subtree-less hero node under one bucket,
+  // exactly as gatedPoints (heroSubtree undefined) would count it. With no committed
+  // subtree the exclusivity check is inert, so the gate path runs: one point, gate 0,
+  // nothing flagged — the same verdict gatedPoints yields.
+  const hero = { ...node(70, 0, { treeType: "hero", spentRequired: 0 }) };
+  delete hero.heroSubtree;
+  const nodes = [hero];
+  const selected = { 70: sel() };
+  assert.strictEqual(gatedPoints(hero, nodes, selected), 1);
+  assertInvalid(computeInvalidNodeIds(nodes, selected, byId(nodes)));
+});
+
+test("zero-point selected node alone in its section fails its gate", () => {
+  // A selected entry carrying 0 points contributes nothing to its section total, so
+  // the section is absent from the precomputed map and reads as 0 — matching
+  // gatedPoints/spentPoints, which also sum to 0. With spentRequired > 0 the node
+  // fails its gate and is flagged.
+  const lone = node(80, 0, { treeType: "spec", spentRequired: 1 });
+  const nodes = [lone];
+  const selected = { 80: sel(0) };
+  assert.strictEqual(gatedPoints(lone, nodes, selected), 0);
+  assertInvalid(computeInvalidNodeIds(nodes, selected, byId(nodes)), 80);
 });
