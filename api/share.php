@@ -553,7 +553,8 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
 
         if ($rateLimited) {
             if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                error_log('Rate limit hit for IP Hash ' . $ipHash . ' | X-Forwarded-For: ' . $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $xff = preg_replace('/[\r\n]+/', ' ', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                error_log('Rate limit hit for IP Hash ' . $ipHash . ' | X-Forwarded-For: ' . $xff);
             }
             throw new ShareException(429, 'Too many shares created — please try again later', RATE_LIMIT_WINDOW);
         }
