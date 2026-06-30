@@ -146,7 +146,7 @@ const nodeIndexCache = new WeakMap();
  * @returns {{ sorted: Array<{ id: number, maxRanks?: number, choices?: Array<{maxRanks:number}>|null }>, nodeById: Map<number, any> }}
  */
 function nodeIndex(nodes) {
-  const cacheKey = nodes[0] ?? nodes;
+  const cacheKey = nodes;
   let idx = nodeIndexCache.get(cacheKey);
   if (!idx) {
     idx = {
