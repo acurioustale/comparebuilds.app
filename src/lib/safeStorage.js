@@ -18,33 +18,47 @@ export function getSafeStorage() {
     removeItem: (name) => memStorage.delete(name),
   };
 
-  if (typeof localStorage === "undefined" || !localStorage) {
+  const getLocalStorage = () => {
+    try {
+      if (typeof localStorage !== "undefined" && localStorage) {
+        return localStorage;
+      }
+    } catch {
+      // Catch ReferenceError or access errors (like Node's experimental localStorage)
+    }
+    return null;
+  };
+
+  const ls = getLocalStorage();
+  if (!ls) {
     return fallbackStorage;
   }
+
   const testKey = "__comparebuilds_test__";
   try {
-    localStorage.setItem(testKey, "test");
-    localStorage.removeItem(testKey);
+    ls.setItem(testKey, "test");
+    ls.removeItem(testKey);
   } catch {
     return fallbackStorage;
   }
   return {
     getItem: (name) =>
-      memStorage.has(name) ? memStorage.get(name) : localStorage.getItem(name),
+      memStorage.has(name) ? memStorage.get(name) : ls.getItem(name),
     setItem: (name, value) => {
       try {
-        localStorage.setItem(name, value);
+        ls.setItem(name, value);
         memStorage.delete(name);
-      } catch (err) {
-        console.error(
-          `[zustand persist middleware] Failed to save state to localStorage: ${err.message}. Falling back to in-memory storage.`,
-          err,
-        );
+      } catch {
+        // Silently fallback if it errors later during tests or usage
         memStorage.set(name, value);
       }
     },
     removeItem: (name) => {
-      localStorage.removeItem(name);
+      try {
+        ls.removeItem(name);
+      } catch {
+        // eslint-disable-next-line no-empty
+      }
       memStorage.delete(name);
     },
   };
