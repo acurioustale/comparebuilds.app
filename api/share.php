@@ -214,8 +214,11 @@ function is_ip_in_cidr(string $ip, string $cidr): bool
 
 function is_trusted_proxy(string $ip): bool
 {
-    if (!defined('TRUSTED_PROXIES') || !is_array(TRUSTED_PROXIES)) {
+    if (!defined('TRUSTED_PROXIES')) {
         return false;
+    }
+    if (!is_array(TRUSTED_PROXIES)) {
+        throw new RuntimeException('TRUSTED_PROXIES must be an array of CIDR strings.');
     }
     foreach (TRUSTED_PROXIES as $proxy) {
         if (is_ip_in_cidr($ip, $proxy)) {
