@@ -21,3 +21,14 @@ if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
     dispatchEvent: () => false,
   });
 }
+
+// Node emits an ExperimentalWarning when localStorage is referenced without a file.
+// Stub a minimal implementation globally to silence the warning during Node suites.
+if (typeof globalThis !== "undefined" && !globalThis.localStorage) {
+  globalThis.localStorage = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+    clear: () => {},
+  };
+}
