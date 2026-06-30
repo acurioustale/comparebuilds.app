@@ -82,7 +82,14 @@ export function useShareRehydration() {
         );
       }
     })();
-  }, [addBuild, clearAllBuilds, rehydrateTreeData, setBuildNames, preloadSpec, setSharedLayoutHash]);
+  }, [
+    addBuild,
+    clearAllBuilds,
+    rehydrateTreeData,
+    setBuildNames,
+    preloadSpec,
+    setSharedLayoutHash,
+  ]);
 
   const dismissShareError = useCallback(() => setShareError(null), []);
   return { shareError, dismissShareError };
