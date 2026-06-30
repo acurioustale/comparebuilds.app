@@ -108,6 +108,73 @@ function NodeTooltip({ node, entryChosen, pointsInvested = 0 }) {
   );
 }
 
+// ─── Single choice option ─────────────────────────────────────────────────────
+
+// One option div of a choice node. Each option owns its own useTapGesture
+// instance so its tap refs (tapStart/tapFired) aren't shared with its sibling —
+// otherwise a tap on one option and the synthetic post-tap click on the other
+// would race over a single tapFired flag, intermittently swallowing or
+// double-toggling a touch selection. Hooks can't run in a loop in the parent, so
+// the per-iteration component is the correct place for the hook.
+function ChoiceOption({
+  ch,
+  index,
+  nodeId,
+  chosen,
+  unchosen,
+  isSelected,
+  invalid,
+  interactive,
+  nodeBorder,
+  nodeOpacity,
+  effOpacity,
+  onNodeClick,
+  onNodeTap,
+  makeKeyDown,
+}) {
+  const { makeTouchHandlers, guardClick } = useTapGesture();
+  return (
+    <div
+      onClick={
+        onNodeClick ? guardClick(() => onNodeClick(nodeId, index)) : undefined
+      }
+      {...makeTouchHandlers(onNodeTap ? () => onNodeTap(nodeId, index) : null)}
+      className={interactive ? "tnode" : undefined}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-pressed={interactive ? chosen : undefined}
+      aria-label={
+        interactive ? `${ch.name}${chosen ? " — selected" : ""}` : undefined
+      }
+      onKeyDown={makeKeyDown(index)}
+      style={{
+        position: "relative",
+        width: CHOICE_ICON,
+        height: CHOICE_ICON,
+        borderRadius: 3,
+        overflow: "hidden",
+        border: `1.5px solid ${chosen ? (invalid ? "rgba(200,60,60,0.85)" : "#c8a84b") : nodeBorder}`,
+        opacity: effOpacity(!isSelected ? nodeOpacity : unchosen ? 0.25 : 1),
+        flexShrink: 0,
+        transition: "opacity 0.2s",
+        zIndex: 1,
+      }}
+    >
+      <img
+        src={iconUrl(ch.icon)}
+        onError={onIconError}
+        width={CHOICE_ICON}
+        height={CHOICE_ICON}
+        alt=""
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+        style={{ display: "block" }}
+      />
+    </div>
+  );
+}
+
 // ─── Individual talent node ───────────────────────────────────────────────────
 
 // Memoised: a panel re-renders on every interactive spend, but a node's props
@@ -157,6 +224,8 @@ export const TalentNode = memo(function TalentNode({
   // click=spend, right-click=refund, hover=tooltip. `tapFired` swallows the
   // synthetic click the browser emits after a tap so it doesn't double-fire with
   // the mouse onClick path; any movement past TAP_MOVE_TOL cancels the tap (scroll).
+  // This instance serves the single-icon shapes; choice options each own their own
+  // instance (in ChoiceOption) so their tap refs don't race across siblings.
   const { makeTouchHandlers, guardClick } = useTapGesture();
 
   // Keyboard accessibility: only the interactive tree wires onNodeClick. Static
@@ -267,53 +336,23 @@ export const TalentNode = memo(function TalentNode({
             const unchosen =
               isSelected && entryChosen !== null && entryChosen !== i;
             return (
-              <div
+              <ChoiceOption
                 key={i}
-                onClick={
-                  onNodeClick
-                    ? guardClick(() => onNodeClick(node.id, i))
-                    : undefined
-                }
-                {...makeTouchHandlers(
-                  onNodeTap ? () => onNodeTap(node.id, i) : null,
-                )}
-                className={interactive ? "tnode" : undefined}
-                role={interactive ? "button" : undefined}
-                tabIndex={interactive ? 0 : undefined}
-                aria-pressed={interactive ? chosen : undefined}
-                aria-label={
-                  interactive
-                    ? `${ch.name}${chosen ? " — selected" : ""}`
-                    : undefined
-                }
-                onKeyDown={makeKeyDown(i)}
-                style={{
-                  position: "relative",
-                  width: CHOICE_ICON,
-                  height: CHOICE_ICON,
-                  borderRadius: 3,
-                  overflow: "hidden",
-                  border: `1.5px solid ${chosen ? (invalid ? "rgba(200,60,60,0.85)" : "#c8a84b") : nodeBorder}`,
-                  opacity: effOpacity(
-                    !isSelected ? nodeOpacity : unchosen ? 0.25 : 1,
-                  ),
-                  flexShrink: 0,
-                  transition: "opacity 0.2s",
-                  zIndex: 1,
-                }}
-              >
-                <img
-                  src={iconUrl(ch.icon)}
-                  onError={onIconError}
-                  width={CHOICE_ICON}
-                  height={CHOICE_ICON}
-                  alt=""
-                  draggable={false}
-                  loading="lazy"
-                  decoding="async"
-                  style={{ display: "block" }}
-                />
-              </div>
+                ch={ch}
+                index={i}
+                nodeId={node.id}
+                chosen={chosen}
+                unchosen={unchosen}
+                isSelected={isSelected}
+                invalid={invalid}
+                interactive={interactive}
+                nodeBorder={nodeBorder}
+                nodeOpacity={nodeOpacity}
+                effOpacity={effOpacity}
+                onNodeClick={onNodeClick}
+                onNodeTap={onNodeTap}
+                makeKeyDown={makeKeyDown}
+              />
             );
           })}
 
