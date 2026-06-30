@@ -527,4 +527,53 @@ describe("loadTreeData error handling", () => {
 
     spy.mockRestore();
   });
+
+  test("a build appended mid-load can't strand itself when an interactive load fails", async () => {
+    // Reproduce the append-during-await race: an interactive preload (no
+    // committed builds) starts loading, a build string lands while the import
+    // is still in flight, then the load fails. The error-path recovery branch
+    // must key off the load-start snapshot (no builds → full EMPTY reset), not
+    // a fresh post-await read that the mid-load append would flip to the
+    // keep-string branch — which would strand the appended string with
+    // treeData/classNodes still null, an unrenderable, unrecoverable slot.
+    const [s] = genStrings("death_knight", "blood", 1);
+
+    // A deferred import we control: the preload awaits it, we append during the
+    // await, then we reject to force the failure path.
+    let rejectImport;
+    const deferred = new Promise((_, reject) => {
+      rejectImport = reject;
+    });
+    const spy = vi
+      .spyOn(storeHelpers, "importClassData")
+      .mockReturnValueOnce(deferred);
+
+    const pending = get().preloadSpec(DK_BLOOD);
+
+    // Append a string while the import is still pending (no loadGen bump, so the
+    // stale-bail does not fire — this is the case the load-start capture guards).
+    useBuildsStore.setState((prev) => ({
+      buildStrings: [...prev.buildStrings, s],
+      parsedBuilds: [...prev.parsedBuilds, null],
+      buildNames: [...prev.buildNames, ""],
+    }));
+
+    rejectImport(new Error("mock network failure"));
+    await pending;
+
+    const st = get();
+    // Load-start had no builds, so failure resets to a clean slate rather than
+    // keeping the raced string against a never-loaded tree.
+    assert.strictEqual(st.buildStrings.length, 0);
+    assert.strictEqual(st.specId, null);
+    assert.strictEqual(st.treeData, null);
+    assert.strictEqual(st.classNodes, null);
+    assert.strictEqual(st.isLoading, false);
+    assert.match(
+      st.error ?? "",
+      /Failed to load tree data: mock network failure/,
+    );
+
+    spy.mockRestore();
+  });
 });
