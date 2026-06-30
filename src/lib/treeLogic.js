@@ -78,6 +78,53 @@ export function spentPoints(allNodes, selected, treeType, heroSubtree = null) {
 }
 
 /**
+ * The section/subtree a node's gate threshold counts against. Hero nodes gate
+ * per heroSubtree; everything else gates over its whole treeType. Mirrors the
+ * (treeType, heroSubtree) pair spentPoints/gatedPoints filter on, so a precomputed
+ * map keyed by this string yields the same total the per-node call would.
+ *
+ * @param {object} node Target node
+ * @returns {string} Gate-section key string
+ */
+function gateSectionKey(node) {
+  return node.treeType === "hero"
+    ? `hero|${node.heroSubtree ?? ""}`
+    : node.treeType;
+}
+
+/**
+ * Totals every node's gate section in one pass: the spent-point sum each node's
+ * gate (gatedPoints) would compute, keyed by gateSectionKey. Reproduces
+ * spentPoints exactly — skips alreadyGranted nodes and zero-point picks, and
+ * collapses co-located duplicates so a cell counts once (countedCells, scoped per
+ * section so cells in different panels never collide). Built once by
+ * computeInvalidNodeIds so the gate check inside its loop is O(1) per node instead
+ * of re-walking allNodes via gatedPoints.
+ *
+ * @param {object[]} allNodes Full spec node list from treeData.nodes
+ * @param {Record<number, { pointsInvested: number, entryChosen: number|null }>} selected Current selection state
+ * @returns {Map<string, number>} Gate-section key → spent points
+ */
+function sectionSpentTotals(allNodes, selected) {
+  const totals = new Map();
+  const countedCells = new Set();
+  for (const n of allNodes) {
+    if (n.alreadyGranted) continue;
+    const pts = selected[n.id]?.pointsInvested ?? 0;
+    if (pts === 0) continue;
+    // cellKey already encodes treeType + heroSubtree, so co-located picks in
+    // different sections never share a key — matching spentPoints, which filters
+    // to one section before de-duping by the same cellKey.
+    const cell = cellKey(n);
+    if (countedCells.has(cell)) continue;
+    countedCells.add(cell);
+    const key = gateSectionKey(n);
+    totals.set(key, (totals.get(key) ?? 0) + pts);
+  }
+  return totals;
+}
+
+/**
  * Points spent in the same tree section as `node`, counting per-heroSubtree
  * for hero nodes. Excludes alreadyGranted nodes (they don't consume the budget).
  * Used for spentRequired gate checks. Delegates to spentPoints so the gate and
@@ -201,6 +248,11 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
   // legal, matching what canSpendPoint forbids interactively.
   const activeHeroSub = activeHeroSubtree(allNodes, selected);
 
+  // Per-section spent-point totals, computed once. Each node's gate check reads
+  // its section total from this map (O(1)) instead of re-deriving it via
+  // gatedPoints → spentPoints, which re-walks every node on every call.
+  const sectionTotals = sectionSpentTotals(allNodes, selected);
+
   for (const node of sorted) {
     let shouldFlag = false;
 
@@ -216,7 +268,7 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
     // Gate: raw selected point total — does not exclude already-invalid nodes
     if (
       !shouldFlag &&
-      gatedPoints(node, allNodes, selected) < node.spentRequired
+      (sectionTotals.get(gateSectionKey(node)) ?? 0) < node.spentRequired
     ) {
       shouldFlag = true;
     }
