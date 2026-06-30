@@ -234,17 +234,6 @@ try {
                 bail(429);
             }
 
-            if (random_int(1, 100) === 1) {
-                try {
-                    $prune = $pdo->prepare(
-                        'DELETE FROM comparebuilds_og_requests '
-                        . 'WHERE created_at < NOW() - INTERVAL ' . OG_PRUNE_WINDOW . ' SECOND'
-                    );
-                    $prune->execute();
-                } catch (Throwable $e) {
-                    // Non-fatal — proceed even if cleanup fails.
-                }
-            }
 
             // Count every valid-id request, whether or not the share exists, so a
             // flood of nonexistent ids is still bounded — matching the Redis path,

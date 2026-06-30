@@ -559,16 +559,6 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
                 $rateLimited = true;
             }
 
-            if (random_int(1, 100) === 1) {
-                try {
-                    $prune = $pdo->prepare(
-                        'DELETE FROM comparebuilds_share_requests '
-                        . 'WHERE created_at < NOW() - INTERVAL 86400 SECOND'
-                    );
-                    $prune->execute();
-                } catch (Throwable $e) {
-                }
-            }
 
             try {
                 $logReq = $pdo->prepare('INSERT INTO comparebuilds_share_requests (ip_hash) VALUES (?)');

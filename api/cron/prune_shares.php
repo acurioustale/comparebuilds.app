@@ -43,6 +43,25 @@ try {
         }
     }
 
+    try {
+        $prunedShareReqs = $pdo->exec('DELETE FROM comparebuilds_share_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND');
+        echo 'Pruned ' . $prunedShareReqs . " expired share requests successfully.\n";
+    } catch (PDOException $e) {
+        if (($e->errorInfo[0] ?? '') !== '42S02' && ($e->errorInfo[1] ?? 0) !== 1146) {
+            throw $e;
+        }
+    }
+
+    try {
+        // OG_PRUNE_WINDOW is 86400 (24h)
+        $prunedOgReqs = $pdo->exec('DELETE FROM comparebuilds_og_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND');
+        echo 'Pruned ' . $prunedOgReqs . " expired OG requests successfully.\n";
+    } catch (PDOException $e) {
+        if (($e->errorInfo[0] ?? '') !== '42S02' && ($e->errorInfo[1] ?? 0) !== 1146) {
+            throw $e;
+        }
+    }
+
     // Prune cache_og image files older than 180 days
     $cacheDir = __DIR__ . '/../../../cache_og';
     if (is_dir($cacheDir)) {
