@@ -89,7 +89,9 @@ const HeatmapNode = memo(function HeatmapNode({
   const takenBy = stat?.takenBy ?? [];
   // Names of the builds that took this node, for the tooltip — the per-build
   // identity the removed colour dots failed to convey (they had no legend).
-  const takenNames = labels.filter((_, i) => takenBy[i]);
+  // Built lazily (filter + JSX) inside the Tooltip's renderContent callback so
+  // the work only happens when a tooltip actually opens, not on every render.
+  const takenNames = () => labels.filter((_, i) => takenBy[i]);
   const tier = rarityTier(count, totalBuilds);
   const rarity = RARITY[tier];
 
@@ -108,7 +110,7 @@ const HeatmapNode = memo(function HeatmapNode({
   if (node.type === "choice") {
     const totalW = CHOICE_ICON * 2 + CHOICE_GAP;
 
-    const tipContent = (
+    const renderTip = () => (
       <div className="space-y-1.5 py-0.5" style={{ maxWidth: 240 }}>
         {node.choices.map((ch, i) => {
           const names = labels.filter((_, bi) => choiceVotes[bi] === i);
@@ -133,7 +135,7 @@ const HeatmapNode = memo(function HeatmapNode({
         }}
       >
         {/* Icons + rarity ring — the tooltip wraps only this area */}
-        <Tooltip content={tipContent} placement="top" delay={300}>
+        <Tooltip renderContent={renderTip} placement="top" delay={300}>
           <div style={{ position: "relative", cursor: "default" }}>
             <div
               style={{
@@ -190,16 +192,19 @@ const HeatmapNode = memo(function HeatmapNode({
     const S = APEX_ICON;
     return (
       <Tooltip
-        content={
-          <div className="py-0.5" style={{ maxWidth: 280 }}>
-            <p className="font-semibold text-xs text-wow-gold mb-1">
-              {node.name}
-            </p>
-            <p className="text-xs text-wow-muted">
-              {takenNames.length ? takenNames.join(", ") : "No builds"}
-            </p>
-          </div>
-        }
+        renderContent={() => {
+          const names = takenNames();
+          return (
+            <div className="py-0.5" style={{ maxWidth: 280 }}>
+              <p className="font-semibold text-xs text-wow-gold mb-1">
+                {node.name}
+              </p>
+              <p className="text-xs text-wow-muted">
+                {names.length ? names.join(", ") : "No builds"}
+              </p>
+            </div>
+          );
+        }}
         placement="top"
         delay={300}
       >
@@ -245,20 +250,23 @@ const HeatmapNode = memo(function HeatmapNode({
 
   return (
     <Tooltip
-      content={
-        <div className="py-0.5" style={{ maxWidth: 260 }}>
-          <p className="font-semibold text-xs text-wow-gold">{node.name}</p>
-          {node.alreadyGranted ? (
-            <p className="text-xs text-wow-dim mt-1 italic">
-              Passive — always active
-            </p>
-          ) : (
-            <p className="text-xs text-wow-muted mt-0.5">
-              {takenNames.length ? takenNames.join(", ") : "No builds"}
-            </p>
-          )}
-        </div>
-      }
+      renderContent={() => {
+        const names = takenNames();
+        return (
+          <div className="py-0.5" style={{ maxWidth: 260 }}>
+            <p className="font-semibold text-xs text-wow-gold">{node.name}</p>
+            {node.alreadyGranted ? (
+              <p className="text-xs text-wow-dim mt-1 italic">
+                Passive — always active
+              </p>
+            ) : (
+              <p className="text-xs text-wow-muted mt-0.5">
+                {names.length ? names.join(", ") : "No builds"}
+              </p>
+            )}
+          </div>
+        );
+      }}
       placement="top"
       delay={300}
     >
