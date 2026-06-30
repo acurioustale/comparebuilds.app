@@ -44,8 +44,15 @@ try {
     }
 
     try {
-        $prunedShareReqs = $pdo->exec('DELETE FROM comparebuilds_share_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND');
-        echo 'Pruned ' . $prunedShareReqs . " expired share requests successfully.\n";
+        $stmt = $pdo->prepare('DELETE FROM comparebuilds_share_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND LIMIT 1000');
+        $totalPruned = 0;
+        do {
+            $stmt->execute();
+            $count = $stmt->rowCount();
+            $totalPruned += $count;
+            if ($count > 0) usleep(50000);
+        } while ($count === 1000);
+        echo 'Pruned ' . $totalPruned . " expired share requests successfully.\n";
     } catch (PDOException $e) {
         if (($e->errorInfo[0] ?? '') !== '42S02' && ($e->errorInfo[1] ?? 0) !== 1146) {
             throw $e;
@@ -54,8 +61,15 @@ try {
 
     try {
         // OG_PRUNE_WINDOW is 86400 (24h)
-        $prunedOgReqs = $pdo->exec('DELETE FROM comparebuilds_og_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND');
-        echo 'Pruned ' . $prunedOgReqs . " expired OG requests successfully.\n";
+        $stmt = $pdo->prepare('DELETE FROM comparebuilds_og_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND LIMIT 1000');
+        $totalPruned = 0;
+        do {
+            $stmt->execute();
+            $count = $stmt->rowCount();
+            $totalPruned += $count;
+            if ($count > 0) usleep(50000);
+        } while ($count === 1000);
+        echo 'Pruned ' . $totalPruned . " expired OG requests successfully.\n";
     } catch (PDOException $e) {
         if (($e->errorInfo[0] ?? '') !== '42S02' && ($e->errorInfo[1] ?? 0) !== 1146) {
             throw $e;
