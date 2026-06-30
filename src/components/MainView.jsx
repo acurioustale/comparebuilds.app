@@ -1,4 +1,11 @@
-import { useState, useMemo, useDeferredValue, useCallback, memo, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useDeferredValue,
+  useCallback,
+  memo,
+  useEffect,
+} from "react";
 import { useShallow } from "zustand/react/shallow";
 import HeatmapTree from "./HeatmapTree";
 import InteractiveTalentTree from "./InteractiveTalentTree";
@@ -11,11 +18,18 @@ import { useBuildsStore, MAX_BUILDS } from "../store/buildsStore";
 import { buildGrantedSeed, computeInvalidNodeIds } from "../lib/treeLogic";
 import { byId, treeNaturalWidths, pairedNaturalWidths } from "./treeLayout";
 import { matchNodeIds } from "../lib/talentSearch";
-import { SearchContext, ChangesFilterContext, SpotlightContext } from "./SearchContext";
+import {
+  SearchContext,
+  ChangesFilterContext,
+  SpotlightContext,
+} from "./SearchContext";
 
 const EMPTY_MATCH = new Set();
 
-const ChangesFilterToggle = memo(function ChangesFilterToggle({ value, onChange }) {
+const ChangesFilterToggle = memo(function ChangesFilterToggle({
+  value,
+  onChange,
+}) {
   const handleClick = useCallback(() => onChange(!value), [onChange, value]);
   return (
     <button

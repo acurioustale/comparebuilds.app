@@ -58,22 +58,22 @@ export function useShareRehydration() {
           `${apiBase}?id=${encodeURIComponent(route.id)}`,
         );
         if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            setShareError(body.error ?? "Shared link not found or has expired.");
-            return;
+          const body = await res.json().catch(() => ({}));
+          setShareError(body.error ?? "Shared link not found or has expired.");
+          return;
         }
         const data = await res.json();
         if (!Array.isArray(data.builds) || data.builds.length === 0) {
-            setShareError("Invalid share data.");
-            return;
+          setShareError("Invalid share data.");
+          return;
         }
         if (data.layoutHash) setSharedLayoutHash(data.layoutHash);
         for (const buildString of data.builds) {
-            await addBuild(buildString);
+          await addBuild(buildString);
         }
         applyAlignedNames(
-            data.builds,
-            Array.isArray(data.labels) ? data.labels : [],
+          data.builds,
+          Array.isArray(data.labels) ? data.labels : [],
         );
         history.replaceState(null, "", window.location.pathname);
       } catch {
