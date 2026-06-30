@@ -318,6 +318,11 @@ header("Content-Type: $mime");
 header('Cache-Control: public, max-age=31536000, immutable');
 header('X-Content-Type-Options: nosniff');
 
+$emit($img);
+if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();
+}
+
 if (!is_dir($cacheDir)) {
     @mkdir($cacheDir, 0755, true);
 }
@@ -342,5 +347,4 @@ if (is_dir($cacheDir)) {
         }
     }
 }
-$emit($img);
 imagedestroy($img);
