@@ -50,7 +50,9 @@ try {
             $stmt->execute();
             $count = $stmt->rowCount();
             $totalPruned += $count;
-            if ($count > 0) usleep(50000);
+            if ($count > 0) {
+                usleep(50000);
+            }
         } while ($count === 1000);
         echo 'Pruned ' . $totalPruned . " expired share requests successfully.\n";
     } catch (PDOException $e) {
@@ -67,7 +69,9 @@ try {
             $stmt->execute();
             $count = $stmt->rowCount();
             $totalPruned += $count;
-            if ($count > 0) usleep(50000);
+            if ($count > 0) {
+                usleep(50000);
+            }
         } while ($count === 1000);
         echo 'Pruned ' . $totalPruned . " expired OG requests successfully.\n";
     } catch (PDOException $e) {
