@@ -214,8 +214,17 @@ function client_ip(): string
         }
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             $ips = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
-            $realIp = end($ips);
-            if (filter_var($realIp, FILTER_VALIDATE_IP) !== false) {
+            // Start from the rightmost (last proxy added) and find the first non-trusted IP
+            $ips = array_reverse($ips);
+            foreach ($ips as $ip) {
+                if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+                    if (!is_trusted_proxy($ip)) {
+                        return $ip;
+                    }
+                    $realIp = $ip; // keep as fallback if all are trusted
+                }
+            }
+            if (isset($realIp)) {
                 return $realIp;
             }
         }
