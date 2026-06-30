@@ -559,11 +559,12 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
                 $rateLimited = true;
             }
 
-
-            try {
-                $logReq = $pdo->prepare('INSERT INTO comparebuilds_share_requests (ip_hash) VALUES (?)');
-                $logReq->execute([$ipHash]);
-            } catch (PDOException $e) {
+            if ($currentCount <= RATE_LIMIT_MAX * 2) {
+                try {
+                    $logReq = $pdo->prepare('INSERT INTO comparebuilds_share_requests (ip_hash) VALUES (?)');
+                    $logReq->execute([$ipHash]);
+                } catch (PDOException $e) {
+                }
             }
         }
 
