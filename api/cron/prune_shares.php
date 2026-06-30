@@ -23,7 +23,7 @@ try {
     );
 
     // Prune shares older than 180 days (~6 months) in batches to prevent lock contention
-    $stmt = $pdo->prepare('DELETE FROM comparebuilds_shares WHERE created_at < NOW() - INTERVAL 180 DAY LIMIT 1000');
+    $stmt = $pdo->prepare('DELETE FROM comparebuilds_shares WHERE created_at < NOW() - INTERVAL 180 DAY ORDER BY created_at ASC LIMIT 1000');
     try {
         $totalPruned = 0;
         do {
