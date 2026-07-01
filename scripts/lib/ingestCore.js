@@ -116,6 +116,7 @@ export function verifyAgainstSnapshot(classes) {
  * @param {boolean}  [args.updateSnapshot]     regenerate the snapshot when clean
  * @param {string}   [args.outDir]             override output dir (e.g. a scratch
  *                                             dir for a verify-only run)
+ * @param {string}   [args.snapshotPath]       override snapshot path (tests)
  * @returns {{ validationFailures: number, snapshotUpdated: boolean }}
  */
 export function writeNormalizedData({
@@ -123,6 +124,7 @@ export function writeNormalizedData({
   classes,
   updateSnapshot = false,
   outDir = OUT_DIR,
+  snapshotPath = SNAPSHOT_PATH,
 }) {
   const { totalProblems, byClass } = validateClasses(classIndex, classes);
 
@@ -158,16 +160,24 @@ export function writeNormalizedData({
 
   let snapshotUpdated = false;
   if (updateSnapshot) {
-    const snapshot = {};
+    // Merge into the existing snapshot rather than replacing it wholesale.
+    // `classes` may be a filtered subset (e.g. `--class=hunter`), but the
+    // snapshot is the whole-class oracle every share link is checked against —
+    // overwriting it from a partial set would silently drop every other class's
+    // fingerprint, destroying their build-string compatibility proof. Regenerate
+    // only the classes actually promoted here and keep the rest intact.
+    const snapshot = existsSync(snapshotPath)
+      ? JSON.parse(readFileSync(snapshotPath, "utf8"))
+      : {};
     for (const [slug, data] of Object.entries(classes)) {
       snapshot[slug] = wireLayout(data);
     }
     writeFileSync(
-      SNAPSHOT_PATH,
+      snapshotPath,
       JSON.stringify(snapshot, null, 2) + "\n",
       "utf8",
     );
-    console.log(`  → ${SNAPSHOT_PATH}`);
+    console.log(`  → ${snapshotPath}`);
     snapshotUpdated = true;
   }
 
