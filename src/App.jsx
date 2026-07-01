@@ -89,8 +89,9 @@ export default function App() {
               color: "#ffaaaa",
             }}
           >
-            These builds were created during a previous game patch. Talent
-            positions may have shifted, causing points to misalign or disappear.
+            These builds were saved for an earlier talent revision. The trees
+            are shown as best they can be, but some talents may have moved,
+            changed, or dropped out since — treat the comparison as approximate.
           </div>
         )}
         <BuildManager />

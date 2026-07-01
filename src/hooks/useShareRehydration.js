@@ -54,6 +54,15 @@ export function useShareRehydration() {
     (async () => {
       try {
         const apiBase = import.meta.env.BASE_URL + "api/share.php";
+        // Liveness beacon: an uncached ping that resets the share's retention
+        // clock on every open. The data fetch below is served `immutable`, so a
+        // warm-cache reopen never reaches the server — this separate `no-store`
+        // request does, without defeating that cache. Fire-and-forget: retention
+        // is best-effort and must never block or fail the rehydration.
+        fetch(`${apiBase}?id=${encodeURIComponent(route.id)}&touch=1`, {
+          cache: "no-store",
+          keepalive: true,
+        }).catch(() => {});
         const res = await fetch(
           `${apiBase}?id=${encodeURIComponent(route.id)}`,
         );

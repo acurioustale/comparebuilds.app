@@ -148,7 +148,20 @@ describe("share rehydration", () => {
     expect(
       await screen.findByText(/Differences/, { selector: "p" }),
     ).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Exactly one data fetch, plus one uncached liveness beacon (?touch=1).
+    const dataCalls = fetchMock.mock.calls.filter(
+      ([u]) => !u.includes("touch=1"),
+    );
+    const touchCalls = fetchMock.mock.calls.filter(([u]) =>
+      u.includes("touch=1"),
+    );
+    expect(dataCalls).toHaveLength(1);
+    expect(touchCalls).toHaveLength(1);
+    // The beacon must bypass the immutable cache so it actually reaches the server.
+    expect(touchCalls[0][1]).toMatchObject({
+      cache: "no-store",
+      keepalive: true,
+    });
     // hash is cleared so a manual reload doesn't re-trigger
     expect(window.location.hash).toBe("");
   });
@@ -205,8 +218,15 @@ describe("share rehydration", () => {
       await screen.findByText(/Differences/, { selector: "p" }),
     ).toBeInTheDocument();
     // The useRef guard prevents StrictMode's double effect invocation from
-    // fetching (and adding the builds) twice.
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // fetching (and adding the builds) twice: one data fetch, one beacon.
+    const dataCalls = fetchMock.mock.calls.filter(
+      ([u]) => !u.includes("touch=1"),
+    );
+    const touchCalls = fetchMock.mock.calls.filter(([u]) =>
+      u.includes("touch=1"),
+    );
+    expect(dataCalls).toHaveLength(1);
+    expect(touchCalls).toHaveLength(1);
   });
 });
 

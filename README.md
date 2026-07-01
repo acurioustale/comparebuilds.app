@@ -92,6 +92,7 @@ Expected layout on the server:
     └── api/
         ├── share.php
         ├── og.php
+        ├── current_layouts.json  ← build-generated manifest of current layout hashes (ensure_schema.php reconciles it)
         ├── lib/
         │   └── RateLimiter.php   ← required by share.php (and og.php via share.php)
         ├── cron/
@@ -165,7 +166,7 @@ limiting (20 shares/hour by default).
 
 ### 5. Configure the pruning cron job
 
-In your hosting control panel or crontab (`crontab -e`), configure a daily overnight job to execute `api/cron/prune_shares.php`. This script safely purges share links older than 180 days (~6 months):
+In your hosting control panel or crontab (`crontab -e`), configure a daily overnight job to execute `api/cron/prune_shares.php`. This script safely purges share links whose talent layout has been superseded (by a game patch) and that have then gone unaccessed for 180 days (~6 months) — a still-current or actively-opened link is never pruned:
 
 ```bash
 30 3 * * * /usr/bin/php $HOME/html/comparebuilds.app/api/cron/prune_shares.php >/dev/null 2>&1
@@ -213,7 +214,7 @@ Hand deploys (`./deploy.sh`) use your own SSH access and need none of this. To l
 | `POST` | JSON body `{ classId, specId, builds: ["…","…"] }` — 2–5 build strings, each ≤ 2000 chars. Optional: `labels` (array parallel to `builds`, each ≤ 40 chars — the per-slot names), `className`/`specName` (≤ 64 chars, used by the OG image), and `layoutHash` (≤ 16-char hex structural fingerprint of the class wire layout). | `{ id }` — 8–16 char alphanumeric, content-addressed (see below)                                |
 | `GET`  | `?id=<id>`                                                                                                                                                                                                                                                                                                                     | Stored JSON payload (includes `labels`/`className`/`specName`/`layoutHash` when they were sent) |
 
-Rows older than 180 days (~6 months) are pruned via a standalone daily cron script (`api/cron/prune_shares.php`), completely decoupling table cleanup from live API requests to guarantee zero latency penalty.
+Retention is **supersession-gated**, not a flat age. A `GET` touches the row's `last_accessed` (debounced to one write per day; note the response is cached `immutable`, so this fires only on a cold-cache open), and each build stamps the row's `layout_hash`. A standalone daily cron script (`api/cron/prune_shares.php`) deletes a share only once its layout is no longer current **and** the link has gone unaccessed for 180 days (~6 months) **and** the layout itself was superseded at least that long ago — so a still-current or actively-opened link is never pruned, while the whole idle window falls after supersession. The server learns which layouts are current from `api/current_layouts.json`, a build-generated manifest that `ensure_schema.php` reconciles into `comparebuilds_layout_history` after each deploy (any hash that drops out of the manifest is stamped superseded). Legacy rows with no `layout_hash` age out on the unaccessed clock alone. Pruning stays completely decoupled from live API requests, so table cleanup never adds request latency.
 
 Ids are **content-addressed**: the id is a base62 prefix (8 chars, lengthened to
 at most 16 on a collision) of the SHA-256 of the canonicalised payload, so sharing
@@ -243,7 +244,7 @@ persistent, short, backed by the DB, and unfurls with an Open Graph preview card
 Opening a share link loads the builds on page load (a share in the URL takes
 precedence over locally saved state).
 
-The share embeds a detect-only `layoutHash` stamp — a structural fingerprint of the talent tree at the time of sharing. If a game patch shifts talent positions or alters the tree structure, opening an older share link displays an honest warning banner explaining that talent positions may have shifted, rather than silently misparsing or rendering a corrupt build.
+The share embeds a detect-only `layoutHash` stamp — a structural fingerprint of the talent tree at the time of sharing. If a game patch shifts talent positions or alters the tree structure, opening an older share link renders the trees best-effort and displays an honest warning banner: the builds were saved for an earlier talent revision, and some talents may have moved, changed, or dropped out, so the comparison should be treated as approximate — rather than silently misparsing or rendering a corrupt build with no notice. The same `layoutHash` also drives supersession-gated retention server-side (see the share-link API section).
 
 ## Local persistence
 
