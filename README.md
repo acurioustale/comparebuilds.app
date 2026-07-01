@@ -13,7 +13,7 @@ the build) and only then its `deploy` job, which `needs: validate`; a push that
 fails the gate never ships. It can also be triggered manually from the Actions
 tab, with an optional dry-run — manual runs validate first too. The deploy job
 builds the site and runs `deploy.sh`. `deploy.sh` stages the built `dist/` together with the PHP API
-(`api/share.php`, `api/og.php`, `api/fonts/`, `api/cron/`) into one tree and mirrors it with a
+(`api/share.php`, `api/og.php`, `api/lib/`, `api/fonts/`, `api/cron/`) into one tree and mirrors it with a
 single `rsync -avz --delete` to the web root:
 
 ```text
@@ -21,7 +21,10 @@ web4186@http2.core-networks.de:html/comparebuilds.app/
 ```
 
 Staging the two sources into one tree is what makes `--delete` safe: `dist/` has
-no `api/`, so deleting against `dist/` alone would wipe the live API folder.
+no `api/`, so deleting against `dist/` alone would wipe the live API folder. For
+the same reason the staged list must include every runtime dependency of the API:
+`api/lib/` holds `RateLimiter.php`, which `share.php` requires, so leaving it out
+makes `--delete` remove it from the server and fatal every share/OG request.
 `config.php` (below) lives one level above the web root and is never touched.
 After a successful rsync, `deploy.sh` runs `api/cron/ensure_schema.php` over SSH
 to apply any pending schema migrations.
@@ -31,9 +34,15 @@ secrets `DEPLOY_SSH_KEY` and `DEPLOY_KNOWN_HOSTS`. The key is harmless if leaked
 on the host it's pinned to a forced command
 (`~web4186/bin/rsync-jail-comparebuilds.sh`, wired up in that account's
 `authorized_keys`) that allows only an rsync _push_ into `html/comparebuilds.app/`
-— no shell, no pull, and no path traversal outside that directory. This is why
-the deploy target in `deploy.sh` must keep its trailing slash; the jail matches
-on that exact prefix.
+plus the one exact schema-migration command `deploy.sh` runs after it — no shell,
+no pull, and no path traversal outside that directory. This is why the deploy
+target in `deploy.sh` must keep its trailing slash; the jail matches on that exact
+prefix. The jail's reviewed source is tracked at
+[`ops/rsync-jail-comparebuilds.sh`](ops/rsync-jail-comparebuilds.sh); the copy on
+the host is authoritative, so after editing it there re-install it with
+`scp ops/rsync-jail-comparebuilds.sh web4186@http2.core-networks.de:bin/`. Any new
+`ssh` command added to `deploy.sh` needs a matching entry in the jail (and a
+reinstall), or the deploy fails with `rsync-jail: only rsync push allowed`.
 
 To deploy by hand instead (uses your own SSH access), run:
 
@@ -65,7 +74,7 @@ real content, and opening one boots the calculator on that spec.
 
 ### 2. Upload files to the server
 
-Upload the **contents** of `dist/` to the web root folder (the folder that comparebuilds.app points to). Upload `api/share.php`, `api/og.php`, and the `api/fonts/` folder into an `api/` subfolder inside that same web root.
+Upload the **contents** of `dist/` to the web root folder (the folder that comparebuilds.app points to). Upload `api/share.php`, `api/og.php`, and the `api/lib/`, `api/cron/`, and `api/fonts/` folders into an `api/` subfolder inside that same web root. `api/lib/` holds `RateLimiter.php`, which `share.php` requires — omitting it makes both `share.php` and `og.php` fatal.
 
 `og.php` renders the Open Graph preview image for shared links and needs PHP's **GD** extension with FreeType (for text). It ships its own bold TTF in `api/fonts/`, so no system fonts are required; set `OG_FONT_PATH` in `config.php` only to override it. It emits whichever image format the host's GD supports (PNG → JPEG → GIF → WebP), so it works even on GD builds without PNG. Make sure the `api/fonts/` folder is uploaded alongside `og.php`. Pretty share URLs (`/s/<id>`) rely on `mod_rewrite` (configured in the shipped `.htaccess`).
 
@@ -74,6 +83,7 @@ Expected layout on the server:
 ```text
 /home/username/
 ├── config.php          ← credentials file, above the web root
+├── cache_og/           ← OG image cache, auto-created by og.php, above the web root
 └── www/                ← web root (comparebuilds.app → this folder)
     ├── index.html
     ├── .htaccess        ← shipped from dist/ (mod_rewrite for /s/<id>, security headers)
@@ -82,12 +92,16 @@ Expected layout on the server:
     └── api/
         ├── share.php
         ├── og.php
+        ├── lib/
+        │   └── RateLimiter.php   ← required by share.php (and og.php via share.php)
         ├── cron/
         │   ├── prune_shares.php
         │   └── ensure_schema.php
         └── fonts/
             └── DejaVuSans-Bold.ttf
 ```
+
+`cache_og/` sits **beside** `config.php`, one level above the web root — not inside it — so the `rsync --delete` mirror can't wipe it on each deploy and `prune_shares.php` (which cleans it) resolves the same path `og.php` writes.
 
 ### 3. Create config.php above the web root
 
