@@ -154,6 +154,60 @@ for (const cls of classIndex.filter((c) => c.implemented)) {
   }
 }
 
+// ── Encode clamps an out-of-range choice index (regression, finding #12) ──────
+// A corrupt or hand-built selection can carry an entryChosen past a node's real
+// option count (the 2-bit field encodes 0-3). The encoder must clamp it into a
+// real option, exactly as the parser clamps on read, so the encode is not
+// silently lossy: encoding the bogus index must produce the same bytes as
+// encoding the clamped index, and the string must round-trip to that option.
+describe("generateBuildString clamps an out-of-range choice index", () => {
+  const data = require("../data/death_knight.json");
+  const classNodes = collectClassNodes(data);
+
+  let choiceNode = null;
+  let specId = null;
+  for (const slug of Object.keys(data.specs)) {
+    const spec = data.specs[slug];
+    const found = spec.nodes.find(
+      (n) => n.type === "choice" && (n.choices?.length ?? 0) >= 2,
+    );
+    if (found) {
+      choiceNode = found;
+      specId = spec.specId;
+      break;
+    }
+  }
+
+  test("out-of-range entryChosen encodes identically to the clamped index", () => {
+    assert.ok(choiceNode, "expected a 2+ option choice node in the data");
+    const lastIdx = choiceNode.choices.length - 1;
+    const points = choiceNode.choices[lastIdx]?.maxRanks ?? 1;
+    // One past the last option — always out of range.
+    const bogus = {
+      [choiceNode.id]: {
+        pointsInvested: points,
+        entryChosen: choiceNode.choices.length,
+      },
+    };
+    const clamped = {
+      [choiceNode.id]: { pointsInvested: points, entryChosen: lastIdx },
+    };
+    const strBogus = generateBuildString(bogus, specId, classNodes);
+    const strClamped = generateBuildString(clamped, specId, classNodes);
+    assert.strictEqual(
+      strBogus,
+      strClamped,
+      "encode should clamp the index, not emit a bogus one",
+    );
+    const parsed = parseBuildString(strBogus, classNodes);
+    assert.strictEqual(
+      parsed.nodes[choiceNode.id].entryChosen,
+      lastIdx,
+      "round-trips to the clamped option",
+    );
+  });
+});
+
 // ── Error paths ───────────────────────────────────────────────────────────────
 // A truncated or corrupt string must fail loudly, never return garbage — the
 // store relies on these throws to mark a build as "failed to parse".
