@@ -64,7 +64,10 @@ beforeEach(() => {
 
 describe("addBuild validation", () => {
   test("rejects a non-string", async () => {
-    await get().addBuild(null);
+    // Every rejection path must resolve exactly false, not undefined, to honour
+    // the documented Promise<boolean> contract (interactive export relies on it).
+    const ok = await get().addBuild(null);
+    assert.strictEqual(ok, false);
     assert.ok(get().error, "expected an error");
     assert.strictEqual(get().buildStrings.length, 0);
   });
@@ -72,20 +75,23 @@ describe("addBuild validation", () => {
   test("rejects an unknown spec id", async () => {
     const dk = require("../data/death_knight.json");
     const bogus = generateBuildString({}, 9999, collectClassNodes(dk)); // 9999 ∉ index
-    await get().addBuild(bogus);
+    const ok = await get().addBuild(bogus);
+    assert.strictEqual(ok, false);
     assert.match(get().error ?? "", /not found in the local class index/);
     assert.strictEqual(get().buildStrings.length, 0);
   });
 
   test("rejects an over-length string before any parsing", async () => {
-    await get().addBuild("A".repeat(2001));
+    const ok = await get().addBuild("A".repeat(2001));
+    assert.strictEqual(ok, false);
     assert.match(get().error ?? "", /too long/);
     assert.strictEqual(get().buildStrings.length, 0);
   });
 
   test("surfaces an unsupported-version error", async () => {
     // 'AAAAAAAA' decodes to version 0; only version 2 is supported.
-    await get().addBuild("AAAAAAAA");
+    const ok = await get().addBuild("AAAAAAAA");
+    assert.strictEqual(ok, false);
     assert.match(
       get().error ?? "",
       /unsupported build string version|newer game format/i,
@@ -116,7 +122,8 @@ describe("addBuild guards", () => {
   test("rejects an exact duplicate", async () => {
     const [s] = genStrings("death_knight", "blood", 1);
     await get().addBuild(s);
-    await get().addBuild(s);
+    const ok = await get().addBuild(s);
+    assert.strictEqual(ok, false);
     assert.match(get().error ?? "", /already been added/);
     assert.strictEqual(get().buildStrings.length, 1);
   });
@@ -126,7 +133,8 @@ describe("addBuild guards", () => {
     for (let i = 0; i < MAX_BUILDS; i++) await get().addBuild(strs[i]);
     assert.strictEqual(get().buildStrings.length, MAX_BUILDS);
     assert.strictEqual(get().error, null);
-    await get().addBuild(strs[MAX_BUILDS]);
+    const ok = await get().addBuild(strs[MAX_BUILDS]);
+    assert.strictEqual(ok, false);
     assert.match(get().error ?? "", /at most/);
     assert.strictEqual(get().buildStrings.length, MAX_BUILDS);
   });
