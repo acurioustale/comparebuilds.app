@@ -313,10 +313,17 @@ export function generateBuildString(
 
     const node = byId.get(id);
     const isChoice = node?.choices != null;
-    // Resolve maxRanks with the SAME entry index we write below (entryChosen ?? 0
-    // for a choice node), so the partial flag can't disagree with what decode
-    // computes from the written entryChosen when entryChosen is unexpectedly null.
-    const entryIdx = sel.entryChosen ?? 0;
+    // Clamp the pick into a real option index, mirroring the parser's read-side
+    // clamp. The 2-bit field encodes 0-3, so a corrupt or hand-built selection
+    // can carry an out-of-range entryChosen (e.g. 3 on a 2-option node). Left
+    // unclamped it would index past choices[] — taking the wrong maxRanks for the
+    // partial flag and writing a bogus index that decode then silently reinterprets,
+    // so the round-trip would not reproduce this string. Resolving maxRanks with the
+    // SAME index we write also keeps the partial flag consistent with what decode
+    // computes (and covers entryChosen unexpectedly null → 0).
+    const entryIdx = isChoice
+      ? Math.min(Math.max(sel.entryChosen ?? 0, 0), node.choices.length - 1)
+      : 0;
     const maxRanks = isChoice
       ? (node.choices[entryIdx]?.maxRanks ?? node?.maxRanks ?? 1)
       : (node?.maxRanks ?? 1);
