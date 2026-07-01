@@ -34,7 +34,9 @@ const CLASS_INFO = [
 
 const OG_RATE_LIMIT_MAX    = 60;    // max OG images generated per IP per window
 const OG_RATE_LIMIT_WINDOW = 3600;  // window length in seconds (1 hour)
-const OG_PRUNE_WINDOW      = 86400; // prune records older than 24 hours
+// The comparebuilds_og_requests rows this window counts are pruned after 24h by
+// api/cron/prune_shares.php (REQUEST_LOG_PRUNE_WINDOW) — the single source for the
+// retention. It must stay >= OG_RATE_LIMIT_WINDOW so the count never misses rows.
 
 function bail(int $code): void
 {

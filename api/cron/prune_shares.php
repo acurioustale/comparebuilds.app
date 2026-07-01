@@ -10,6 +10,13 @@ if (php_sapi_name() !== 'cli') {
 
 require_once __DIR__ . '/../../../config.php';
 
+// Retention for the per-IP request-log tables (share + OG). Single source of
+// truth for their prune window, replacing the magic 86400s literals below. Must
+// stay >= the rate-limit windows in share.php (RATE_LIMIT_WINDOW) and og.php
+// (OG_RATE_LIMIT_WINDOW) so a sliding-window count never loses rows it still
+// needs; 24h leaves ample margin over the 1h rate windows.
+const REQUEST_LOG_PRUNE_WINDOW = 86400; // seconds (24 hours)
+
 try {
     $pdo = new PDO(
         'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
@@ -44,7 +51,7 @@ try {
     }
 
     try {
-        $stmt = $pdo->prepare('DELETE FROM comparebuilds_share_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND LIMIT 1000');
+        $stmt = $pdo->prepare('DELETE FROM comparebuilds_share_requests WHERE created_at < NOW() - INTERVAL ' . REQUEST_LOG_PRUNE_WINDOW . ' SECOND LIMIT 1000');
         $totalPruned = 0;
         do {
             $stmt->execute();
@@ -62,8 +69,7 @@ try {
     }
 
     try {
-        // OG_PRUNE_WINDOW is 86400 (24h)
-        $stmt = $pdo->prepare('DELETE FROM comparebuilds_og_requests WHERE created_at < NOW() - INTERVAL 86400 SECOND LIMIT 1000');
+        $stmt = $pdo->prepare('DELETE FROM comparebuilds_og_requests WHERE created_at < NOW() - INTERVAL ' . REQUEST_LOG_PRUNE_WINDOW . ' SECOND LIMIT 1000');
         $totalPruned = 0;
         do {
             $stmt->execute();
