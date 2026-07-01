@@ -52,25 +52,48 @@ const escAttr = (s) =>
 const escHtml = (s) =>
   String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// Replace exactly one match of `re`, throwing if the pattern isn't found. The
+// template's <title>/<link>/<meta> tags are matched by attribute-order-sensitive
+// regexes, so a silent no-op (a reordered attribute, a renamed tag, a Vite/plugin
+// change) would otherwise ship the homepage's default title/description on every
+// prerendered spec page with no error. Failing loudly makes that a build failure.
+function replaceOnce(html, re, replacement, label) {
+  if (!re.test(html)) {
+    throw new Error(
+      `prerenderSpecs: no match for ${label} in the HTML template`,
+    );
+  }
+  return html.replace(re, replacement);
+}
+
 /** Replaces the content="" of the <meta> identified by attr/key (single- or multi-line). */
 function setMeta(html, attr, key, value) {
   const re = new RegExp(
     `(<meta\\b[^>]*?\\b${attr}="${key}"[^>]*?\\bcontent=")[^"]*(")`,
     "",
   );
-  return html.replace(re, `$1${escAttr(value)}$2`);
+  return replaceOnce(
+    html,
+    re,
+    `$1${escAttr(value)}$2`,
+    `<meta ${attr}="${key}">`,
+  );
 }
 
 function buildPage(template, { title, description, url, summary }) {
   let html = template;
-  html = html.replace(
+  html = replaceOnce(
+    html,
     /<title>[\s\S]*?<\/title>/,
     `<title>${escHtml(title)}</title>`,
+    "<title>",
   );
   // Point the template's canonical (homepage URL) at this spec's URL.
-  html = html.replace(
+  html = replaceOnce(
+    html,
     /(<link\b[^>]*\brel="canonical"[^>]*\bhref=")[^"]*(")/,
     `$1${escAttr(url)}$2`,
+    'rel="canonical"',
   );
   html = setMeta(html, "name", "description", description);
   html = setMeta(html, "property", "og:title", title);
@@ -78,10 +101,18 @@ function buildPage(template, { title, description, url, summary }) {
   html = setMeta(html, "property", "og:url", url);
   html = setMeta(html, "name", "twitter:title", title);
   html = setMeta(html, "name", "twitter:description", description);
-  // Static SEO content inside #root; React replaces it for JS visitors.
-  html = html.replace(
-    '<div id="root"></div>',
-    `<div id="root">${summary}</div>`,
+  // Static SEO content inside #root; React replaces it on mount for JS visitors.
+  // The template ships an empty <main></main> placeholder inside #root; swap the
+  // whole inner content for the summary. Matched by regex against the actual built
+  // markup (whitespace/attribute order vary), and via replaceOnce so a missing
+  // #root fails the build instead of silently shipping a summary-less page — which
+  // is exactly what the previous literal '<div id="root"></div>' replace did, as
+  // that empty form never existed in the template.
+  html = replaceOnce(
+    html,
+    /(<div\b[^>]*\bid="root"[^>]*>)[\s\S]*?<\/div>/,
+    (_match, openTag) => `${openTag}${summary}</div>`,
+    '<div id="root">',
   );
   return html;
 }
