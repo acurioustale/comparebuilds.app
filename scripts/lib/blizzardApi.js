@@ -264,7 +264,11 @@ export class BlizzardApi {
  */
 export function buildFromNamespaceHref(href, region) {
   const m = (href ?? "").match(new RegExp(`static-(.+?)-${region}\\b`));
-  return m ? m[1].replace("_", ".") : null;
+  // Replace *every* underscore, not just the first: retail namespaces carry a
+  // single underscore (version_build), but a tagged build id (e.g. a PTR/beta)
+  // could hold more, and a partial replace would yield a malformed build that
+  // then pins the DB2 pull and API cache dir to the wrong build.
+  return m ? m[1].replace(/_/g, ".") : null;
 }
 
 /** Convenience: a spell's icon NAME (basename, no extension) via the Media API. */

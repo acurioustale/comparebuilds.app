@@ -21,6 +21,11 @@ describe("buildFromNamespaceHref", () => {
     expect(buildFromNamespaceHref(href, "us")).toBeNull(); // region mismatch
   });
 
+  it("replaces every underscore, not just the first", () => {
+    const href = "x?namespace=static-12.0.7_beta_67808-us";
+    expect(buildFromNamespaceHref(href, "us")).toBe("12.0.7.beta.67808");
+  });
+
   it("returns null for a missing or shapeless href", () => {
     expect(buildFromNamespaceHref(undefined, "us")).toBeNull();
     expect(buildFromNamespaceHref("no namespace here", "us")).toBeNull();
