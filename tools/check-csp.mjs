@@ -44,6 +44,7 @@ if (!csp) {
 const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
 
 let failed = false;
+let inlineJsCount = 0;
 for (const [, attrs, body] of scripts) {
   if (/\bsrc=/i.test(attrs)) continue; // external: covered by script-src 'self'
   const type = (attrs.match(/\btype=["']([^"']*)["']/i) || [])[1];
@@ -53,6 +54,7 @@ for (const [, attrs, body] of scripts) {
     !type || /^(module|text\/javascript|application\/javascript)$/i.test(type);
   if (!isJs) continue;
 
+  inlineJsCount++;
   const hash = createHash("sha256").update(body, "utf8").digest("base64");
   const token = `'sha256-${hash}'`;
   if (!csp.includes(token)) {
@@ -61,6 +63,20 @@ for (const [, attrs, body] of scripts) {
       `check-csp: inline script not allowed by the .htaccess header CSP.\n  expected token: ${token}`,
     );
   }
+}
+
+// Floor assertion: the build always emits the anti-flash theme script inline, so
+// matching zero inline JS scripts means the markup or the regex above drifted and
+// the loop verified nothing. Without this, the guard would print success and exit
+// 0 as a silent no-op, letting an unhashed inline script ship (blocked at runtime
+// by the CSP, reintroducing the theme flash). Fail loudly instead.
+if (inlineJsCount === 0) {
+  console.error(
+    "check-csp: found no inline <script> to hash in dist/index.html - the\n" +
+      "  markup or the matching regex has drifted, so this guard verified nothing.\n" +
+      "  Refusing to green-light an unchecked CSP.",
+  );
+  process.exit(1);
 }
 
 if (failed) process.exit(1);
