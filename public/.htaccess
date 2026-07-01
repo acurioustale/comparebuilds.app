@@ -16,8 +16,12 @@
   RewriteCond %{HTTPS} off
   RewriteRule ^(.*)$ https://comparebuilds.app%{REQUEST_URI} [L,R=301]
 
-  # Share URLs
-  RewriteRule ^s/([A-Za-z0-9]{8,16})$ api/share.php?page=1&id=$1 [L,QSA]
+  # Share URLs. No QSA: this rule supplies the only params share.php reads
+  # (page, id from the validated path segment). Appending the client query string
+  # would let a request like /s/<id>?id=<other> inject a second id= that, by PHP's
+  # last-wins parsing, overrides $_GET['id']. valid_share_id() still gates it, but
+  # dropping QSA removes the client's ability to steer the internal request at all.
+  RewriteRule ^s/([A-Za-z0-9]{8,16})$ api/share.php?page=1&id=$1 [L]
 </IfModule>
 
 
