@@ -74,9 +74,9 @@ if have shellcheck && have shfmt; then
 	step "Shell scripts (shellcheck + shfmt)"
 	require_version shfmt "$SHFMT_VERSION" "$(shfmt --version)"
 	sh_files=()
-	while IFS= read -r -d '' file; do
+	while IFS= read -r file; do
 		sh_files+=("$file")
-	done < <(find . -maxdepth 1 -name "*.sh" -print0)
+	done < <(git ls-files '*.sh')
 	shellcheck "${sh_files[@]}"
 	shfmt -d "${sh_files[@]}"
 else
