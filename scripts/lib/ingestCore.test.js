@@ -5,7 +5,13 @@
 
 import { describe, test, beforeEach, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, existsSync, rmSync, readFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  existsSync,
+  rmSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
@@ -34,6 +40,45 @@ describe("writeNormalizedData", () => {
     assert.ok(existsSync(join(outDir, "death_knight.json")));
     assert.ok(existsSync(join(outDir, "classes.json")));
     assert.ok(!existsSync(join(outDir, ".invalid")));
+  });
+
+  test("merges into the existing snapshot instead of overwriting it", () => {
+    // Pre-seed a snapshot holding two OTHER classes' fingerprints, then promote
+    // only death_knight with updateSnapshot. The promoted class must be written
+    // AND the pre-existing classes must survive — a filtered promote must never
+    // drop other classes' oracle entries.
+    const snapshotPath = join(outDir, "snapshot.json");
+    const seeded = {
+      warrior: { count: 111, hash: "warrior-hash" },
+      mage: { count: 222, hash: "mage-hash" },
+    };
+    writeFileSync(snapshotPath, JSON.stringify(seeded, null, 2) + "\n", "utf8");
+
+    const res = writeNormalizedData({
+      classIndex,
+      classes: { death_knight: validData },
+      updateSnapshot: true,
+      outDir,
+      snapshotPath,
+    });
+
+    assert.strictEqual(res.validationFailures, 0);
+    assert.strictEqual(res.snapshotUpdated, true);
+    const merged = JSON.parse(readFileSync(snapshotPath, "utf8"));
+    assert.deepStrictEqual(
+      merged.warrior,
+      seeded.warrior,
+      "pre-existing warrior fingerprint preserved",
+    );
+    assert.deepStrictEqual(
+      merged.mage,
+      seeded.mage,
+      "pre-existing mage fingerprint preserved",
+    );
+    assert.ok(
+      merged.death_knight && typeof merged.death_knight.hash === "string",
+      "promoted class fingerprint written",
+    );
   });
 
   test("leaves committed data untouched and routes invalid output to .invalid/", () => {
