@@ -37,7 +37,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: ".tool-versions"
+          cache: npm
+
+      # compareSources.js pulls in the app's ingest chain, which reaches
+      # sanitizeDescription.js -> dompurify, so the node_modules must be present
+      # or the run dies with ERR_MODULE_NOT_FOUND before any comparison.
+      - name: Install dependencies
+        run: npm ci
 
       - name: Compare fresh Blizzard ingest against committed data
         # Skipped on fork PRs, which don't receive secrets (the auth would fail).
