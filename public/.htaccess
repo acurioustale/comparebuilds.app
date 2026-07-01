@@ -9,9 +9,12 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Force HTTPS
+  # Force HTTPS. Redirect to the canonical host literally rather than echoing
+  # %{HTTP_HOST}: a client-supplied (and, behind a proxy, forwardable) Host header
+  # would otherwise make this a 301 to an attacker-chosen origin (open redirect /
+  # cached-redirect poisoning). comparebuilds.app is the single canonical origin.
   RewriteCond %{HTTPS} off
-  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  RewriteRule ^(.*)$ https://comparebuilds.app%{REQUEST_URI} [L,R=301]
 
   # Share URLs
   RewriteRule ^s/([A-Za-z0-9]{8,16})$ api/share.php?page=1&id=$1 [L,QSA]
