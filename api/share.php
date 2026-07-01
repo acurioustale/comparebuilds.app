@@ -479,7 +479,7 @@ function canonicalize_payload(array $payload): string
  */
 function get_db_connection(): PDO
 {
-    return new PDO(
+    $pdo = new PDO(
         'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
         DB_USER,
         DB_PASS,
@@ -490,6 +490,24 @@ function get_db_connection(): PDO
             PDO::ATTR_PERSISTENT         => true,
         ],
     );
+
+    // Persistent connections are reused across requests, and MySQL/MariaDB only
+    // auto-releases GET_LOCK advisory locks when the *session* ends — not at the
+    // end of a request. A request that acquired a lock and then died before its
+    // `finally` ran (a fatal error, OOM kill, or request timeout — none of which
+    // run `finally`) strands that lock on this connection for the worker's whole
+    // lifetime, wedging every later request that needs it. Clear any stranded
+    // locks up front as a safety net: this runs before any lock is acquired this
+    // request, and each persistent connection serves one request at a time, so it
+    // can only ever release a previous request's leak, never a live lock.
+    try {
+        $pdo->exec('DO RELEASE_ALL_LOCKS()');
+    } catch (PDOException $e) {
+        // Best-effort only — a failure here must never block the request.
+        error_log('RELEASE_ALL_LOCKS on connect failed: ' . $e->getMessage());
+    }
+
+    return $pdo;
 }
 
 /**
