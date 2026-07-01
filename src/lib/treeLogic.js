@@ -211,8 +211,10 @@ export function buildGrantedSeed(treeData) {
  * iteration needed — and deep cascades are always complete.
  *
  * Gate check counts the selected section total (one node per co-located cell;
- * see gatedPoints). Prereq-invalid nodes' points still count toward the sum —
- * gate violations stem from actual point removals, not from cascaded invalidity.
+ * see gatedPoints) but EXCLUDES the node's own points — those can't unlock the
+ * node's own gate, matching canSpendPoint. Prereq-invalid nodes' points still
+ * count toward the sum — gate violations stem from actual point removals, not
+ * from cascaded invalidity.
  *
  * A co-located cell's duplicate node ids are NOT flagged: they are records for a
  * single talent (see cellKey), so a build that sets several of them is the same
@@ -256,12 +258,20 @@ export function computeInvalidNodeIds(allNodes, selected, nodeById) {
       shouldFlag = true;
     }
 
-    // Gate: raw selected point total — does not exclude already-invalid nodes
-    if (
-      !shouldFlag &&
-      (sectionTotals.get(gateSectionKey(node)) ?? 0) < node.spentRequired
-    ) {
-      shouldFlag = true;
+    // Gate: points spent ELSEWHERE in the section must already meet the threshold.
+    // A node's own points can't count toward unlocking its own gate — canSpendPoint
+    // gates incrementally, so the section total when the first point lands here
+    // excludes it. Subtract this node's own points before the check; otherwise a
+    // self-tipping build (others just under the gate, this node's own point pushing
+    // the raw total over) would validate here yet be impossible to build. Prereq-
+    // invalid nodes' points still count toward the sum — gate violations stem from
+    // actual point removals, not from cascaded invalidity.
+    if (!shouldFlag) {
+      const sectionTotal = sectionTotals.get(gateSectionKey(node)) ?? 0;
+      const othersInSection = sectionTotal - selected[node.id].pointsInvested;
+      if (othersInSection < node.spentRequired) {
+        shouldFlag = true;
+      }
     }
 
     // Prereq cascade: an invalid parent does NOT satisfy the requirement

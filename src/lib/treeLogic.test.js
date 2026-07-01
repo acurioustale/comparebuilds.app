@@ -256,6 +256,15 @@ test("decrementing P one rank keeps gate met (total still ≥ 3)", () => {
   assertInvalid(computeInvalidNodeIds(GATE, selected, byId(GATE)));
 });
 
+test("a node's own point cannot satisfy its own gate", () => {
+  // P=2, R=1 → raw section total is 3, which meets R's gate of 3, but R's own
+  // point supplies the third. With only P's 2 points spent elsewhere you could
+  // never place R (canSpendPoint blocks it), so the build is unreachable and R
+  // must be flagged — counting R's own point would wrongly call it valid.
+  const selected = { 10: sel(2), 12: sel() };
+  assertInvalid(computeInvalidNodeIds(GATE, selected, byId(GATE)), 12);
+});
+
 test("alreadyGranted parent is always satisfied — child never invalid", () => {
   const root = node(20, 0, { alreadyGranted: true, connections: [21] });
   const child = node(21, 1, { connections: [20] });
