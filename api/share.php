@@ -599,6 +599,11 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
                     $logReq = $pdo->prepare('INSERT INTO comparebuilds_share_requests (ip_hash) VALUES (?)');
                     $logReq->execute([$ipHash]);
                 } catch (PDOException $e) {
+                    // Losing this row under-counts the window and weakens the
+                    // rate limit; surface the failure so a persistent one (schema
+                    // drift, a renamed/dropped table) is visible in the logs
+                    // instead of silently relaxing the cap for every user.
+                    error_log('Failed to log share request: ' . $e->getMessage());
                 }
             }
         }

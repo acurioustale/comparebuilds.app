@@ -262,7 +262,10 @@ try {
                 $rl->execute([$ipHash]);
                 $count = (int) $rl->fetch()['c'];
             } catch (PDOException $e) {
-                // Table might not exist yet if no share has ever been created.
+                // A missing table reads as a zero count, silently disabling the
+                // OG rate limit. Surface the failure so schema drift or a failed
+                // migration is visible instead of quietly lifting the cap.
+                error_log('Failed to read OG rate-limit count: ' . $e->getMessage());
             }
             if ($count >= OG_RATE_LIMIT_MAX) {
                 RateLimiter::releaseLock($pdo, $redis, $lockName, $lockToken);
@@ -283,7 +286,10 @@ try {
                     $logReq = $pdo->prepare('INSERT INTO comparebuilds_og_requests (ip_hash) VALUES (?)');
                     $logReq->execute([$ipHash]);
                 } catch (PDOException $e) {
-                    // Table might not exist yet if no share has ever been created.
+                    // Losing this row under-counts the window and weakens the
+                    // rate limit; surface the failure so schema drift or a failed
+                    // migration is visible instead of silently relaxing the cap.
+                    error_log('Failed to log OG request: ' . $e->getMessage());
                 }
             }
         }
