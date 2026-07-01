@@ -81,7 +81,7 @@ function gatherIconNames() {
   return [...icons].sort();
 }
 
-async function fetchOne(name) {
+export async function fetchOne(name) {
   const dest = join(OUT_DIR, `${name}.jpg`);
   if (existsSync(dest)) return "skipped";
   let lastErr;
@@ -101,6 +101,30 @@ async function fetchOne(name) {
       if (res.ok) {
         const buf = Buffer.from(await res.arrayBuffer());
         if (buf.length === 0) throw new Error("empty body");
+        // Guard against a truncated response: a 200 whose connection drops
+        // mid-body yields a short buffer. Once written, the incremental
+        // `existsSync` skip never re-fetches it, so a corrupt icon would be
+        // committed and shipped. Verify completeness before writing; a throw
+        // here is caught below and retried, then surfaced as a failure.
+        const declared = res.headers.get("content-length");
+        const encoded = res.headers.get("content-encoding");
+        if (declared != null && !encoded) {
+          if (buf.length !== Number(declared)) {
+            throw new Error(`truncated: ${buf.length} of ${declared} bytes`);
+          }
+        } else if (
+          buf[buf.length - 2] !== 0xff ||
+          buf[buf.length - 1] !== 0xd9
+        ) {
+          // No Content-Length to check against (e.g. a chunked response) — fall
+          // back to the JPEG end-of-image marker as the completeness signal.
+          throw new Error("truncated: missing JPEG end marker");
+        }
+        // A 200 can still carry a non-image (an error/placeholder page); the
+        // JPEG start-of-image marker rejects that instead of saving it as .jpg.
+        if (buf[0] !== 0xff || buf[1] !== 0xd8) {
+          throw new Error("not a JPEG (bad start marker)");
+        }
         writeFileSync(dest, buf);
         return "downloaded";
       }
@@ -159,4 +183,7 @@ async function main() {
   }
 }
 
-main();
+// Run only when invoked directly, not when imported by a test.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
