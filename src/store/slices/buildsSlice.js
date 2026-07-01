@@ -54,14 +54,14 @@ export const createBuildsSlice = (set, get) => ({
 
     if (!buildString || typeof buildString !== "string") {
       set({ error: "Build string must be a non-empty string." });
-      return;
+      return false;
     }
 
     if (buildString.length > MAX_BUILD_LEN) {
       set({
         error: `Build string is too long (max ${MAX_BUILD_LEN} characters).`,
       });
-      return;
+      return false;
     }
 
     const {
@@ -73,14 +73,14 @@ export const createBuildsSlice = (set, get) => ({
 
     if (buildStrings.length >= MAX_BUILDS) {
       set({ error: `You can compare at most ${MAX_BUILDS} builds at once.` });
-      return;
+      return false;
     }
 
     // Reject exact duplicates — comparing a build against itself is pointless,
     // and identical strings would collide as React keys in the slot list.
     if (buildStrings.includes(buildString)) {
       set({ error: "That build has already been added." });
-      return;
+      return false;
     }
 
     // ── Parse just the 24-bit header to identify the spec ────────────────────
@@ -101,7 +101,7 @@ export const createBuildsSlice = (set, get) => ({
           ? `${err.message}. This build string is from a newer game format than this tool supports.`
           : "Could not read the build string header — it may be truncated or corrupt.",
       });
-      return;
+      return false;
     }
 
     const match = findClassForSpec(header.specId);
@@ -111,7 +111,7 @@ export const createBuildsSlice = (set, get) => ({
           `Spec ID ${header.specId} was not found in the local class index. ` +
           `Try re-running the ingest script for the latest data.`,
       });
-      return;
+      return false;
     }
 
     // ── Reject spec mismatches ────────────────────────────────────────────────
@@ -134,7 +134,7 @@ export const createBuildsSlice = (set, get) => ({
           `Spec mismatch: loaded builds are ${existingLabel}, ` +
           `but this string is for ${incomingLabel}.`,
       });
-      return;
+      return false;
     }
 
     // ── Append the string ─────────────────────────────────────────────────────
@@ -272,14 +272,14 @@ export const createBuildsSlice = (set, get) => ({
 
     if (!buildString || typeof buildString !== "string") {
       set({ error: "Build string must be a non-empty string." });
-      return;
+      return false;
     }
 
     if (buildString.length > MAX_BUILD_LEN) {
       set({
         error: `Build string is too long (max ${MAX_BUILD_LEN} characters).`,
       });
-      return;
+      return false;
     }
 
     const {
@@ -289,11 +289,11 @@ export const createBuildsSlice = (set, get) => ({
       isLoading,
     } = get();
 
-    if (index < 0 || index >= buildStrings.length) return;
+    if (index < 0 || index >= buildStrings.length) return false;
 
     if (buildStrings.some((s, i) => i !== index && s === buildString)) {
       set({ error: "That build has already been added." });
-      return;
+      return false;
     }
 
     let header;
@@ -311,7 +311,7 @@ export const createBuildsSlice = (set, get) => ({
           ? `${err.message}. This build string is from a newer game format than this tool supports.`
           : "Could not read the build string header — it may be truncated or corrupt.",
       });
-      return;
+      return false;
     }
 
     if (currentSpecId !== null && header.specId !== currentSpecId) {
@@ -328,7 +328,7 @@ export const createBuildsSlice = (set, get) => ({
           `Spec mismatch: loaded builds are ${existingLabel}, ` +
           `but this string is for ${incomingLabel}.`,
       });
-      return;
+      return false;
     }
 
     const newStrings = [...buildStrings];
