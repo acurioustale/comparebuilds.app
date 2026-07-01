@@ -85,6 +85,10 @@ export function validateClassData(data, indexEntry = null) {
     if (!isInt(spec.specId)) at("specId must be an integer");
     if (spec.specSlug !== slug)
       at(`specSlug "${spec.specSlug}" does not match its key "${slug}"`);
+    // spec.icon flows into iconUrl() as a URL path segment (BuildManager renders
+    // it), so constrain it to the slug charset like node/choice icons — otherwise
+    // a "/" or ".." in a hand-edited row escapes the icons directory.
+    if (!isIconName(spec.icon)) at("icon must be an icon slug ([A-Za-z0-9_])");
 
     // pointBudget
     const pb = spec.pointBudget;
@@ -133,6 +137,9 @@ export function validateClassData(data, indexEntry = null) {
           if (!isStr(sub.name))
             at(`heroSubtrees.${side}.name must be a non-empty string`);
           else subtreeNames.add(sub.name);
+          // NB: heroSubtrees.*.icon holds the subtree's display name, not an icon
+          // slug, and is never passed to iconUrl() — so it only needs to be a
+          // non-empty string, unlike node/choice/spec icons which do reach iconUrl.
           if (!isStr(sub.icon))
             at(`heroSubtrees.${side}.icon must be a non-empty string`);
         }

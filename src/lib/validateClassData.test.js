@@ -26,6 +26,7 @@ function makeValid() {
       only: {
         specId: 100,
         specSlug: "only",
+        icon: "spec_icon",
         pointBudget: { class: 1, spec: 1, hero: 1 },
         checkpoints: { class: [{ row: 2, points: 5 }], spec: [] },
         heroGateNodeId: 9,
@@ -201,6 +202,20 @@ describe("spec-level fields", () => {
         d.specs.only.specSlug = "other";
       }),
       "does not match its key",
+    ));
+  test("missing spec icon", () =>
+    assertHasError(
+      errorsFor((d) => {
+        delete d.specs.only.icon;
+      }),
+      "icon must be an icon slug ([A-Za-z0-9_])",
+    ));
+  test("spec icon with a path-traversal value", () =>
+    assertHasError(
+      errorsFor((d) => {
+        d.specs.only.icon = "../../../etc/passwd";
+      }),
+      "icon must be an icon slug ([A-Za-z0-9_])",
     ));
   test("missing pointBudget", () =>
     assertHasError(
