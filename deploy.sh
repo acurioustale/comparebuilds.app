@@ -71,5 +71,8 @@ fi
 if [[ "$is_dry_run" -eq 0 ]]; then
 	echo "Running schema migration..."
 	# shellcheck disable=SC2029
-	ssh "${REMOTE}" "php ${TARGET}api/cron/ensure_schema.php" || true
+	if ! ssh "${REMOTE}" "php ${TARGET}api/cron/ensure_schema.php"; then
+		echo "error: schema migration failed - files were deployed but the DB schema may be stale." >&2
+		exit 1
+	fi
 fi
