@@ -330,7 +330,11 @@ if (!function_exists('imagecreatetruecolor')) {
 
 $limit = ini_get('memory_limit');
 if ($limit !== false && $limit !== '' && $limit !== '-1') {
-    $val = (int) $limit;
+    // Parse as float, not int: on a 32-bit PHP build an int caps near 2.1e9, so a
+    // "2G"+ limit would overflow when scaled to bytes below (wrapping negative and
+    // tripping the "insufficient memory" guard on a host that has plenty). Floats
+    // represent these byte counts exactly well past any real memory_limit.
+    $val = (float) $limit;
     $last = strtolower(substr(trim($limit), -1));
     if ($last === 'g') {
         $val *= 1024 * 1024 * 1024;
