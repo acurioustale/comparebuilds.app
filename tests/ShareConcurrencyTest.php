@@ -191,4 +191,54 @@ final class ShareConcurrencyTest extends TestCase
         $id = store_share($pdo, $payload, 'dummy-ip-hash', $redis);
         $this->assertSame($candidate, $id);
     }
+
+    public function testStoreShareSlidesOldestRequestForwardWhenOverRowCap(): void
+    {
+        // An IP past 2x the limit is rate-limited AND past the row-log cap. The
+        // request must not be INSERTed (unbounded growth) but must slide the
+        // oldest logged row forward so the window can't drain while the abuse
+        // continues — then still be rejected with 429.
+        $lockStmt = $this->createMock(PDOStatement::class);
+        $lockStmt->method('fetchColumn')->willReturn(1);
+
+        $rlStmt = $this->createMock(PDOStatement::class);
+        $rlStmt->method('fetch')->willReturn(['c' => 50, 'oldest' => time() - 10]);
+
+        $slid = false;
+        $slideStmt = $this->createMock(PDOStatement::class);
+        $slideStmt->expects($this->once())
+                  ->method('execute')
+                  ->willReturnCallback(function () use (&$slid) {
+                      $slid = true;
+                      return true;
+                  });
+
+        $pdo = $this->createMock(PDO::class);
+        $pdo->method('prepare')->willReturnCallback(function ($query) use ($lockStmt, $rlStmt, $slideStmt) {
+            if (str_starts_with($query, 'SELECT GET_LOCK')) {
+                return $lockStmt;
+            }
+            if (str_starts_with($query, 'SELECT COUNT(*)')) {
+                return $rlStmt;
+            }
+            if (str_starts_with($query, 'UPDATE comparebuilds_share_requests')) {
+                return $slideStmt;
+            }
+            if (str_starts_with($query, 'INSERT INTO comparebuilds_share_requests')) {
+                throw new RuntimeException('must not log a new request row past the cap');
+            }
+            if (str_starts_with($query, 'SELECT RELEASE_LOCK')) {
+                return $lockStmt;
+            }
+            throw new RuntimeException("Unexpected query: $query");
+        });
+
+        try {
+            store_share($pdo, ['classId' => 1, 'specId' => 1, 'builds' => ['AA', 'BB']], 'dummy-ip-hash');
+            $this->fail('Expected 429 ShareException was not thrown');
+        } catch (ShareException $e) {
+            $this->assertSame(429, $e->httpStatus);
+        }
+        $this->assertTrue($slid, 'oldest request row should be slid forward');
+    }
 }
