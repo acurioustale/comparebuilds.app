@@ -41,11 +41,13 @@ if (!csp) {
 }
 
 // Every <script> element in index.html, capturing opening-tag attributes + body.
-// The end tag allows trailing whitespace (`</script >`) per the HTML spec, so
-// match `</script\s*>` — a bare `</script>` would miss that form and skip the
-// element (CodeQL js/bad-tag-filter).
+// The end tag can carry trailing whitespace or junk up to the `>` (e.g.
+// `</script >` or `</script\n foo>`), which browsers still treat as a close, so
+// match `</script\b[^>]*>` — a bare `</script>` would miss those forms and skip
+// the element. The `\b` keeps it from matching a different tag like
+// `</scriptx>`. Mirrors the opening-tag pattern (CodeQL js/bad-tag-filter).
 const scripts = [
-  ...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi),
+  ...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi),
 ];
 
 let failed = false;
