@@ -87,6 +87,33 @@ function diffApexChain(cn, fn) {
   return msgs;
 }
 
+/**
+ * Diff a choice node's option list (committed cn vs fresh fn). The arity check
+ * alone can't catch a re-pointed option (same count, a different spell at the
+ * same index) or a changed per-option maxRanks — both are wire-relevant, since
+ * the build string encodes the chosen option's positional index and its partial
+ * rank. Option ORDER therefore matters and the diff is positional; option
+ * name/icon/description stay soft (compared as node-level name/desc elsewhere).
+ * Returns a list of hard-divergence messages (empty when the options agree).
+ */
+function diffChoices(cn, fn) {
+  const msgs = [];
+  const cCh = cn.choices ?? [];
+  const fCh = fn.choices ?? [];
+  if (cCh.length !== fCh.length) {
+    msgs.push(`choice arity ${cCh.length}→${fCh.length}`);
+    return msgs;
+  }
+  cCh.forEach((cc, i) => {
+    const fc = fCh[i];
+    if (cc.spellId !== fc.spellId)
+      msgs.push(`choice[${i}] spellId ${cc.spellId}→${fc.spellId}`);
+    if ((cc.maxRanks ?? 1) !== (fc.maxRanks ?? 1))
+      msgs.push(`choice[${i}] maxRanks ${cc.maxRanks}→${fc.maxRanks}`);
+  });
+  return msgs;
+}
+
 /** Diff one class's freshly-ingested data against its committed data. */
 function diffClass(slug, fresh, committed, opts) {
   const hard = [];
@@ -140,8 +167,11 @@ function diffClass(slug, fresh, committed, opts) {
       if (!fn) continue; // membership-only, reported above
       if (cn.maxRanks !== fn.maxRanks)
         at("hard", `node ${id} maxRanks ${cn.maxRanks}→${fn.maxRanks}`);
-      if ((cn.choices?.length ?? 0) !== (fn.choices?.length ?? 0))
-        at("hard", `node ${id} choice arity differs`);
+      // Choice nodes: diff the option list positionally, not just its length —
+      // a re-pointed option or a changed per-option maxRanks is wire-relevant
+      // even when the arity is unchanged (mirrors the apex chain diff below).
+      if (cn.choices || fn.choices)
+        for (const msg of diffChoices(cn, fn)) at("hard", `node ${id} ${msg}`);
       if (cn.spentRequired !== fn.spentRequired)
         at("hard", `node ${id} gate ${cn.spentRequired}→${fn.spentRequired}`);
       // Compare only edges to nodes present in BOTH specs, so a membership
