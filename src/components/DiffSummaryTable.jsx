@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { computeDiff } from "../lib/diff";
+import { Fragment, useEffect, useMemo } from "react";
+import { computeDiff, groupBySection } from "../lib/diff";
 import { computeStats, isContested, isDivergent } from "../lib/heatmap";
 
 // Display name for a node: its own name, or a choice node's options joined.
@@ -105,6 +105,12 @@ export default function DiffSummaryTable({
     return out;
   }, [treeData, valid]);
 
+  // Group rows by tree section (Class/Spec/Hero) so the table reads as "what
+  // differs where" rather than a flat list — sections with no differences are
+  // dropped, and section order/labels come from the shared diff.js grouping so
+  // it can't drift from the sort order computeDiff already applies to `rows`.
+  const groups = useMemo(() => groupBySection(rows), [rows]);
+
   // Row hover sets the spotlight and onMouseLeave clears it — but if the builds
   // change while a row is hovered so that row drops out of `rows` (its difference
   // resolved, or it was removed), onMouseLeave never fires and the spotlight
@@ -147,29 +153,45 @@ export default function DiffSummaryTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#3a2e1a]/50">
-              {rows.map((row) => (
-                <tr
-                  key={row.id}
-                  onMouseEnter={() => setSpotlightId?.(row.id)}
-                  onMouseLeave={() => setSpotlightId?.(null)}
-                  className="hover:bg-[#251b0d]/50 transition-colors cursor-default"
-                >
-                  <td className="py-2.5 px-3 font-medium text-wow-gold">
-                    {nodeName(row.node)}
-                  </td>
-                  {isDiffMode ? (
-                    <>
-                      <td className="py-2.5 px-3 text-wow-text">{row.valA}</td>
-                      <td className="py-2.5 px-3 text-wow-text">{row.valB}</td>
-                    </>
-                  ) : (
-                    <td className="py-2.5 px-3 text-wow-text font-mono">
-                      {row.choiceSplit
-                        ? `picks differ (${row.count}/${row.total})`
-                        : `${row.count}/${row.total} builds`}
+              {groups.map((group) => (
+                <Fragment key={group.section}>
+                  <tr>
+                    <td
+                      colSpan={isDiffMode ? 3 : 2}
+                      className="pt-3 pb-1 px-3 text-[11px] uppercase tracking-widest text-wow-gold-dark first:pt-0"
+                    >
+                      {group.label}
                     </td>
-                  )}
-                </tr>
+                  </tr>
+                  {group.entries.map((row) => (
+                    <tr
+                      key={row.id}
+                      onMouseEnter={() => setSpotlightId?.(row.id)}
+                      onMouseLeave={() => setSpotlightId?.(null)}
+                      className="hover:bg-[#251b0d]/50 transition-colors cursor-default"
+                    >
+                      <td className="py-2.5 px-3 font-medium text-wow-gold">
+                        {nodeName(row.node)}
+                      </td>
+                      {isDiffMode ? (
+                        <>
+                          <td className="py-2.5 px-3 text-wow-text">
+                            {row.valA}
+                          </td>
+                          <td className="py-2.5 px-3 text-wow-text">
+                            {row.valB}
+                          </td>
+                        </>
+                      ) : (
+                        <td className="py-2.5 px-3 text-wow-text font-mono">
+                          {row.choiceSplit
+                            ? `picks differ (${row.count}/${row.total})`
+                            : `${row.count}/${row.total} builds`}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

@@ -24,6 +24,15 @@ const CHOICE = {
   name: null,
   choices: [{ name: "Opt1" }, { name: "Opt2" }],
 };
+const CLASS_NODE = {
+  id: 3,
+  type: "active",
+  treeType: "class",
+  maxRanks: 1,
+  posX: 0,
+  posY: 0,
+  name: "Class Node",
+};
 const treeData = { nodes: [NODE_A, CHOICE] };
 
 const noop = () => {};
@@ -68,6 +77,36 @@ describe("DiffSummaryTable", () => {
       />,
     );
     expect(screen.getByText(/picks differ \(3\/3\)/)).toBeInTheDocument();
+  });
+
+  test("groups differing rows under section headers, class before spec", () => {
+    const treeDataWithClass = { nodes: [NODE_A, CHOICE, CLASS_NODE] };
+    const valid = [
+      {
+        parsed: {
+          nodes: {
+            1: { pointsInvested: 2, entryChosen: null },
+            3: { pointsInvested: 1, entryChosen: null },
+          },
+        },
+        label: "A",
+      },
+      { parsed: { nodes: {} }, label: "B" },
+    ];
+    render(
+      <DiffSummaryTable
+        treeData={treeDataWithClass}
+        valid={valid}
+        setSpotlightId={noop}
+      />,
+    );
+    expect(screen.getByText("Class")).toBeInTheDocument();
+    expect(screen.getByText("Spec")).toBeInTheDocument();
+    expect(screen.queryByText("Hero")).not.toBeInTheDocument();
+
+    // Class section header must precede the Spec section header in the DOM.
+    const headers = screen.getAllByText(/^(Class|Spec|Hero)$/);
+    expect(headers.map((h) => h.textContent)).toEqual(["Class", "Spec"]);
   });
 
   test("hovering a row spotlights the node", () => {

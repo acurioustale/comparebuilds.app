@@ -120,8 +120,10 @@ describe("spotlight cleanup", () => {
     await screen.findByText(/Differences/, { selector: "p" });
 
     // Hover a summary row to spotlight its node — other nodes dim to 0.3.
-    const row = (await screen.findAllByRole("row")).find((r) =>
-      r.querySelector("td"),
+    // (Section-header rows have a single colSpan `td`; a real data row has
+    // one `td` per column, so requiring more than one skips the headers.)
+    const row = (await screen.findAllByRole("row")).find(
+      (r) => r.querySelectorAll("td").length > 1,
     );
     fireEvent.mouseEnter(row);
     expect(dimmedCount(container)).toBeGreaterThan(0);
