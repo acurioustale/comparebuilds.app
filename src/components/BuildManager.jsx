@@ -254,6 +254,19 @@ export default function BuildManager() {
     [classLocked, preloadSpec],
   );
 
+  // "Start from scratch" — a first-class jump into the interactive calculator
+  // for users with no build string to paste, rather than relying on them to
+  // intuit that picking a class then a spec opens it. Defaults to the
+  // in-progress class's first spec, or the first implemented class/spec
+  // overall when nothing has been picked yet. Only rendered while no builds
+  // are loaded (see below), so classLocked is never true here.
+  const handleStartFromScratch = useCallback(() => {
+    const cls = activeClass ?? classesIndex.find((c) => c.implemented);
+    if (!cls) return;
+    const spec = cls.specs.find((s) => s.id === specId) ?? cls.specs[0];
+    preloadSpec(spec.id);
+  }, [activeClass, specId, preloadSpec]);
+
   // ── Slot layout ────────────────────────────────────────────────────────────
   const filledCount = buildStrings.length;
   const canAdd = filledCount < MAX_BUILDS;
@@ -358,6 +371,22 @@ export default function BuildManager() {
             );
           })}
         </div>
+
+        {/* Cold-start escape hatch: with nothing pasted yet, jump straight into
+            the interactive calculator instead of requiring a build string.
+            Always visible here (not just after a failed parse) so it's the
+            first-class alternative the empty state was missing. Hidden once a
+            spec has been picked (preloadSpec sets specId synchronously), so it
+            doesn't linger once the calculator flow is already underway. */}
+        {filledCount === 0 && !specId && (
+          <button
+            type="button"
+            onClick={handleStartFromScratch}
+            className="mt-2 text-wow-muted hover:text-wow-gold text-xs transition-colors"
+          >
+            Don&rsquo;t have a build string? Start from scratch →
+          </button>
+        )}
       </section>
 
       {/* ── Action buttons ─────────────────────────── */}

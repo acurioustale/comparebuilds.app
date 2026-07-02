@@ -152,3 +152,37 @@ describe("BuildManager import flow", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("cold-start CTA", () => {
+  test("offers a start-from-scratch jump into the calculator with no builds", () => {
+    render(<BuildManager />);
+    expect(
+      screen.getByRole("button", { name: /start from scratch/i }),
+    ).toBeInTheDocument();
+  });
+
+  test("clicking it loads a spec's tree without requiring a build string", async () => {
+    render(<BuildManager />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /start from scratch/i }),
+    );
+    await waitFor(() =>
+      expect(useBuildsStore.getState().treeData).not.toBeNull(),
+    );
+    expect(useBuildsStore.getState().buildStrings).toEqual([]);
+    // The CTA steps aside once the calculator flow is underway.
+    expect(
+      screen.queryByRole("button", { name: /start from scratch/i }),
+    ).toBeNull();
+  });
+
+  test("is not shown once a build has been pasted", async () => {
+    render(<BuildManager />);
+    const [s] = genStrings("death_knight", "blood", 1);
+    paste(screen.getAllByPlaceholderText("Paste build string…")[0], s);
+    await screen.findByPlaceholderText(/Blood Death Knight/);
+    expect(
+      screen.queryByRole("button", { name: /start from scratch/i }),
+    ).toBeNull();
+  });
+});
