@@ -116,7 +116,7 @@ describe("BuildManager import flow", () => {
     paste(screen.getAllByPlaceholderText("Paste build string…")[0], a);
     await screen.findByPlaceholderText(/Build 1 — Blood Death Knight/);
     paste(screen.getByPlaceholderText("Paste build string…"), b);
-    await screen.findByPlaceholderText(/Build 2 — Blood Death Knight/);
+    await screen.findByPlaceholderText(/Build B — Blood Death Knight/);
 
     // Type (but do not submit) a third build string into the empty slot.
     fireEvent.change(screen.getByPlaceholderText("Paste build string…"), {
@@ -141,7 +141,7 @@ describe("BuildManager import flow", () => {
     paste(screen.getAllByPlaceholderText("Paste build string…")[0], a);
     await screen.findByPlaceholderText(/Build 1 — Blood Death Knight/);
     paste(screen.getByPlaceholderText("Paste build string…"), b);
-    await screen.findByPlaceholderText(/Build 2 — Blood Death Knight/);
+    await screen.findByPlaceholderText(/Build B — Blood Death Knight/);
 
     // Both actions are surfaced directly as buttons — no popover to open.
     expect(

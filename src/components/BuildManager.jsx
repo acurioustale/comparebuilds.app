@@ -223,10 +223,13 @@ export default function BuildManager() {
       layoutHash,
     });
 
-  // Human-readable build label: "Build N — [Hero Spec] Spec Class"
+  // Human-readable build label: "Build N — [Hero Spec] Spec Class". With
+  // exactly two builds loaded this reads "Build A"/"Build B" instead, to
+  // signal these two are being diffed.
   const buildLabel = (n, parsedBuild) =>
     defaultBuildLabel({
       index: n,
+      total: buildStrings.length,
       className: classDisplayName,
       specName: specDisplayName,
       treeData,
@@ -319,6 +322,7 @@ export default function BuildManager() {
                 <FilledSlot
                   key={buildStrings[i]}
                   index={i}
+                  total={filledCount}
                   name={buildNames[i] ?? ""}
                   label={buildLabel(i + 1, parsedBuilds[i])}
                   summary={pointSummary(parsedBuilds[i], treeData)}

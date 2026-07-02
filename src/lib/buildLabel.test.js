@@ -71,4 +71,55 @@ describe("defaultBuildLabel", () => {
       }),
     ).toBe("Build 5");
   });
+
+  test("labels index 1 and 2 as A/B when total is exactly two", () => {
+    const parsedBuild = { nodes: {} };
+    expect(
+      defaultBuildLabel({
+        index: 1,
+        total: 2,
+        className: "Death Knight",
+        specName: "Blood",
+        treeData,
+        parsedBuild,
+      }),
+    ).toBe("Build A — Blood Death Knight");
+    expect(
+      defaultBuildLabel({
+        index: 2,
+        total: 2,
+        className: "Death Knight",
+        specName: "Blood",
+        treeData,
+        parsedBuild,
+      }),
+    ).toBe("Build B — Blood Death Knight");
+  });
+
+  test("A/B applies to the 'Build N' fallback too", () => {
+    expect(
+      defaultBuildLabel({ index: 1, total: 2, specName: "", className: "" }),
+    ).toBe("Build A");
+    expect(
+      defaultBuildLabel({ index: 2, total: 2, specName: "", className: "" }),
+    ).toBe("Build B");
+  });
+
+  test("stays numeric when total is not exactly two", () => {
+    expect(
+      defaultBuildLabel({
+        index: 1,
+        total: 3,
+        className: "Death Knight",
+        specName: "Blood",
+      }),
+    ).toBe("Build 1 — Blood Death Knight");
+    expect(
+      defaultBuildLabel({
+        index: 1,
+        className: "Death Knight",
+        specName: "Blood",
+      }),
+    ).toBe("Build 1 — Blood Death Knight");
+  });
 });

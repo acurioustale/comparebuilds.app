@@ -30,6 +30,7 @@ function SlotStatus({ parsed, loading }) {
 
 export const FilledSlot = memo(function FilledSlot({
   index,
+  total,
   name,
   label,
   summary,
@@ -63,7 +64,7 @@ export const FilledSlot = memo(function FilledSlot({
 
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <SlotNumber n={index + 1} />
+      <SlotNumber n={index + 1} total={total} />
 
       {/* Editable slot name. Empty shows the computed default as a placeholder. */}
       <input
@@ -220,8 +221,23 @@ export const EmptySlot = memo(function EmptySlot({ index, onAdd, errorMsg }) {
   );
 });
 
-// Shared slot number label
-function SlotNumber({ n, muted = false }) {
+// Shared slot number label. With exactly two builds loaded it shows a
+// coloured A/B badge instead of a plain ordinal — red = A, blue = B, matching
+// the tags SideBySideDiff already uses for the same two builds.
+function SlotNumber({ n, total, muted = false }) {
+  if (total === 2) {
+    const letter = n === 1 ? "A" : "B";
+    return (
+      <span
+        className={[
+          "shrink-0 w-4 text-center text-xs font-semibold select-none",
+          letter === "A" ? "text-red-400" : "text-blue-400",
+        ].join(" ")}
+      >
+        {letter}
+      </span>
+    );
+  }
   return (
     <span
       className={[
