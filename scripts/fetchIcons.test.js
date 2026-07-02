@@ -85,4 +85,24 @@ describe("fetchOne integrity guards", () => {
     await assert.rejects(fetchOne("chunked"), /end marker/);
     assert.strictEqual(writes.length, 0);
   });
+
+  test("treats content-encoding: identity as unencoded and still enforces Content-Length", async () => {
+    // A structurally complete-looking JPEG (valid SOI/EOI) that is shorter than
+    // the advertised length. `identity` is not compression, so Content-Length is
+    // exact and the truncation must be caught rather than skipped — otherwise the
+    // valid end marker would let this slip past.
+    mockResponse(jpeg(16), { contentLength: 32, encoding: "identity" });
+    await assert.rejects(fetchOne("identity"), /truncated/);
+    assert.strictEqual(writes.length, 0);
+  });
+
+  test("skips the Content-Length check for a real compression encoding", async () => {
+    // gzip: fetch has already decompressed the body, so buf.length won't match
+    // the compressed Content-Length. A complete JPEG must still be accepted via
+    // the end-marker fallback rather than wrongly rejected as truncated.
+    mockResponse(jpeg(16), { contentLength: 8, encoding: "gzip" });
+    const result = await fetchOne("gzipped");
+    assert.strictEqual(result, "downloaded");
+    assert.strictEqual(writes.length, 1);
+  });
 });

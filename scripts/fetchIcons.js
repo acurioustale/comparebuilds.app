@@ -107,7 +107,16 @@ export async function fetchOne(name) {
         // committed and shipped. Verify completeness before writing; a throw
         // here is caught below and retried, then surfaced as a failure.
         const declared = res.headers.get("content-length");
-        const encoded = res.headers.get("content-encoding");
+        const encoding = res.headers.get("content-encoding");
+        // Only a real compression encoding (gzip/br/deflate) invalidates the
+        // length check: fetch has already decompressed the body, so buf no
+        // longer matches the compressed Content-Length. `identity` (or an empty
+        // value) means the body was not transformed, so Content-Length is still
+        // the exact size and the strong length check must apply — otherwise a
+        // truncated `identity` response would fall through to the weaker marker
+        // check and slip past if it happened to end in the JPEG EOI bytes.
+        const encoded =
+          encoding != null && encoding.trim().toLowerCase() !== "identity";
         if (declared != null && !encoded) {
           if (buf.length !== Number(declared)) {
             throw new Error(`truncated: ${buf.length} of ${declared} bytes`);
