@@ -41,20 +41,26 @@ export function generateSimcProfileset(
     // failure signal, so only an explicit null is skipped.
     if (parsedBuilds?.[i] === null) continue;
 
-    let name = buildNames?.[i]?.trim();
+    // Strip quotes and backslashes to ensure a clean simc profile name.
+    const strip = (s) => s.replace(/["\\]/g, "");
 
-    if (!name) {
-      name = defaultBuildLabel({
-        index: i + 1,
-        className: classDisplayName,
-        specName: specDisplayName,
-        treeData,
-        parsedBuild: parsedBuilds?.[i],
-      });
+    // Fall back to the default label when the custom name is empty OR collapses
+    // to empty after stripping (e.g. a name of `"` or `\`). Without the second
+    // check a quotes-only name would emit `profileset.""`, an empty-named
+    // profileset SimulationCraft mishandles. The default label carries no quotes
+    // or backslashes today, but strip it too so the fallback can never be empty.
+    let cleanName = strip(buildNames?.[i]?.trim() ?? "");
+    if (!cleanName) {
+      cleanName = strip(
+        defaultBuildLabel({
+          index: i + 1,
+          className: classDisplayName,
+          specName: specDisplayName,
+          treeData,
+          parsedBuild: parsedBuilds?.[i],
+        }),
+      );
     }
-
-    // Strip quotes and backslashes to ensure clean simc profile name
-    const cleanName = name.replace(/["\\]/g, "");
     // Disambiguate a name already emitted this run so the later build is not
     // silently overwritten by SimulationCraft's name-keyed profilesets.
     let uniqueName = cleanName;
