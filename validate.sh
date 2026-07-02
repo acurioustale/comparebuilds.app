@@ -171,4 +171,26 @@ else
 	skip xmllint "sitemap check"
 fi
 
+# Validate the built markup with the Nu Html Checker. Runs against dist/ so it
+# checks exactly what ships — the entry page plus every prerendered spec landing
+# page, and the SVG favicon — catching a markup or prerender-template bug before
+# deploy. Guarded like the other non-npm CLIs: skipped with a notice when vnu is
+# absent so validate.sh stays runnable everywhere; CI always enforces it. Two
+# benign infos are filtered: the void-element trailing slash (Vite/Prettier house
+# style) and the CSP meta check (a file:// false positive where script-src 'self'
+# plus the inline-script hashes can't resolve without an origin; served over https
+# the policy allows them, verified in-browser). The generated Tailwind CSS is not
+# checked — vnu rejects modern properties it doesn't yet recognise.
+if have vnu; then
+	step "Built HTML + SVG (vnu)"
+	html_files=()
+	while IFS= read -r file; do
+		html_files+=("$file")
+	done < <(find dist -name '*.html')
+	vnu --filterpattern '.*(Trailing slash on void elements|Content Security Policy).*' \
+		--also-check-svg "${html_files[@]}" dist/favicon.svg
+else
+	skip vnu "built HTML/SVG validation"
+fi
+
 step "All CI checks passed."

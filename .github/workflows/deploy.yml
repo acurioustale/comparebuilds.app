@@ -129,6 +129,33 @@ jobs:
           sudo apt-get install -y libxml2-utils
           xmllint --noout dist/sitemap.xml
 
+      # The Nu Html Checker needs a JVM. Set it up here (after the Node steps that
+      # do the real work) so the vnu step below can run the jar.
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Validate the built markup against dist/ — the entry page plus every
+      # prerendered spec landing page, and the SVG favicon — so a markup or
+      # prerender-template bug is caught before deploy. Mirrors validate.sh. We
+      # download the jar rather than a packaged wrapper: wrappers ship an older
+      # bundled vnu that rejects valid modern features. Two benign infos are
+      # filtered: the void-element trailing slash (Vite/Prettier house style) and
+      # the CSP meta check (a file:// false positive where script-src 'self' plus
+      # the inline-script hashes can't resolve without an origin; over https the
+      # policy allows them, verified in-browser). The generated Tailwind CSS is not
+      # checked — vnu rejects modern properties it doesn't yet recognise.
+      - name: Validate built HTML + SVG (vnu)
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/vnu.jar" \
+            https://github.com/validator/validator/releases/download/latest/vnu.jar
+          mapfile -t html_files < <(find dist -name '*.html')
+          java -jar "$RUNNER_TEMP/vnu.jar" \
+            --filterpattern '.*(Trailing slash on void elements|Content Security Policy).*' \
+            --also-check-svg "${html_files[@]}" dist/favicon.svg
+
   deploy:
     needs: validate
     if: github.event_name != 'pull_request'
