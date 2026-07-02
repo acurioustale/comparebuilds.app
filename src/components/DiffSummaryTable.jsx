@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo } from "react";
-import { computeDiff, groupBySection } from "../lib/diff";
+import { computeDiff, differenceLabel, groupBySection } from "../lib/diff";
 import { computeStats, isContested, isDivergent } from "../lib/heatmap";
 
 // Display name for a node: its own name, or a choice node's options joined.
@@ -71,6 +71,7 @@ export default function DiffSummaryTable({
           node,
           valA: cellValue(node, selA),
           valB: cellValue(node, selB),
+          semanticLabel: differenceLabel(node, selA, selB),
         }),
       );
     }
@@ -172,6 +173,11 @@ export default function DiffSummaryTable({
                     >
                       <td className="py-2.5 px-3 font-medium text-wow-gold">
                         {nodeName(row.node)}
+                        {row.semanticLabel && (
+                          <span className="ml-1.5 text-[11px] font-normal text-wow-muted">
+                            ({row.semanticLabel})
+                          </span>
+                        )}
                       </td>
                       {isDiffMode ? (
                         <>

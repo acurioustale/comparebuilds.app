@@ -33,6 +33,15 @@ const CLASS_NODE = {
   posY: 0,
   name: "Class Node",
 };
+const APEX = {
+  id: 4,
+  type: "apex",
+  treeType: "spec",
+  maxRanks: 2,
+  posX: 0,
+  posY: 9,
+  name: "Capstone",
+};
 const treeData = { nodes: [NODE_A, CHOICE] };
 
 const noop = () => {};
@@ -107,6 +116,62 @@ describe("DiffSummaryTable", () => {
     // Class section header must precede the Spec section header in the DOM.
     const headers = screen.getAllByText(/^(Class|Spec|Hero)$/);
     expect(headers.map((h) => h.textContent)).toEqual(["Class", "Spec"]);
+  });
+
+  test("shows a semantic label for a choice-node flip", () => {
+    const valid = [
+      { parsed: { nodes: { 2: { entryChosen: 0 } } }, label: "A" },
+      { parsed: { nodes: { 2: { entryChosen: 1 } } }, label: "B" },
+    ];
+    render(
+      <DiffSummaryTable
+        treeData={treeData}
+        valid={valid}
+        setSpotlightId={noop}
+      />,
+    );
+    expect(screen.getByText("(Opt1 → Opt2)")).toBeInTheDocument();
+  });
+
+  test("shows 'dropped'/'gained' for a capstone gained or dropped between builds", () => {
+    const treeDataWithApex = { nodes: [NODE_A, CHOICE, APEX] };
+    const valid = [
+      {
+        parsed: { nodes: { 4: { pointsInvested: 2, entryChosen: null } } },
+        label: "A",
+      },
+      { parsed: { nodes: {} }, label: "B" },
+    ];
+    render(
+      <DiffSummaryTable
+        treeData={treeDataWithApex}
+        valid={valid}
+        setSpotlightId={noop}
+      />,
+    );
+    expect(screen.getByText("(dropped)")).toBeInTheDocument();
+  });
+
+  test("omits a semantic label for a plain rank-only difference", () => {
+    const valid = [
+      {
+        parsed: { nodes: { 1: { pointsInvested: 2, entryChosen: null } } },
+        label: "A",
+      },
+      {
+        parsed: { nodes: { 1: { pointsInvested: 1, entryChosen: null } } },
+        label: "B",
+      },
+    ];
+    render(
+      <DiffSummaryTable
+        treeData={treeData}
+        valid={valid}
+        setSpotlightId={noop}
+      />,
+    );
+    const row = screen.getByText("Node A").closest("tr");
+    expect(row.textContent).not.toMatch(/\(.*\)/);
   });
 
   test("hovering a row spotlights the node", () => {

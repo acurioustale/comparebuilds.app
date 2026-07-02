@@ -4,7 +4,12 @@
 
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
-import { computeDiff, groupBySection, selectionLabel } from "./diff.js";
+import {
+  computeDiff,
+  differenceLabel,
+  groupBySection,
+  selectionLabel,
+} from "./diff.js";
 
 // Small synthetic spec: one class node, a multi-rank spec node, a choice node,
 // a hero node, and an always-granted node.
@@ -241,5 +246,37 @@ describe("groupBySection", () => {
       groups.map((g) => g.entries.map((e) => e.id)),
       [[1]],
     );
+  });
+});
+
+describe("differenceLabel", () => {
+  test("choice node both builds took, different picks → 'X → Y'", () => {
+    assert.strictEqual(differenceLabel(byId[3], pt(1, 0), pt(1, 1)), "X → Y");
+  });
+
+  test("choice node both builds took, same pick → null", () => {
+    assert.strictEqual(differenceLabel(byId[3], pt(1, 0), pt(1, 0)), null);
+  });
+
+  test("choice node only one build took → null (not a flip)", () => {
+    assert.strictEqual(differenceLabel(byId[3], pt(1, 0), null), null);
+    assert.strictEqual(differenceLabel(byId[3], null, pt(1, 1)), null);
+  });
+
+  test("apex node present in A, absent in B → 'dropped'", () => {
+    assert.strictEqual(differenceLabel(byId[6], pt(2), null), "dropped");
+  });
+
+  test("apex node absent in A, present in B → 'gained'", () => {
+    assert.strictEqual(differenceLabel(byId[6], null, pt(1)), "gained");
+  });
+
+  test("apex node in both (rank-only change) → null", () => {
+    assert.strictEqual(differenceLabel(byId[6], pt(1), pt(2)), null);
+  });
+
+  test("non-choice, non-apex node → null regardless of selections", () => {
+    assert.strictEqual(differenceLabel(byId[2], pt(1), null), null);
+    assert.strictEqual(differenceLabel(byId[2], pt(1), pt(3)), null);
   });
 });

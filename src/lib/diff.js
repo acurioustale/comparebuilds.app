@@ -103,6 +103,39 @@ export function computeDiff(nodesA, nodesB, allNodes) {
   };
 }
 
+/**
+ * A short, human-readable label for a recognisable trade-off between two
+ * builds' selections on the same node — rendered alongside the node name in
+ * the 2-build diff summary. Deliberately narrow: only the two patterns
+ * concrete enough to name without guessing —
+ *
+ *   - a choice node both builds took, but picked different options
+ *     ("Option X → Option Y")
+ *   - a capstone (apex node) present in one build and absent in the other
+ *     ("dropped" / "gained", A → B)
+ *
+ * Everything else (rank-only changes, non-apex nodes only one build took)
+ * returns null rather than mislabelling.
+ *
+ * @param {object} node Spec node definition
+ * @param {{ pointsInvested: number, entryChosen: number|null }|null} selA
+ * @param {{ pointsInvested: number, entryChosen: number|null }|null} selB
+ * @returns {string|null}
+ */
+export function differenceLabel(node, selA, selB) {
+  if (node.type === "choice" && selA && selB) {
+    const nameA = node.choices?.[selA.entryChosen]?.name;
+    const nameB = node.choices?.[selB.entryChosen]?.name;
+    if (nameA && nameB && nameA !== nameB) return `${nameA} → ${nameB}`;
+    return null;
+  }
+  if (node.type === "apex") {
+    if (selA && !selB) return "dropped";
+    if (!selA && selB) return "gained";
+  }
+  return null;
+}
+
 const SECTION_LABELS = { class: "Class", spec: "Spec", hero: "Hero" };
 const SECTION_ORDER = ["class", "spec", "hero"];
 
