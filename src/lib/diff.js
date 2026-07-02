@@ -102,3 +102,32 @@ export function computeDiff(nodesA, nodesB, allNodes) {
     differing: sortEntries(differing),
   };
 }
+
+const SECTION_LABELS = { class: "Class", spec: "Spec", hero: "Hero" };
+const SECTION_ORDER = ["class", "spec", "hero"];
+
+/**
+ * Buckets a flat list of entries by their node's tree section (class/spec/
+ * hero), in that display order, dropping empty sections. Each entry must
+ * carry a `.node` with a `.treeType`; entries with an unrecognised treeType
+ * are dropped rather than silently mis-bucketed. Order within a bucket is
+ * preserved from the input.
+ *
+ * Extracted as pure logic (rather than computed inline in DiffSummaryTable)
+ * so the "what differs where" grouping is unit-tested and can't drift from
+ * the section labels/order used elsewhere.
+ *
+ * @param {Array<{node: {treeType: string}}>} entries
+ * @returns {Array<{section: string, label: string, entries: object[]}>}
+ */
+export function groupBySection(entries) {
+  const buckets = { class: [], spec: [], hero: [] };
+  for (const entry of entries) {
+    buckets[entry.node?.treeType]?.push(entry);
+  }
+  return SECTION_ORDER.map((section) => ({
+    section,
+    label: SECTION_LABELS[section],
+    entries: buckets[section],
+  })).filter((group) => group.entries.length > 0);
+}

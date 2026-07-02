@@ -4,7 +4,7 @@
 
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
-import { computeDiff, selectionLabel } from "./diff.js";
+import { computeDiff, groupBySection, selectionLabel } from "./diff.js";
 
 // Small synthetic spec: one class node, a multi-rank spec node, a choice node,
 // a hero node, and an always-granted node.
@@ -182,6 +182,64 @@ describe("computeDiff", () => {
     assert.deepStrictEqual(
       aOnly.map((e) => e.node.treeType),
       ["class", "spec", "hero"],
+    );
+  });
+});
+
+describe("groupBySection", () => {
+  test("buckets entries by treeType in class → spec → hero order", () => {
+    const entries = [
+      { id: 4, node: byId[4] }, // hero
+      { id: 1, node: byId[1] }, // class
+      { id: 2, node: byId[2] }, // spec
+    ];
+    const groups = groupBySection(entries);
+    assert.deepStrictEqual(
+      groups.map((g) => g.section),
+      ["class", "spec", "hero"],
+    );
+    assert.deepStrictEqual(
+      groups.map((g) => g.label),
+      ["Class", "Spec", "Hero"],
+    );
+    assert.deepStrictEqual(
+      groups.map((g) => g.entries.map((e) => e.id)),
+      [[1], [2], [4]],
+    );
+  });
+
+  test("drops sections with no entries", () => {
+    const groups = groupBySection([{ id: 1, node: byId[1] }]);
+    assert.deepStrictEqual(
+      groups.map((g) => g.section),
+      ["class"],
+    );
+  });
+
+  test("preserves input order within a section", () => {
+    const groups = groupBySection([
+      { id: 2, node: byId[2] },
+      { id: 3, node: byId[3] },
+    ]);
+    assert.deepStrictEqual(
+      groups[0].entries.map((e) => e.id),
+      [2, 3],
+    );
+  });
+
+  test("empty input yields no groups", () => {
+    assert.deepStrictEqual(groupBySection([]), []);
+  });
+
+  test("drops entries with an unrecognised or missing treeType", () => {
+    const groups = groupBySection([
+      { id: 1, node: byId[1] },
+      { id: 99, node: { treeType: "unknown" } },
+      { id: 100, node: {} },
+    ]);
+    assert.deepStrictEqual(
+      groups.map((g) => g.entries.map((e) => e.id)),
+      [[1]],
     );
   });
 });
