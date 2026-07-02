@@ -220,6 +220,50 @@ describe("BlizzardDb2.apexChain", () => {
   it("returns null for an unknown node", () => {
     expect(fixture().apexChain("999")).toBeNull();
   });
+
+  it("throws when an apex entry's TraitDefinition (SpellID) is missing", () => {
+    const db2 = new BlizzardDb2({ build: "test", cache: false });
+    db2.index({
+      nx: [{ TraitNodeID: "100", TraitNodeEntryID: "e1", _Index: "100" }],
+      entry: [
+        {
+          ID: "e1",
+          TraitDefinitionID: "gone",
+          MaxRanks: "1",
+          NodeEntryType: "13",
+        },
+      ],
+      def: [], // no definition for "gone" → SpellID undefined → NaN
+      cond: [],
+      ncond: [],
+      gxn: [],
+      gxc: [],
+      subtree: [],
+    });
+    expect(() => db2.apexChain("100")).toThrow(/no valid SpellID/);
+  });
+
+  it("throws when an apex entry's MaxRanks is blank", () => {
+    const db2 = new BlizzardDb2({ build: "test", cache: false });
+    db2.index({
+      nx: [{ TraitNodeID: "100", TraitNodeEntryID: "e1", _Index: "100" }],
+      entry: [
+        {
+          ID: "e1",
+          TraitDefinitionID: "d1",
+          MaxRanks: "",
+          NodeEntryType: "13",
+        },
+      ],
+      def: [{ ID: "d1", SpellID: "1001" }],
+      cond: [],
+      ncond: [],
+      gxn: [],
+      gxc: [],
+      subtree: [],
+    });
+    expect(() => db2.apexChain("100")).toThrow(/invalid MaxRanks/);
+  });
 });
 
 describe("BlizzardDb2.spentRequired", () => {
