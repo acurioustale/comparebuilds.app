@@ -277,8 +277,10 @@ inline anti-flash theme script and fails if its hash has drifted from either
 Content-Security-Policy that allowlists it — the `<meta>` baseline injected into
 the built HTML and the `.htaccess` header superset — or if the two policies
 disagree on any other directive, an OG image guard
-(`npm run check:og`) that verifies `public/og-image.png` is 1200×630, and a
-sitemap well-formedness check (`xmllint --noout dist/sitemap.xml`):
+(`npm run check:og`) that verifies `public/og-image.png` is 1200×630, a
+sitemap well-formedness check (`xmllint --noout dist/sitemap.xml`), and HTML
+validation (the Nu Html Checker over `dist/` — the entry page, every prerendered
+spec landing page and the SVG favicon):
 
 ```bash
 ./validate.sh          # everything CI enforces
@@ -292,7 +294,7 @@ skips any that are missing with a notice, and CI pins them — but to run the wh
 gate, install them too:
 
 ```bash
-brew install shellcheck shfmt php-cs-fixer phpunit actionlint lychee xmllint
+brew install shellcheck shfmt php-cs-fixer phpunit actionlint lychee xmllint vnu
 ```
 
 Link checking (lychee) runs in its own GitHub workflow, separate from the
