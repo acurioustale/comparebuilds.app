@@ -230,6 +230,23 @@ describe("BlizzardDb2.spentRequired", () => {
   it("is 0 for an ungated node", () => {
     expect(fixture().spentRequired("100")).toBe(0);
   });
+
+  it("throws on a non-numeric spend-gate amount instead of treating it as ungated", () => {
+    const db2 = new BlizzardDb2({ build: "test", cache: false });
+    db2.index({
+      nx: [],
+      entry: [],
+      def: [],
+      subtree: [],
+      cond: [{ ID: "bad", CondType: "0", SpentAmountRequired: "N/A" }],
+      ncond: [],
+      gxn: [{ TraitNodeGroupID: "grp", TraitNodeID: "500" }],
+      gxc: [{ TraitNodeGroupID: "grp", TraitCondID: "bad" }],
+    });
+    expect(() => db2.spentRequired("500")).toThrow(
+      /non-numeric SpentAmountRequired/,
+    );
+  });
 });
 
 describe("BlizzardDb2.subtree", () => {
