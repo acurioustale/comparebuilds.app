@@ -744,6 +744,25 @@ function store_share(PDO $pdo, array $payload, string $ipHash, ?object $redis = 
                     // instead of silently relaxing the cap for every user.
                     error_log('Failed to log share request: ' . $e->getMessage());
                 }
+            } else {
+                // Already at the per-IP row cap (2x the limit) and still
+                // hammering. Inserting another row would grow the table
+                // unbounded, but dropping the request outright lets the sliding
+                // window drain: as the oldest rows age out the count falls back
+                // under the cap and the abuser regains capacity while still
+                // hammering. Instead slide this IP's oldest logged request
+                // forward to now — the row count stays bounded while the
+                // recovery horizon is pushed out for as long as the abuse
+                // continues, mirroring the Redis path's over-limit penalty.
+                try {
+                    $slide = $pdo->prepare(
+                        'UPDATE comparebuilds_share_requests SET created_at = NOW() '
+                        . 'WHERE ip_hash = ? ORDER BY created_at ASC LIMIT 1'
+                    );
+                    $slide->execute([$ipHash]);
+                } catch (PDOException $e) {
+                    error_log('Failed to slide share request window: ' . $e->getMessage());
+                }
             }
         }
 
