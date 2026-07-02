@@ -312,7 +312,13 @@ export function generateBuildString(
     writer.writeBit(1); // isPurchased
 
     const node = byId.get(id);
-    const isChoice = node?.choices != null;
+    // A choice node needs at least one real option. An empty choices array (a
+    // malformed node the validator rejects, but a hand-built classNodes could
+    // pass) must encode as a non-choice node — otherwise entryIdx below would be
+    // Math.min(0, choices.length - 1) = -1, and writeBits(-1, 2) would emit
+    // entryChosen=3 plus two stray bits that misalign every later node. Mirrors
+    // the read-side guard in parseBuildString.
+    const isChoice = node?.choices != null && node.choices.length > 0;
     // Clamp the pick into a real option index, mirroring the parser's read-side
     // clamp. The 2-bit field encodes 0-3, so a corrupt or hand-built selection
     // can carry an out-of-range entryChosen (e.g. 3 on a 2-option node). Left

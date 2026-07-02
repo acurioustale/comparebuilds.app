@@ -208,6 +208,39 @@ describe("generateBuildString clamps an out-of-range choice index", () => {
   });
 });
 
+describe("generateBuildString treats an empty choices array as a non-choice node", () => {
+  // A node with choices: [] is malformed (validateClassData rejects it), but a
+  // hand-built classNodes could carry one. It must encode exactly like a
+  // non-choice node — never as isChoice with entryIdx = choices.length - 1 = -1,
+  // which writeBits(-1, 2) would otherwise turn into a stray entryChosen=3 plus
+  // two bits that misalign every later node.
+  const specId = 250;
+  const selection = { 100: { pointsInvested: 1, entryChosen: 0 } };
+
+  test("encodes identically to the same node with choices: null and round-trips", () => {
+    const strEmpty = generateBuildString(selection, specId, [
+      { id: 100, maxRanks: 1, choices: [] },
+    ]);
+    const strNull = generateBuildString(selection, specId, [
+      { id: 100, maxRanks: 1, choices: null },
+    ]);
+    assert.strictEqual(
+      strEmpty,
+      strNull,
+      "empty choices must encode like a non-choice node",
+    );
+    const parsed = parseBuildString(strEmpty, [
+      { id: 100, maxRanks: 1, choices: null },
+    ]);
+    assert.strictEqual(parsed.nodes[100].pointsInvested, 1);
+    assert.strictEqual(
+      parsed.nodes[100].entryChosen,
+      null,
+      "a non-choice node reports entryChosen null, not a stray index",
+    );
+  });
+});
+
 // ── Error paths ───────────────────────────────────────────────────────────────
 // A truncated or corrupt string must fail loudly, never return garbage — the
 // store relies on these throws to mark a build as "failed to parse".
