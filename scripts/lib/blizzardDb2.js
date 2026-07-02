@@ -490,10 +490,27 @@ export class BlizzardDb2 {
     if (!entries.length) return null;
     if (!entries.every((e) => e.NodeEntryType === APEX_ENTRY_TYPE)) return null;
 
-    const ranks = entries.map((e) => ({
-      spellId: Number(this._defById.get(e.TraitDefinitionID)?.SpellID),
-      maxRanks: Number(e.MaxRanks),
-    }));
+    const ranks = entries.map((e) => {
+      // A missing TraitDefinition (SpellID undefined) or a blank MaxRanks would
+      // otherwise coerce to NaN and flow into the apex node's rank total and
+      // point-budget contribution, then serialise as null — a silent source-data
+      // corruption. Fail loud with the ids that pin down the bad entry instead.
+      const spellId = Number(this._defById.get(e.TraitDefinitionID)?.SpellID);
+      const maxRanks = Number(e.MaxRanks);
+      if (!Number.isInteger(spellId) || spellId <= 0) {
+        throw new Error(
+          `apex node ${nodeId} entry ${e.ID} has no valid SpellID ` +
+            `(TraitDefinitionID ${e.TraitDefinitionID})`,
+        );
+      }
+      if (!Number.isInteger(maxRanks) || maxRanks < 1) {
+        throw new Error(
+          `apex node ${nodeId} entry ${e.ID} (spell ${spellId}) has an ` +
+            `invalid MaxRanks ("${e.MaxRanks}")`,
+        );
+      }
+      return { spellId, maxRanks };
+    });
     return { ranks, levels: this._apexLevels(nodeId, ranks) };
   }
 
